@@ -4,13 +4,22 @@
  *
  * Zoekstrategie (volgorde):
  *   1. Exacte match merk + modelnummer
- *   2. Merk + modelnummer LIKE (voor spaties, streepjes, kleine variaties)
- *   3. Alleen merk  → geef merk-level default terug
+ *   2. Fuzzy match (spaties/streepjes genegeerd)
+ *   3. Merk-level fallback via advies_regels (reparatie_merken / coulance_merken)
  *
- * Response: { gevonden: bool, repareerbaar: bool, merk: string, modelnummer: string, match: string }
+ * Response:
+ *   {
+ *     gevonden:     bool,
+ *     repareerbaar: bool,
+ *     taxatie:      bool,
+ *     merk:         string,
+ *     modelnummer:  string,
+ *     match:        'exact'|'fuzzy'|'merk_default'|'niet_gevonden'
+ *   }
  */
 ob_start();
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/advies_regels.php';
 error_reporting(0);
 ini_set('display_errors', 0);
 ob_clean();
@@ -21,7 +30,7 @@ $merk        = trim($_GET['merk']        ?? '');
 $modelnummer = trim($_GET['modelnummer'] ?? '');
 
 if ($merk === '' || $modelnummer === '') {
-    echo json_encode(['gevonden' => false, 'repareerbaar' => false]);
+    echo json_encode(['gevonden' => false, 'repareerbaar' => false, 'taxatie' => false]);
     exit;
 }
 
@@ -31,9 +40,9 @@ $modelNormalized = preg_replace('/[\s\-]+/', '', strtolower($modelnummer));
 try {
     $pdo = db();
 
-    // ── Stap 1: exacte match (case-insensitive) ──
+    // ── Stap 1: exacte match ──────────────────────────────────────
     $stmt = $pdo->prepare("
-        SELECT id, merk, modelnummer, repareerbaar
+        SELECT id, merk, modelnummer, repareerbaar, taxatie
         FROM   tv_modellen
         WHERE  actief = 1
           AND  LOWER(merk)        = LOWER(:merk)
@@ -47,6 +56,7 @@ try {
         echo json_encode([
             'gevonden'     => true,
             'repareerbaar' => (bool)(int)$row['repareerbaar'],
+            'taxatie'      => (bool)(int)($row['taxatie'] ?? 0),
             'merk'         => $row['merk'],
             'modelnummer'  => $row['modelnummer'],
             'match'        => 'exact',
@@ -54,9 +64,9 @@ try {
         exit;
     }
 
-    // ── Stap 2: fuzzy match – haal alle modellen van dit merk op en vergelijk genormaliseerd ──
+    // ── Stap 2: fuzzy match ───────────────────────────────────────
     $stmt2 = $pdo->prepare("
-        SELECT id, merk, modelnummer, repareerbaar
+        SELECT id, merk, modelnummer, repareerbaar, taxatie
         FROM   tv_modellen
         WHERE  actief = 1
           AND  LOWER(merk) = LOWER(:merk)
@@ -70,6 +80,7 @@ try {
             echo json_encode([
                 'gevonden'     => true,
                 'repareerbaar' => (bool)(int)$r['repareerbaar'],
+                'taxatie'      => (bool)(int)($r['taxatie'] ?? 0),
                 'merk'         => $r['merk'],
                 'modelnummer'  => $r['modelnummer'],
                 'match'        => 'fuzzy',
@@ -78,20 +89,26 @@ try {
         }
     }
 
-    // ── Stap 3: model niet gevonden – geef merk-level repareerbaar terug als fallback ──
-    // Merken die standaard NIET repareerbaar zijn (conform admin/modellen.php $repareerbareMerken)
-    $repareerbareMerken = ['Samsung', 'Philips', 'Sony', 'LG'];
-    $merkRepareerbaar   = in_array($merk, $repareerbareMerken, true);
+    // ── Stap 3: model niet gevonden — merk-level fallback via DB-regels ──
+    // Gebruik reparatie_merken en taxatie_merken uit advies_regels.
+    // Lege lijst = alle merken toegestaan.
+    $regels        = getAdviesRegels();
+    $repMerken     = $regels['reparatie_merken'] ?? [];
+    $taxMerken     = $regels['taxatie_merken']   ?? [];
+
+    $merkRep = merkToegestaanVoorRoute($repMerken, $merk);
+    $merkTax = merkToegestaanVoorRoute($taxMerken, $merk);
 
     echo json_encode([
         'gevonden'     => false,
-        'repareerbaar' => $merkRepareerbaar,
+        'repareerbaar' => $merkRep,
+        'taxatie'      => $merkTax,
         'merk'         => $merk,
         'modelnummer'  => $modelnummer,
         'match'        => 'merk_default',
     ]);
 
 } catch (Exception $e) {
-    echo json_encode(['gevonden' => false, 'repareerbaar' => false, 'match' => 'error']);
+    echo json_encode(['gevonden' => false, 'repareerbaar' => false, 'taxatie' => false, 'match' => 'error']);
 }
 exit;
