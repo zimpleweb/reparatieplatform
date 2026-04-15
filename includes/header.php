@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/model.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/footer.css" />
+  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/advies-routing.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/responsive.css" />
   <style>
     @media (max-width: 768px) {
