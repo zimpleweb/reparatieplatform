@@ -1,0 +1,178 @@
+/* ── Hero zoekbalk ──────────────────────────────────── */
+.hero-search-wrap { position: relative; margin-top: 2rem; max-width: 620px; }
+.hero-search {
+  display: flex; align-items: center;
+  background: white; border-radius: 16px;
+  padding: .85rem 1.25rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18); gap: .75rem;
+}
+.hero-search-icon { font-size: 1.2rem; flex-shrink: 0; opacity: .5; }
+.hero-search input {
+  flex: 1; border: none; outline: none;
+  font-family: 'Inter', sans-serif; font-size: 1rem; color: var(--ink);
+  background: transparent;
+}
+.hero-search input::placeholder { color: #9ca3af; }
+.hero-search-clear {
+  background: none; border: none; cursor: pointer;
+  font-size: 1.2rem; color: #9ca3af; line-height: 1;
+  display: flex; align-items: center; transition: color .15s;
+}
+.hero-search-clear:hover { color: var(--ink); }
+
+/* ── Autocomplete ───────────────────────────────────── */
+.autocomplete-box {
+  display: none;
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 400;
+  background: white; border-radius: 16px;
+  border: 1.5px solid var(--border);
+  box-shadow: 0 16px 48px rgba(0,0,0,.15);
+  overflow: hidden; max-height: 400px; overflow-y: auto;
+}
+.ac-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .8rem 1.1rem; cursor: pointer; gap: 1rem;
+  border-bottom: 1px solid var(--border); transition: background .1s;
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover, .ac-item.active { background: var(--accent-light); }
+.ac-left { min-width: 0; }
+.ac-model { font-weight: 700; font-size: .9rem; color: var(--ink); }
+.ac-sub   { font-size: .75rem; color: var(--muted); margin-top: .1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-badge { font-size: .68rem; font-weight: 700; padding: .18rem .55rem; border-radius: 999px; flex-shrink: 0; border: none; }
+.ac-mark  { background: #d1fae5; color: #065f46; border-radius: 2px; padding: 0 1px; }
+.ac-not-found { padding: 1.5rem 1.25rem; text-align: center; }
+.ac-not-found p { font-size: .875rem; color: var(--muted); margin-bottom: 1rem; }
+.ac-not-found a {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: var(--accent); color: white; border-radius: 999px;
+  padding: .6rem 1.25rem; font-size: .85rem; font-weight: 700; transition: background .2s;
+}
+.ac-not-found a:hover { background: var(--accent-dark); }
+
+/* ── Filter balken ──────────────────────────────────── */
+.filter-bar {
+  background: white; border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 1.75rem 2rem;
+  display: grid; grid-template-columns: 1fr 1fr 1.2fr auto; gap: 1rem;
+  align-items: end; margin-bottom: 1.5rem; box-shadow: var(--shadow);
+}
+.filter-bar-small {
+  background: white; border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem 1.5rem;
+  display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;
+  box-shadow: var(--shadow);
+}
+.filter-bar-small .filter-group { flex: 1; min-width: 160px; }
+.filter-group { display: flex; flex-direction: column; gap: .4rem; }
+.filter-group label {
+  font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--muted);
+}
+.filter-group select, .filter-group input {
+  width: 100%; padding: .7rem 1rem;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif; font-size: .9rem; color: var(--ink);
+  background: var(--surface); -webkit-appearance: none; transition: border-color .2s;
+}
+.filter-group select:focus, .filter-group input:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(40,120,100,.1);
+}
+.filter-group select:disabled { opacity: .4; }
+.filter-reset {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: .7rem 1.25rem;
+  font-size: .85rem; font-weight: 600; color: var(--muted);
+  cursor: pointer; transition: all .2s; font-family: 'Inter', sans-serif;
+  white-space: nowrap; display: inline-flex; align-items: center; text-decoration: none;
+}
+.filter-reset:hover { background: var(--ink); color: white; border-color: var(--ink); }
+.active-filters { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.filter-tag {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: var(--accent-light); border: 1px solid #b2d8d0;
+  border-radius: 999px; padding: .22rem .75rem;
+  font-size: .78rem; font-weight: 600; color: var(--accent);
+}
+.filter-tag a { color: var(--accent); font-size: .9rem; line-height: 1; display: flex; align-items: center; }
+.results-count { font-size: .875rem; font-weight: 600; color: var(--muted); margin-bottom: 1rem; }
+.results-count strong { color: var(--ink); }
+
+/* ── Tabel ──────────────────────────────────────────── */
+.tv-table-wrap {
+  background: white; border: 1.5px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
+}
+table { width: 100%; border-collapse: collapse; }
+thead tr { background: var(--surface); border-bottom: 1.5px solid var(--border); }
+th {
+  padding: .85rem 1.25rem; text-align: left;
+  font-size: .72rem; font-weight: 700; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--muted); white-space: nowrap;
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #fafaf8; }
+td { padding: .85rem 1.25rem; font-size: .875rem; vertical-align: middle; }
+.td-model { font-weight: 700; color: var(--ink); }
+.td-sub   { color: var(--muted); font-size: .78rem; margin-top: .1rem; }
+.td-link  { display: inline-flex; align-items: center; gap: .3rem; color: var(--accent); font-weight: 600; font-size: .82rem; transition: gap .15s; }
+.td-link:hover { gap: .55rem; }
+
+/* ── Merken kaarten ─────────────────────────────────── */
+.db-section { margin-bottom: 3.5rem; }
+.db-section-header { margin-bottom: 1.5rem; }
+.db-section-header h2 { font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .3rem; }
+.db-section-header p  { font-size: .875rem; color: var(--muted); }
+.merken-kaarten {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem;
+}
+.merk-kaart {
+  background: white; border: 1.5px solid var(--border); border-radius: 18px;
+  padding: 1.25rem; display: flex; align-items: center; gap: 1rem;
+  transition: all .2s; position: relative;
+}
+.merk-kaart:hover { border-color: var(--accent); box-shadow: 0 6px 20px rgba(40,120,100,.1); transform: translateY(-2px); }
+.merk-kaart-icon-wrap {
+  width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.merk-kaart-body    { flex: 1; min-width: 0; }
+.merk-kaart-naam    { font-weight: 800; font-size: .95rem; font-family: 'Epilogue', sans-serif; color: var(--ink); }
+.merk-kaart-count   { font-size: .75rem; color: var(--muted); margin-top: .1rem; }
+.merk-kaart-arrow   { font-size: .85rem; color: var(--muted); transition: transform .2s, color .2s; flex-shrink: 0; }
+.merk-kaart:hover .merk-kaart-arrow { color: var(--accent); transform: translateX(3px); }
+
+/* ── Populaire modellen ─────────────────────────────── */
+.populair-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;
+}
+.populair-kaart {
+  background: white; border: 1.5px solid var(--border); border-radius: 18px;
+  padding: 1.4rem 1.25rem; display: flex; flex-direction: column; gap: .35rem;
+  transition: all .2s;
+}
+.populair-kaart:hover { border-color: var(--accent); box-shadow: 0 6px 20px rgba(40,120,100,.1); transform: translateY(-2px); }
+.populair-kaart-top   { display: flex; align-items: center; justify-content: space-between; margin-bottom: .4rem; }
+.populair-kaart-inch  { font-size: .75rem; color: var(--muted); font-weight: 600; }
+.populair-kaart-model { font-family: 'Epilogue', sans-serif; font-weight: 800; font-size: 1rem; color: var(--ink); line-height: 1.2; }
+.populair-kaart-sub   { font-size: .78rem; color: var(--muted); }
+.populair-kaart-jaar  { font-size: .75rem; color: #9ca3af; margin-top: auto; padding-top: .5rem; }
+.populair-kaart-link  { font-size: .8rem; color: var(--accent); font-weight: 700; margin-top: .25rem; }
+
+/* ── Niet gevonden ──────────────────────────────────── */
+.not-found-block {
+  background: white; border: 1.5px solid var(--border);
+  border-radius: 24px; padding: 3rem 2.5rem; text-align: center;
+  max-width: 560px; margin: 2rem auto 0;
+}
+.not-found-icon { font-size: 3rem; margin-bottom: 1.25rem; }
+.not-found-block h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: .75rem; }
+.not-found-block p  { font-size: .95rem; color: var(--muted); line-height: 1.75; margin-bottom: 2rem; }
+.not-found-actions  { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.not-found-hint {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: .85rem 1.1rem;
+  font-size: .8rem; color: var(--muted); line-height: 1.65; text-align: left;
+}

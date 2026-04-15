@@ -1,0 +1,76 @@
+.admin-wrap { min-height: 100vh; background: #f8fafc; }
+.admin-nav {
+  background: var(--ink); padding: 0 2rem; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.admin-nav .logo { color: white; font-family: 'Epilogue', sans-serif; font-weight: 800; font-size: 1rem; }
+.admin-nav .logo span { color: var(--accent); }
+.admin-nav a { color: rgba(255,255,255,.6); font-size: .85rem; transition: color .2s; }
+.admin-nav a:hover { color: white; }
+.admin-layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 60px); }
+.admin-sidebar { background: white; border-right: 1px solid var(--border); padding: 1.5rem 0; }
+.admin-sidebar a { display: flex; align-items: center; gap: .75rem; padding: .65rem 1.5rem; font-size: .875rem; font-weight: 500; color: var(--muted); transition: all .15s; }
+.admin-sidebar a:hover,
+.admin-sidebar a.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+.admin-sidebar a .icon { font-size: 1.1rem; }
+.admin-content { padding: 2.5rem; }
+.admin-content h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 2rem; }
+.admin-card { background: white; border: 1px solid var(--border); border-radius: 16px; padding: 1.75rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
+.admin-card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; }
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th { padding: .65rem 1rem; text-align: left; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); border-bottom: 1.5px solid var(--border); }
+.admin-table td { padding: .7rem 1rem; font-size: .875rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table tr:hover td { background: #fafaf8; }
+
+/* ── Formulier velden ── */
+.form-admin .field { margin-bottom: 1.1rem; }
+.form-admin label { display: block; font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: .35rem; }
+.form-admin input:not([type="checkbox"]),
+.form-admin select,
+.form-admin textarea { width: 100%; padding: .65rem .9rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: .9rem; font-family: 'Inter', sans-serif; transition: border-color .2s; }
+.form-admin input:not([type="checkbox"]):focus,
+.form-admin select:focus,
+.form-admin textarea:focus { outline: none; border-color: var(--accent); }
+.form-admin textarea { min-height: 80px; resize: vertical; }
+
+/* ── Checkboxes ── */
+.form-admin input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  background: white;
+  box-shadow: none;
+  accent-color: #287864;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: .15rem;
+}
+.form-check label {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  cursor: pointer;
+  font-size: .875rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 0;
+}
+.form-check label strong { display: block; color: var(--ink); font-size: .875rem; }
+.form-check .field-hint { font-size: .75rem; color: var(--muted); font-weight: 400; margin-top: .15rem; }
+
+/* ── Grid layouts ── */
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+
+/* ── Stat kaarten ── */
+.stat-grid  { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 2rem; }
+.stat-card  { background: white; border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem 1.5rem; box-shadow: var(--shadow); }
+.stat-card .stat-val   { font-family: 'Epilogue', sans-serif; font-size: 2rem; font-weight: 800; color: var(--ink); line-height: 1; }
+.stat-card .stat-label { font-size: .8rem; color: var(--muted); margin-top: .3rem; }
+
+/* ── Spec iconen ── */
+.spec-ja  { color: #287864; font-weight: 700; font-size: 1rem; }
+.spec-nee { color: #d1d5db; font-weight: 700; font-size: 1rem; }

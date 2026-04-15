@@ -1,0 +1,12 @@
+# Database / configuratie
+includes/db.php
+includes/config.php
+.env
+
+# OS bestanden
+.DS_Store
+Thumbs.db
+
+# Uploads / cache
+uploads/
+cache/

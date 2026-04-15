@@ -1,0 +1,498 @@
+/* ── Gedeelde knoppen ───────────────────────────────── */
+.btn-primary {
+  background: var(--ink); color: white;
+  padding: .9rem 2rem; border-radius: 999px;
+  font-weight: 700; font-size: 1rem;
+  display: inline-flex; align-items: center; gap: .6rem;
+  transition: background .2s, transform .2s;
+  box-shadow: 0 8px 32px rgba(13,15,20,.18);
+}
+.btn-primary:hover { background: var(--accent); transform: translateY(-2px); }
+.btn-primary-arrow {
+  width: 26px; height: 26px; background: rgba(255,255,255,.15);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+}
+.btn-ghost {
+  color: var(--ink); font-weight: 600; font-size: .95rem;
+  display: inline-flex; align-items: center; gap: .4rem;
+  border-bottom: 2px solid var(--ink); padding-bottom: 1px;
+  transition: color .2s, border-color .2s;
+}
+.btn-ghost:hover { color: var(--accent); border-color: var(--accent); }
+.btn {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .5rem 1rem; border-radius: 8px;
+  font-size: .85rem; font-weight: 600; cursor: pointer; border: none;
+  transition: all .2s; font-family: 'Inter', sans-serif;
+}
+.btn-sm         { padding: .35rem .75rem; font-size: .78rem; }
+.btn-primary-sm { background: var(--accent); color: white; }
+.btn-primary-sm:hover { background: var(--accent-dark); }
+.btn-danger     { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.btn-danger:hover { background: #fee2e2; }
+.btn-secondary  { background: var(--surface); color: var(--ink); border: 1.5px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+
+
+/* ── Badges ─────────────────────────────────────────── */
+.badge {
+  display: inline-block; padding: .2rem .65rem;
+  border-radius: 999px; font-size: .72rem; font-weight: 700;
+}
+.badge-green  { background: #dcfce7; color: #166534; }
+.badge-yellow { background: #fef9c3; color: #92400e; }
+.badge-red    { background: #fee2e2; color: #991b1b; }
+.badge-blue   { background: #dbeafe; color: #1e40af; }
+.badge-gray   { background: #f1f5f9; color: var(--muted); }
+.type-badge {
+  display: inline-block; padding: .18rem .6rem;
+  border-radius: 999px; font-size: .7rem; font-weight: 700; border: 1.5px solid;
+}
+.type-LED      { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+.type-OLED     { background:#f5f3ff; color:#6d28d9; border-color:#ddd6fe; }
+.type-QLED     { background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
+.type-NeoQLED  { background:#fef9c3; color:#854d0e; border-color:#fef08a; }
+.type-NanoCell { background:#f0fdf4; color:#15803d; border-color:#bbf7d0; }
+.type-QNED     { background:#ecfdf5; color:#047857; border-color:#a7f3d0; }
+.type-QDOLED   { background:#fdf4ff; color:#7e22ce; border-color:#e9d5ff; }
+
+
+/* ── Meldingen ──────────────────────────────────────── */
+.alert { padding: .85rem 1.1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; font-size: .875rem; }
+.alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+.alert-error   { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+
+/* ── Gedeelde velden ────────────────────────────────── */
+.field { margin-bottom: 1.2rem; }
+.field label {
+  display: block; font-size: .75rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); margin-bottom: .4rem;
+}
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0; }
+.field input, .field select, .field textarea {
+  width: 100%; padding: .75rem 1rem;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif; font-size: .9rem; color: var(--ink);
+  background: white; -webkit-appearance: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(40,120,100,.1);
+}
+.field textarea { min-height: 90px; resize: vertical; }
+.field-hint { font-size: .75rem; color: var(--muted); margin-top: .3rem; }
+
+
+/* ── Sectie basis ───────────────────────────────────── */
+.section { padding: 5rem 2.5rem; max-width: 1280px; margin: 0 auto; }
+.section-title { font-size: clamp(1.7rem, 2.5vw, 2.4rem); font-weight: 800; letter-spacing: -.025em; margin-bottom: .85rem; }
+.section-lead  { font-size: 1rem; color: var(--muted); max-width: 520px; line-height: 1.75; margin-bottom: 3rem; }
+
+
+/* ── Page header ────────────────────────────────────── */
+.page-header {
+  background: var(--ink); padding: 5rem 2.5rem 4rem;
+  position: relative; overflow: hidden;
+}
+.page-header::before {
+  content: ''; position: absolute;
+  top: -100px; right: -100px; width: 400px; height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(40,120,100,.2) 0%, transparent 70%);
+}
+.page-header-inner { max-width: 1280px; margin: 0 auto; position: relative; }
+.page-header h1 {
+  font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 800;
+  color: white; letter-spacing: -.03em; margin-bottom: .75rem;
+}
+.page-header p { font-size: 1rem; color: rgba(255,255,255,.55); max-width: 520px; }
+.page-main { max-width: 1280px; margin: 0 auto; padding: 3rem 2.5rem; }
+.breadcrumb {
+  display: flex; gap: .5rem; font-size: .8rem;
+  color: rgba(255,255,255,.4); align-items: center;
+  margin-bottom: 1.5rem; flex-wrap: wrap;
+}
+.breadcrumb a { color: rgba(255,255,255,.4); transition: color .2s; }
+.breadcrumb a:hover { color: white; }
+.breadcrumb .sep { color: rgba(255,255,255,.2); }
+
+
+/* ═══════════════════════════════════════════════════
+   LICHTE SECTIE WRAPPER
+═══════════════════════════════════════════════════ */
+.section-light {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+
+/* ═══════════════════════════════════════════════════
+   STAPPEN — LICHTE VARIANT (advies.php)
+═══════════════════════════════════════════════════ */
+.steps-grid-light {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+.step-light {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 2rem 1.75rem;
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+.step-light:hover {
+  border-color: var(--accent);
+  box-shadow: 0 8px 28px rgba(40,120,100,.1);
+  transform: translateY(-3px);
+}
+.step-light-nr {
+  font-family: 'Epilogue', sans-serif;
+  font-size: 3rem; font-weight: 800;
+  color: var(--border);
+  line-height: 1; margin-bottom: .5rem;
+}
+.step-light-icon { font-size: 1.75rem; margin-bottom: 1rem; }
+.step-light h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: .5rem; color: var(--ink); }
+.step-light p  { font-size: .875rem; color: var(--muted); line-height: 1.7; margin: 0; }
+
+
+/* ═══════════════════════════════════════════════════
+   STAPPEN — DB-SECTION CONTEXT
+═══════════════════════════════════════════════════ */
+.stappen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+.stap-kaart {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  padding: 1.75rem 1.5rem;
+  transition: border-color .2s, box-shadow .2s;
+}
+.stap-kaart:hover {
+  border-color: var(--accent);
+  box-shadow: 0 6px 20px rgba(40,120,100,.08);
+}
+.stap-nr {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 1rem;
+}
+.stap-kaart h3 { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; }
+.stap-kaart p  { font-size: .875rem; color: var(--muted); line-height: 1.65; margin: 0; }
+
+
+/* ═══════════════════════════════════════════════════
+   VOORDELEN
+═══════════════════════════════════════════════════ */
+.voordelen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+.voordeel-kaart {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  padding: 1.75rem 1.5rem;
+  transition: border-color .2s, box-shadow .2s;
+}
+.voordeel-kaart:hover {
+  border-color: var(--accent);
+  box-shadow: 0 6px 20px rgba(40,120,100,.1);
+}
+.voordeel-icon { font-size: 1.75rem; margin-bottom: .85rem; }
+.voordeel-kaart h3 { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; }
+.voordeel-kaart p  { font-size: .875rem; color: var(--muted); line-height: 1.65; margin: 0; }
+
+
+/* ═══════════════════════════════════════════════════
+   ADVIES KAARTEN
+═══════════════════════════════════════════════════ */
+.advies-kaarten {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+.advies-kaart {
+  display: flex; flex-direction: column;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  padding: 1.75rem 1.5rem;
+  text-decoration: none; color: inherit;
+  transition: border-color .2s, box-shadow .2s, transform .15s;
+}
+.advies-kaart:hover {
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px rgba(40,120,100,.12);
+  transform: translateY(-2px);
+}
+.advies-kaart-icon { font-size: 2rem; margin-bottom: 1rem; }
+.advies-kaart h3   { font-size: 1rem; font-weight: 700; margin-bottom: .5rem; color: var(--ink); }
+.advies-kaart p    { font-size: .875rem; color: var(--muted); line-height: 1.65; flex: 1; margin: 0 0 1rem; }
+.advies-kaart-link { font-size: .825rem; font-weight: 700; color: var(--accent); margin-top: auto; }
+
+
+/* ═══════════════════════════════════════════════════
+   ADVIES FORMULIER LAYOUT
+═══════════════════════════════════════════════════ */
+.advies-wrap {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 2rem;
+  align-items: start;
+}
+.advies-main { display: flex; flex-direction: column; gap: 1.5rem; }
+.advies-form-card {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  box-shadow: var(--shadow);
+}
+.advies-form-card h2 { font-size: 1.25rem; font-weight: 800; margin-bottom: .25rem; }
+
+
+/* ═══════════════════════════════════════════════════
+   INFO KAARTEN
+═══════════════════════════════════════════════════ */
+.advies-info { display: flex; flex-direction: column; gap: 1rem; }
+.info-kaart {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 1.4rem 1.25rem;
+  transition: border-color .2s;
+}
+.info-kaart:hover { border-color: var(--accent); }
+.info-icon { font-size: 1.5rem; margin-bottom: .6rem; }
+.info-kaart h3 { font-size: .95rem; font-weight: 700; margin-bottom: .4rem; color: var(--ink); }
+.info-kaart p  { font-size: .825rem; color: var(--muted); line-height: 1.65; margin: 0 0 .6rem; }
+.info-link { font-size: .825rem; font-weight: 700; color: var(--accent); text-decoration: none; }
+.info-link:hover { text-decoration: underline; }
+
+
+/* ═══════════════════════════════════════════════════
+   FAQ — LICHTE VARIANT (database, model)
+═══════════════════════════════════════════════════ */
+.faq-lijst { display: flex; flex-direction: column; gap: .5rem; max-width: 720px; }
+.faq-item {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.faq-item:has(.faq-q.open) { border-color: var(--accent); }
+.faq-q {
+  width: 100%; text-align: left;
+  background: none; border: none; cursor: pointer;
+  padding: 1.1rem 1.25rem;
+  font-size: .95rem; font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: var(--ink);
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 1rem;
+}
+.faq-q::after {
+  content: '+'; font-size: 1.3rem; font-weight: 400;
+  color: var(--muted); flex-shrink: 0;
+  transition: transform .2s;
+}
+.faq-q.open::after { transform: rotate(45deg); color: var(--accent); }
+.faq-a { display: none; padding: 0 1.25rem 1.1rem; }
+.faq-a p { font-size: .875rem; color: var(--muted); line-height: 1.75; margin: 0; }
+
+
+/* ═══════════════════════════════════════════════════
+   FAQ — DONKERE VARIANT (.how-wrap achtergrond)
+═══════════════════════════════════════════════════ */
+.faq-lijst-dark { display: flex; flex-direction: column; gap: .5rem; max-width: 720px; }
+.faq-item-dark {
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px; overflow: hidden;
+  transition: border-color .2s;
+}
+.faq-item-dark:has(.faq-q.open) { border-color: var(--accent); }
+.faq-q-dark {
+  width: 100%; text-align: left;
+  background: rgba(255,255,255,.04); border: none; cursor: pointer;
+  padding: 1.1rem 1.25rem;
+  font-size: .95rem; font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: white;
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+}
+.faq-q-dark::after {
+  content: '+'; font-size: 1.3rem; font-weight: 400;
+  color: rgba(255,255,255,.3); flex-shrink: 0;
+  transition: transform .2s;
+}
+.faq-q-dark.open::after { transform: rotate(45deg); color: var(--accent); }
+.faq-a-dark { display: none; padding: 0 1.25rem 1.1rem; }
+.faq-a-dark p { font-size: .875rem; color: rgba(255,255,255,.48); line-height: 1.75; margin: 0; }
+
+
+/* ═══════════════════════════════════════════════════
+   FAQ — FANCY VARIANT (reparatie + taxatie)
+═══════════════════════════════════════════════════ */
+.faq-lijst-fancy {
+  display: flex; flex-direction: column; gap: .75rem; max-width: 760px;
+}
+.faq-fancy-item {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+}
+.faq-fancy-item:has(.faq-q.open) {
+  border-color: var(--accent);
+  box-shadow: 0 4px 20px rgba(40,120,100,.1);
+}
+.faq-fancy-q {
+  width: 100%; text-align: left;
+  background: none; border: none; cursor: pointer;
+  padding: 1.25rem 1.5rem;
+  font-size: .95rem; font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: var(--ink);
+  display: flex; align-items: center; gap: 1rem;
+}
+.faq-fancy-q::after {
+  content: '+'; font-size: 1.1rem; font-weight: 400;
+  color: var(--muted); margin-left: auto; flex-shrink: 0;
+  width: 28px; height: 28px;
+  border: 1.5px solid var(--border); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .25s, background .2s, border-color .2s, color .2s;
+}
+.faq-fancy-q.open::after {
+  transform: rotate(45deg);
+  background: var(--accent); border-color: var(--accent);
+  color: white;
+}
+.faq-fancy-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--accent-light); border: 1px solid #b2ddd4;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; flex-shrink: 0;
+}
+.faq-fancy-a {
+  display: none;
+  padding: 0 1.5rem 1.25rem 5rem;
+}
+.faq-fancy-a p {
+  font-size: .9rem; color: var(--muted);
+  line-height: 1.75; margin: 0;
+  padding-top: .85rem;
+  border-top: 1px solid var(--border);
+}
+
+
+/* ═══════════════════════════════════════════════════
+   CTA BLOK
+═══════════════════════════════════════════════════ */
+.cta-blok {
+  background: var(--ink);
+  border-radius: 24px;
+  padding: 3rem 2.5rem;
+  text-align: center;
+  color: #fff;
+}
+.cta-blok h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: .75rem; color: #fff; }
+.cta-blok p  { font-size: .95rem; color: rgba(255,255,255,.6); margin-bottom: 1.75rem; }
+
+
+/* ═══════════════════════════════════════════════════
+   TAXATIE — RAPPORT INHOUD
+═══════════════════════════════════════════════════ */
+.rapport-inhoud {
+  display: flex; flex-direction: column; gap: .6rem; margin-bottom: 1.75rem;
+}
+.rapport-item {
+  display: flex; align-items: center; gap: .85rem;
+  font-size: .9rem; font-weight: 500; color: var(--ink);
+}
+.rapport-check {
+  width: 24px; height: 24px; background: var(--accent);
+  border-radius: 50%; color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700; flex-shrink: 0;
+}
+.taxatie-prijs {
+  background: var(--accent-light); border: 1.5px solid #b2ddd4;
+  border-radius: var(--radius-sm); padding: 1.25rem 1.5rem;
+  display: flex; align-items: center;
+}
+.taxatie-prijs-label {
+  display: block; font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .07em;
+  color: var(--accent-dark); margin-bottom: .2rem;
+}
+.taxatie-prijs-bedrag {
+  display: block; font-family: 'Epilogue', sans-serif;
+  font-size: 2.2rem; font-weight: 800; color: var(--ink); line-height: 1;
+}
+.taxatie-prijs-sub {
+  display: block; font-size: .78rem; color: var(--muted); margin-top: .3rem;
+}
+
+
+/* ═══════════════════════════════════════════════════
+   NOT FOUND BLOK
+═══════════════════════════════════════════════════ */
+.not-found-block {
+  text-align: center; padding: 4rem 2rem;
+  background: white; border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+}
+.not-found-icon { font-size: 3rem; margin-bottom: 1rem; }
+.not-found-block h2 { font-size: 1.35rem; font-weight: 800; margin-bottom: .6rem; }
+.not-found-block p  { font-size: .9rem; color: var(--muted); margin-bottom: 1.5rem; }
+.not-found-actions  { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.not-found-hint {
+  font-size: .8rem; color: var(--muted);
+  background: var(--surface); border-radius: var(--radius-sm);
+  padding: .75rem 1rem; display: inline-block; max-width: 480px;
+}
+
+
+/* ═══════════════════════════════════════════════════
+   RESULTS COUNT
+═══════════════════════════════════════════════════ */
+.results-count { font-size: .875rem; color: var(--muted); margin-bottom: 1rem; }
+.results-count strong { color: var(--ink); }
+
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .advies-wrap      { grid-template-columns: 1fr; }
+  .field-row        { grid-template-columns: 1fr; }
+  .steps-grid-light { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .stappen-grid,
+  .voordelen-grid,
+  .advies-kaarten   { grid-template-columns: 1fr; }
+  .cta-blok         { padding: 2rem 1.5rem; }
+  .page-header      { padding: 4rem 1.25rem 3rem; }
+  .page-main        { padding: 2rem 1.25rem; }
+  .section          { padding: 3.5rem 1.25rem; }
+  .faq-fancy-a      { padding-left: 1.5rem; }
+  .steps-grid-light { grid-template-columns: 1fr; }
+}

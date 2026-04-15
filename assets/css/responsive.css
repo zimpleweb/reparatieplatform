@@ -1,0 +1,52 @@
+@media (max-width: 1024px) {
+  .hero             { grid-template-columns: 1fr; padding-top: 7rem; }
+  .hero-bg          { display: none; }
+  .form-inner       { grid-template-columns: 1fr; gap: 3rem; }
+  .form-left        { position: static; }
+  .cards-grid       { grid-template-columns: 1fr 1fr; }
+  .duurzaam-inner   { grid-template-columns: 1fr; gap: 3rem; }
+  .steps-grid       { grid-template-columns: 1fr; }
+  .footer-inner     { grid-template-columns: 1fr 1fr; }
+  .model-page       { grid-template-columns: 1fr; }
+  .sidebar          { position: static; }
+  .model-header     { grid-template-columns: 1fr; }
+  .filter-bar       { grid-template-columns: 1fr 1fr; }
+  .filter-reset     { grid-column: 1 / -1; justify-content: center; }
+  .admin-layout     { grid-template-columns: 1fr; }
+  .admin-sidebar    { display: none; }
+  .stat-grid        { grid-template-columns: 1fr 1fr; }
+  .merken-grid      { grid-template-columns: 1fr; gap: 2rem; }
+}
+@media (max-width: 640px) {
+  nav               { padding: 0 1.25rem; }
+  .nav-menu {
+    display: none; position: absolute; top: 68px; left: 0; right: 0;
+    background: white; border-bottom: 1px solid var(--border);
+    flex-direction: column; gap: 0; padding: 1rem 0; z-index: 100;
+  }
+  .nav-menu.open    { display: flex; }
+  .nav-menu a       { padding: .65rem 1.5rem; }
+  .nav-toggle       { display: block; }
+  .nav-btn          { display: none; }
+  .hero             { padding: 6rem 1.25rem 3.5rem; }
+  .section          { padding: 3.5rem 1.25rem; }
+  .form-wrap,
+  .how-wrap,
+  .duurzaam-wrap    { padding: 3.5rem 1.25rem; }
+  .page-header      { padding: 3rem 1.25rem 2.5rem; }
+  .page-main,
+  .model-page,
+  .admin-content    { padding: 1.5rem 1.25rem; }
+  .breadcrumb-bar   { padding: .75rem 1.25rem; }
+  .field-row        { grid-template-columns: 1fr; }
+  .filter-bar       { grid-template-columns: 1fr; padding: 1.25rem; }
+  .cards-grid       { grid-template-columns: 1fr; }
+  .green-stats      { grid-template-columns: 1fr; }
+  .footer-inner     { grid-template-columns: 1fr; gap: 2rem; padding: 0 0 2rem; }
+  .form-row-2,
+  .form-row-3       { grid-template-columns: 1fr; }
+  .stat-grid        { grid-template-columns: 1fr 1fr; }
+  .merken-kaarten   { grid-template-columns: 1fr 1fr; }
+  .populair-grid    { grid-template-columns: 1fr 1fr; }
+  .hero-search input { font-size: .9rem; }
+}

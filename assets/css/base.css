@@ -1,0 +1,27 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #0d0f14;
+  --ink2: #1a1d26;
+  --surface: #f5f4f1;
+  --white: #fff;
+  --accent: #287864;
+  --accent-light: #e8f4f1;
+  --accent-dark: #1e6353;
+  --text: #0d0f14;
+  --muted: #6b7280;
+  --border: #e5e4e0;
+  --radius: 20px;
+  --radius-sm: 12px;
+  --shadow: 0 4px 24px rgba(0,0,0,.07);
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+h1,h2,h3,h4 { font-family: 'Epilogue', sans-serif; line-height: 1.15; }
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
