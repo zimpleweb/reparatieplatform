@@ -97,9 +97,9 @@ include __DIR__ . '/includes/header.php';
         </div>
 
         <form action="<?= BASE_URL ?>/api/send-advies.php" method="POST" id="advies-form">
-          <input type="hidden" name="csrf_token"       value="<?= csrf() ?>" />
+          <input type="hidden" name="csrf_token"         value="<?= csrf() ?>" />
           <input type="hidden" name="geadviseerde_route" id="geadviseerde_route" value="" />
-          <input type="hidden" name="coulance_kans"    id="coulance_kans"    value="" />
+          <input type="hidden" name="coulance_kans"      id="coulance_kans"    value="" />
           <input type="hidden" name="model_repareerbaar" id="model_repareerbaar" value="" />
 
           <!-- STAP 1 -->
@@ -286,6 +286,15 @@ include __DIR__ . '/includes/header.php';
 const REGELS = <?= $rJs ?>;
 const HUIDIG_JAAR = <?= date('Y') ?>;
 
+/**
+ * Helpercheck: is merk toegestaan voor een route?
+ * Lege array = alle merken toegestaan.
+ */
+function merkToegestaan(merkLijst, merk) {
+  if (!merkLijst || merkLijst.length === 0) return true;
+  return merkLijst.map(m => m.toLowerCase()).includes((merk || '').toLowerCase());
+}
+
 // ── Repareerbaar DB-check ─────────────────────────────────────────
 let _rep    = { geladen: false, gevonden: false, repareerbaar: false };
 let _repTimer = null;
@@ -367,54 +376,84 @@ document.querySelectorAll('.route-keuze input[type=radio]').forEach(r => {
 // ── Routing engine (volledig op basis van REGELS uit DB) ──────────
 function berekenRoute() {
   const situatie   = document.querySelector('[name=situatie]:checked')?.value || '';
+  const merk       = document.getElementById('merk')?.value || '';
   const aanschJaar = parseInt(document.getElementById('aanschafjaar')?.value) || null;
   const waarde     = document.getElementById('aanschafwaarde')?.value || '';
   const locatie    = document.getElementById('aankoop_locatie')?.value || 'nl';
   const failliet   = document.getElementById('verkoper_failliet')?.checked || false;
   const klacht     = document.getElementById('klacht_type')?.value || '';
 
-  const leeftijd   = aanschJaar ? (HUIDIG_JAAR - aanschJaar) : null;
+  const leeftijd = aanschJaar ? (HUIDIG_JAAR - aanschJaar) : null;
 
-  // Repareerbaar: als vereist door regel EN geladen EN gevonden → gebruik DB waarde
-  // Als niet gevonden (merk-fallback) of nog niet geladen → aanname uit merk-fallback
-  const vereistRep = REGELS.reparatie_vereist_repareerbaar ?? true;
-  const kanRep     = !vereistRep || !_rep.geladen || _rep.repareerbaar;
+  // ── Regels uit DB ──────────────────────────────────────────────
+  const gTermijn          = REGELS.garantie_termijn_jaar          ?? 2;
+  const gAlleenNl         = REGELS.garantie_alleen_nl             ?? true;
+  const gUitsluit         = REGELS.garantie_uitsluiten_klachten   ?? ['gebarsten_scherm'];
+  const gMerken           = REGELS.garantie_merken                ?? [];
+
+  const cMin              = REGELS.coulance_min_jaar              ?? 2;
+  const cMax              = REGELS.coulance_max_jaar              ?? 5;
+  const cUitsluit         = REGELS.coulance_uitsluiten_klachten   ?? ['gebarsten_scherm'];
+  const cMerken           = REGELS.coulance_merken                ?? [];
+  const cMatrix           = REGELS.coulance_kans_matrix           ?? [];
+  const cAftrekBuitenland = REGELS.coulance_aftrek_buitenland     ?? 30;
+  const cAftrekFailliet   = REGELS.coulance_aftrek_failliet       ?? 40;
+
+  const repMin            = REGELS.reparatie_min_jaar             ?? 2;
+  const repMax            = REGELS.reparatie_max_jaar             ?? 10;
+  const vereistRep        = REGELS.reparatie_vereist_repareerbaar ?? true;
+  const repMerken         = REGELS.reparatie_merken               ?? [];
+
+  const recycMin          = REGELS.recycling_min_jaar             ?? 10;
+  const taxBijSchade      = REGELS.taxatie_bij_schade             ?? true;
+  const taxMerken         = REGELS.taxatie_merken                 ?? [];
+
+  // ── Repareerbaar-check ──────────────────────────────────────────
+  // Model is repareerbaar als:
+  //   1. reparatie_vereist_repareerbaar = false, OF
+  //   2. DB-check nog niet geladen (voordeel van twijfel), OF
+  //   3. DB-check geladen + repareerbaar = true
+  // Daarnaast: merk moet in repMerken zitten (als lijst niet leeg is)
+  const kanRep = (!vereistRep || !_rep.geladen || _rep.repareerbaar)
+                 && merkToegestaan(repMerken, merk);
 
   let route = '', badge = '', toel = '', kans = 0;
 
-  // ── Taxatie ──
-  if (situatie === 'schade' && (REGELS.taxatie_bij_schade ?? true)) {
-    route = 'taxatie';
-    badge = '&#128203; Taxatierapport';
-    toel  = 'Omdat er sprake is van externe schade is een taxatierapport de juiste route voor uw verzekeraar.';
+  // ── 1. Taxatie (bij externe schade) ────────────────────────────
+  if (situatie === 'schade' && taxBijSchade) {
+    if (!merk || merkToegestaan(taxMerken, merk)) {
+      route = 'taxatie';
+      badge = '&#128203; Taxatierapport';
+      toel  = 'Omdat er sprake is van externe schade is een taxatierapport de juiste route voor uw verzekeraar.';
+    } else {
+      // Merk niet in taxatie-lijst: val terug op reparatie of recycling
+      if (kanRep) {
+        route = 'reparatie';
+        badge = '&#128295; Reparatie aan huis';
+        toel  = 'Externe schade, maar dit merk komt niet in aanmerking voor taxatie. Reparatie aan huis is de meest geschikte optie.';
+      } else {
+        route = 'recycling';
+        badge = '&#9851; Recycling';
+        toel  = 'Dit model is niet repareerbaar en komt niet in aanmerking voor taxatie. Wij begeleiden u richting verantwoorde recycling.';
+      }
+    }
   }
 
-  // ── Storing ──
+  // ── 2. Storing ─────────────────────────────────────────────────
   else if (situatie === 'storing' && leeftijd !== null) {
-    const gTermijn        = REGELS.garantie_termijn_jaar   ?? 2;
-    const gAlleenNl       = REGELS.garantie_alleen_nl      ?? true;
-    const gUitsluit       = REGELS.garantie_uitsluiten_klachten ?? ['gebarsten_scherm'];
-    const cMin            = REGELS.coulance_min_jaar        ?? 2;
-    const cMax            = REGELS.coulance_max_jaar        ?? 5;
-    const cUitsluit       = REGELS.coulance_uitsluiten_klachten ?? ['gebarsten_scherm'];
-    const cMatrix         = REGELS.coulance_kans_matrix     ?? [];
-    const cAftrekBuitenland = REGELS.coulance_aftrek_buitenland ?? 30;
-    const cAftrekFailliet   = REGELS.coulance_aftrek_failliet   ?? 40;
-    const repMin          = REGELS.reparatie_min_jaar       ?? 2;
-    const repMax          = REGELS.reparatie_max_jaar       ?? 10;
-    const recycMin        = REGELS.recycling_min_jaar       ?? 10;
-
     const isGUitsluit = gUitsluit.includes(klacht);
     const isCUitsluit = cUitsluit.includes(klacht);
     const isNl        = locatie === 'nl';
+    const merkGarantie = merkToegestaan(gMerken, merk);
+    const merkCoulance = merkToegestaan(cMerken, merk);
 
-    // 1. Garantie
-    if (leeftijd <= gTermijn && !isGUitsluit && (!gAlleenNl || isNl) && !failliet) {
+    // ── 2a. Garantie ─────────────────────────────────────────────
+    if (leeftijd <= gTermijn && !isGUitsluit && (!gAlleenNl || isNl) && !failliet && merkGarantie) {
       route = 'garantie';
       badge = '&#9989; Garantie';
       toel  = 'Op basis van het aanschafjaar valt uw televisie waarschijnlijk nog onder de wettelijke garantietermijn van ' + gTermijn + ' jaar.';
     }
-    // 2. Garantietermijn maar bijzondere situatie (buitenland / failliet)
+    // ── 2b. Garantietermijn maar bijzondere situatie ─────────────
     else if (leeftijd <= gTermijn && (locatie === 'buitenland' || failliet)) {
       if (kanRep) {
         route = 'reparatie';
@@ -427,9 +466,23 @@ function berekenRoute() {
         toel  = 'Dit model is niet repareerbaar. Wij begeleiden u richting verantwoorde recycling.';
       }
     }
-    // 3. Coulance
-    else if (leeftijd > cMin && leeftijd <= cMax && !isCUitsluit) {
-      // Bereken kans via matrix
+    // ── 2c. Garantie: merk niet toegestaan ───────────────────────
+    else if (leeftijd <= gTermijn && !merkGarantie) {
+      // Merk staat niet op de garantielijst: direct naar coulance of reparatie
+      if (merkCoulance && leeftijd > cMin && leeftijd <= cMax && !isCUitsluit) {
+        // val door naar coulance-blok hieronder
+      } else if (kanRep) {
+        route = 'reparatie';
+        badge = '&#128295; Reparatie aan huis';
+        toel  = 'Dit merk komt niet in aanmerking voor de garantieroute via ons platform. Reparatie aan huis is de meest geschikte optie.';
+      } else {
+        route = 'recycling'; badge = '&#9851; Recycling';
+        toel  = 'Dit model is niet repareerbaar en het merk komt niet in aanmerking voor garantie.';
+      }
+    }
+
+    // ── 2d. Coulance ─────────────────────────────────────────────
+    if (!route && leeftijd > cMin && leeftijd <= cMax && !isCUitsluit && merkCoulance) {
       const matrixRij = cMatrix.find(m => m.prijsklasse === waarde)
                      || cMatrix.find(m => m.prijsklasse === '');
       const basisKans   = matrixRij?.basis_kans      ?? 50;
@@ -442,25 +495,25 @@ function berekenRoute() {
       badge = '&#129309; Coulanceregeling (' + kans + '% kans)';
       toel  = 'Uw televisie is ' + leeftijd + ' jaar oud. Garantie is verlopen, maar veel fabrikanten bieden coulance aan. Wij schatten de kans op <strong>' + kans + '%</strong>.';
     }
-    // 4. Reparatie
-    else if (leeftijd > repMin && leeftijd <= repMax) {
+    // ── 2e. Reparatie ────────────────────────────────────────────
+    else if (!route && leeftijd > repMin && leeftijd <= repMax) {
       if (kanRep) {
         route = 'reparatie';
         badge = '&#128295; Reparatie aan huis';
-        toel  = 'Garantie en coulance zijn niet meer van toepassing. Reparatie aan huis is de meest kosteneffiënte oplossing.';
+        toel  = 'Garantie en coulance zijn niet meer van toepassing. Reparatie aan huis is de meest kosteneffi\u00ebnte oplossing.';
       } else {
         route = 'recycling'; badge = '&#9851; Recycling';
         toel  = 'Dit model staat als niet-repareerbaar in onze database. Wij begeleiden u richting verantwoorde recycling.';
       }
     }
-    // 5. Recycling (oud)
-    else if (leeftijd > recycMin) {
+    // ── 2f. Recycling (oud) ──────────────────────────────────────
+    else if (!route && leeftijd > recycMin) {
       route = 'recycling';
       badge = '&#9851; Recycling';
       toel  = 'Een televisie ouder dan ' + recycMin + ' jaar — reparatiekosten overtreffen vaak de waarde. Wij adviseren eerlijk over recycling of doorverkoop.';
     }
-    // 6. Gebarsten scherm edge case
-    else if (klacht === 'gebarsten_scherm') {
+    // ── 2g. Gebarsten scherm edge case ───────────────────────────
+    else if (!route && klacht === 'gebarsten_scherm') {
       if (kanRep) {
         route = 'reparatie'; badge = '&#128295; Schermvervanging';
         toel  = 'Een gebarsten scherm valt nooit onder garantie. Wij kijken of schermvervanging economisch zinvol is.';
@@ -497,11 +550,11 @@ function berekenRoute() {
 }
 
 function vulSamenvatting() {
-  const merk      = document.getElementById('merk')?.value || '—';
-  const model     = document.getElementById('modelnummer')?.value || '—';
-  const jaar      = document.getElementById('aanschafjaar')?.value || '—';
+  const merk      = document.getElementById('merk')?.value || '\u2014';
+  const model     = document.getElementById('modelnummer')?.value || '\u2014';
+  const jaar      = document.getElementById('aanschafjaar')?.value || '\u2014';
   const klachtEl  = document.getElementById('klacht_type');
-  const klachtTxt = klachtEl?.options[klachtEl.selectedIndex]?.text || '—';
+  const klachtTxt = klachtEl?.options[klachtEl.selectedIndex]?.text || '\u2014';
   const badge     = document.getElementById('routing-badge')?.innerHTML || '';
   const el = document.getElementById('route-samenvatting');
   if (!el) return;

@@ -1,5 +1,6 @@
 -- ============================================================
 -- Advies Regels: installeer dit eenmalig op de server
+-- Voer ALTER TABLE uit als de tabel al bestaat (zie onderaan)
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS advies_regels (
@@ -26,6 +27,10 @@ INSERT INTO advies_regels (regel_key, regel_waarde, label, omschrijving, type) V
   'Klachten uitgesloten van garantie (JSON array)',
   'Klachtcodes die nooit in aanmerking komen voor garantie.',
   'json'),
+('garantie_merken', '[]',
+  'Merken toegestaan voor garantieroute (JSON array, leeg = alle merken)',
+  'Laat leeg om alle merken toe te staan. Vul in om garantie te beperken tot specifieke merken.',
+  'json'),
 -- ── Coulance ──────────────────────────────────────────────────
 ('coulance_min_jaar', '2',
   'Coulance: minimale leeftijd (jaren)',
@@ -38,6 +43,10 @@ INSERT INTO advies_regels (regel_key, regel_waarde, label, omschrijving, type) V
 ('coulance_uitsluiten_klachten', '["gebarsten_scherm"]',
   'Klachten uitgesloten van coulance (JSON array)',
   'Klachtcodes die nooit in aanmerking komen voor coulance.',
+  'json'),
+('coulance_merken', '["Samsung","Philips","Sony","LG","Panasonic","Hisense","TCL"]',
+  'Merken waarvoor coulance mogelijk is (JSON array, leeg = alle merken)',
+  'Alleen deze merken komen in aanmerking voor de coulanceregeling.',
   'json'),
 -- Kansmatrix: [{ "prijsklasse": "<500", "basis_kans": 30, "per_jaar_aftrek": 8 }, ...]
 ('coulance_kans_matrix', '[{"prijsklasse":"<500","basis_kans":30,"per_jaar_aftrek":8},{"prijsklasse":"500-1000","basis_kans":55,"per_jaar_aftrek":6},{"prijsklasse":"1000-2000","basis_kans":70,"per_jaar_aftrek":5},{"prijsklasse":">2000","basis_kans":85,"per_jaar_aftrek":4},{"prijsklasse":"","basis_kans":50,"per_jaar_aftrek":6}]',
@@ -65,6 +74,10 @@ INSERT INTO advies_regels (regel_key, regel_waarde, label, omschrijving, type) V
   'Reparatie vereist repareerbaar=1 in database',
   'Als 1: reparatieroute alleen voor modellen met repareerbaar=1 in de TV-database.',
   'bool'),
+('reparatie_merken', '[]',
+  'Merken toegestaan voor reparatieroute (JSON array, leeg = alle repareerbare modellen)',
+  'Laat leeg om alle modellen met repareerbaar=1 toe te staan. Vul in om reparatie te beperken tot specifieke merken.',
+  'json'),
 -- ── Recycling / Second life ───────────────────────────────────
 ('recycling_min_jaar', '10',
   'Recycling: minimale leeftijd TV (jaren)',
@@ -79,4 +92,6 @@ INSERT INTO advies_regels (regel_key, regel_waarde, label, omschrijving, type) V
   'Merken waarvoor taxatie mogelijk is (JSON array)',
   'Lijst van merken waarvoor een taxatierapport opgesteld kan worden.',
   'json')
-ON DUPLICATE KEY UPDATE regel_waarde = VALUES(regel_waarde);
+ON DUPLICATE KEY UPDATE label = VALUES(label), omschrijving = VALUES(omschrijving), type = VALUES(type);
+-- NOOT: ON DUPLICATE KEY UPDATE werkt NIET de regel_waarde bij,
+-- zodat bestaande admin-instellingen behouden blijven bij heruitvoering.
