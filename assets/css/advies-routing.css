@@ -1,0 +1,157 @@
+/* ============================================================
+   Advies routing UI — meerstaps formulier + smart routing
+   ============================================================ */
+
+/* Stap navigatie */
+.stap-header { margin-bottom: 1.5rem; }
+.stap-nr {
+  display: inline-block;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: .35rem;
+}
+.stap-header h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: .3rem; }
+.stap-header p  { font-size: .875rem; color: #6b7280; }
+
+.stap-nav {
+  display: flex;
+  gap: .75rem;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+.stap-volgende {
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: .7rem 1.5rem;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+  margin-left: auto;
+}
+.stap-volgende:hover { background: #1a2233; }
+.stap-terug {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: .7rem 1.2rem;
+  font-size: .9rem;
+  color: #374151;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.stap-terug:hover { border-color: #9ca3af; }
+
+/* Route-keuze kaarten (stap 1) */
+.route-keuze-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+  margin-bottom: 1.25rem;
+}
+.route-keuze { cursor: pointer; }
+.route-keuze input[type=radio] { position: absolute; opacity: 0; pointer-events: none; }
+.route-keuze-inner {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding: 1rem 1.1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  transition: border-color .2s, background .2s;
+}
+.route-keuze-inner:hover { border-color: #9ca3af; }
+.route-keuze.geselecteerd .route-keuze-inner {
+  border-color: var(--accent, #1d4ed8);
+  background: #f0f7ff;
+}
+.route-keuze-icon { font-size: 1.5rem; }
+.route-keuze-inner strong { font-size: .9rem; color: #111827; }
+.route-keuze-inner span   { font-size: .8rem; color: #6b7280; line-height: 1.4; }
+
+/* Garantie / routing feedback blok */
+.garantie-feedback {
+  border-radius: 10px;
+  padding: .9rem 1rem;
+  margin-bottom: 1rem;
+  font-size: .85rem;
+  line-height: 1.6;
+  border-left: 4px solid #d1d5db;
+  background: #f9fafb;
+}
+.feedback-garantie  { border-left-color: #16a34a; background: #f0fdf4; color: #14532d; }
+.feedback-coulance  { border-left-color: #d97706; background: #fffbeb; color: #78350f; }
+.feedback-reparatie { border-left-color: #2563eb; background: #eff6ff; color: #1e3a8a; }
+.feedback-taxatie   { border-left-color: #7c3aed; background: #f5f3ff; color: #3b0764; }
+.feedback-secondlife{ border-left-color: #059669; background: #ecfdf5; color: #064e3b; }
+
+/* Routing indicator (linkerkant) */
+.routing-indicator {
+  margin-top: 2rem;
+  padding: 1rem 1.1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+.routing-label {
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: .5rem;
+}
+.routing-badge {
+  display: inline-block;
+  font-size: .875rem;
+  font-weight: 700;
+  padding: .4rem .8rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #1e293b;
+  margin-bottom: .6rem;
+}
+.routing-badge.route-garantie  { background: #dcfce7; color: #14532d; }
+.routing-badge.route-coulance  { background: #fef9c3; color: #78350f; }
+.routing-badge.route-reparatie { background: #dbeafe; color: #1e3a8a; }
+.routing-badge.route-taxatie   { background: #ede9fe; color: #3b0764; }
+.routing-badge.route-secondlife{ background: #d1fae5; color: #064e3b; }
+.routing-toelichting { font-size: .82rem; color: #475569; line-height: 1.6; }
+
+/* Stap 4 samenvatting */
+.route-samenvatting {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+  font-size: .875rem;
+}
+.samenvatting-titel {
+  font-weight: 700;
+  margin-bottom: .75rem;
+  font-size: .9rem;
+  color: #1e293b;
+}
+.samenvatting-rij {
+  display: flex;
+  justify-content: space-between;
+  padding: .35rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.samenvatting-rij:last-child { border-bottom: none; }
+.samenvatting-rij span { color: #64748b; }
+.samenvatting-rij strong { color: #0f172a; text-align: right; }
+
+/* Mobiel */
+@media (max-width: 640px) {
+  .route-keuze-grid { grid-template-columns: 1fr; }
+  .stap-nav { flex-wrap: wrap; }
+  .stap-volgende { margin-left: 0; width: 100%; text-align: center; }
+  .samenvatting-rij { flex-direction: column; gap: .2rem; }
+}
