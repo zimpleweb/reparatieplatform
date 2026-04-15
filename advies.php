@@ -20,7 +20,7 @@ include __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<!-- Stappen -->
+<!-- Hoe het werkt -->
 <div class="section-light">
   <div class="section" style="padding-top:4rem;padding-bottom:4rem;">
     <h2 class="section-title">Zo werkt het</h2>
@@ -61,7 +61,7 @@ include __DIR__ . '/includes/header.php';
         <div class="outcome-item"><div class="oi-icon oi-yellow">&#129309;</div> Coulanceregeling bespreken met de verkoper</div>
         <div class="outcome-item"><div class="oi-icon oi-orange">&#128295;</div> Reparatie aan huis door gespecialiseerde monteur</div>
         <div class="outcome-item"><div class="oi-icon oi-purple">&#128203;</div> Taxatierapport opstellen voor uw verzekeraar</div>
-        <div class="outcome-item"><div class="oi-icon" style="background:#d1fae5;color:#065f46">&#9854;</div> Second life: doorverkoop of verantwoorde recycling</div>
+        <div class="outcome-item"><div class="oi-icon" style="background:#d1fae5;color:#065f46">&#9854;</div> Recycling: verantwoorde verwerking van uw televisie</div>
       </div>
       <!-- Routing-indicator: wordt live gevuld door JS -->
       <div id="routing-indicator" style="display:none;" class="routing-indicator">
@@ -72,7 +72,7 @@ include __DIR__ . '/includes/header.php';
     </div>
 
     <!-- Rechterkant: het formulier -->
-    <div>
+    <div class="form-right">
       <div class="form-card">
 
         <?php if (isset($_GET['verzonden'])): ?>
@@ -81,12 +81,26 @@ include __DIR__ . '/includes/header.php';
           <div class="alert alert-error">Er is iets misgegaan. Controleer uw gegevens en probeer het opnieuw.</div>
         <?php endif; ?>
 
+        <!-- Voortgangsbalk -->
+        <div class="stap-progress">
+          <div class="stap-dot actief" data-stap="1"></div>
+          <div class="stap-lijn"></div>
+          <div class="stap-dot" data-stap="2"></div>
+          <div class="stap-lijn"></div>
+          <div class="stap-dot" data-stap="3"></div>
+          <div class="stap-lijn"></div>
+          <div class="stap-dot" data-stap="4"></div>
+        </div>
+
         <form action="<?= BASE_URL ?>/api/send-advies.php" method="POST" id="advies-form">
           <input type="hidden" name="csrf_token" value="<?= csrf() ?>" />
           <input type="hidden" name="geadviseerde_route" id="geadviseerde_route" value="" />
           <input type="hidden" name="coulance_kans" id="coulance_kans" value="" />
+          <input type="hidden" name="model_repareerbaar" id="model_repareerbaar" value="" />
 
-          <!-- STAP 1: Schade of storing? -->
+          <!-- ============================================================
+               STAP 1 — Schade of storing?
+               ============================================================ -->
           <div class="form-stap" id="stap-1">
             <div class="stap-header">
               <span class="stap-nr">Stap 1 van 4</span>
@@ -111,20 +125,26 @@ include __DIR__ . '/includes/header.php';
                 </div>
               </label>
             </div>
-            <button type="button" class="stap-volgende" onclick="naarStap(2)">Volgende &rarr;</button>
+            <div class="stap-nav">
+              <button type="button" class="stap-volgende" onclick="naarStap(2)">Volgende &rarr;</button>
+            </div>
           </div>
 
-          <!-- STAP 2: Aanschafinfo + garantiecheck -->
+          <!-- ============================================================
+               STAP 2 — TV-gegevens + aankoop
+               ============================================================ -->
           <div class="form-stap" id="stap-2" style="display:none;">
             <div class="stap-header">
               <span class="stap-nr">Stap 2 van 4</span>
-              <h3>Wanneer en waar gekocht?</h3>
-              <p>Dit bepaalt of garantie of coulance van toepassing kan zijn.</p>
+              <h3>Over uw televisie</h3>
+              <p>Merk, model en aankoopinformatie bepalen de route.</p>
             </div>
+
+            <!-- Merk + modelnummer -->
             <div class="field-row">
               <div class="field">
                 <label>Merk *</label>
-                <select name="merk" required>
+                <select name="merk" id="merk" required onchange="resetRepareerbaar()">
                   <option value="">Selecteer merk</option>
                   <?php foreach (['Samsung','Philips','Sony','LG','Panasonic','Hisense','TCL','Anders'] as $m): ?>
                   <option value="<?= h($m) ?>"><?= h($m) ?></option>
@@ -133,15 +153,22 @@ include __DIR__ . '/includes/header.php';
               </div>
               <div class="field">
                 <label>Modelnummer *</label>
-                <input type="text" name="modelnummer" placeholder="Bijv. UE55CU8000" required />
+                <input type="text" name="modelnummer" id="modelnummer" placeholder="Bijv. UE55CU8000" required
+                       oninput="resetRepareerbaar()" />
                 <p class="field-hint">Staat achter op de tv of via Instellingen &rarr; Ondersteuning</p>
               </div>
             </div>
+
+            <!-- Repareerbaar-check feedback -->
+            <div id="repareerbaar-feedback" style="display:none;"></div>
+
+            <!-- Aanschafjaar + waarde -->
             <div class="field-row">
               <div class="field">
                 <label>Aanschafjaar *</label>
                 <select name="aanschafjaar" id="aanschafjaar" required onchange="berekenRoute()">
                   <option value="">Selecteer jaar</option>
+                  <option value="2026">2026</option>
                   <option value="2025">2025</option>
                   <option value="2024">2024</option>
                   <option value="2023">2023</option>
@@ -158,12 +185,14 @@ include __DIR__ . '/includes/header.php';
                 <select name="aanschafwaarde" id="aanschafwaarde" onchange="berekenRoute()">
                   <option value="">Onbekend</option>
                   <option value="<500">Minder dan &euro;500</option>
-                  <option value="500-1000">&euro;500 – &euro;1.000</option>
-                  <option value="1000-2000">&euro;1.000 – &euro;2.000</option>
+                  <option value="500-1000">&euro;500 &ndash; &euro;1.000</option>
+                  <option value="1000-2000">&euro;1.000 &ndash; &euro;2.000</option>
                   <option value=">2000">Meer dan &euro;2.000</option>
                 </select>
               </div>
             </div>
+
+            <!-- Verkoper -->
             <div class="field">
               <label>Waar gekocht?</label>
               <select name="aankoop_locatie" id="aankoop_locatie" onchange="berekenRoute()">
@@ -172,22 +201,28 @@ include __DIR__ . '/includes/header.php';
                 <option value="onbekend">Weet ik niet meer</option>
               </select>
             </div>
-            <div class="field">
-              <label>
+
+            <!-- Failliet: direct bij de verkoopvraag -->
+            <div class="field field-failliet">
+              <label class="checkbox-label">
                 <input type="checkbox" name="verkoper_failliet" id="verkoper_failliet" onchange="berekenRoute()" />
-                De winkel waar ik het heb gekocht is failliet gegaan
+                <span>De winkel waar ik het heb gekocht is failliet gegaan</span>
               </label>
               <p class="field-hint">Dit heeft invloed op garantieaanspraken (faillissement is een uitzonderingspositie).</p>
             </div>
-            <!-- Live feedback blok -->
+
+            <!-- Live route-feedback -->
             <div id="garantie-feedback" class="garantie-feedback" style="display:none;"></div>
+
             <div class="stap-nav">
               <button type="button" class="stap-terug" onclick="naarStap(1)">&larr; Terug</button>
-              <button type="button" class="stap-volgende" onclick="naarStap(3)">Volgende &rarr;</button>
+              <button type="button" class="stap-volgende" onclick="naarStapMetCheck(3)">Volgende &rarr;</button>
             </div>
           </div>
 
-          <!-- STAP 3: Het defect -->
+          <!-- ============================================================
+               STAP 3 — Het defect
+               ============================================================ -->
           <div class="form-stap" id="stap-3" style="display:none;">
             <div class="stap-header">
               <span class="stap-nr">Stap 3 van 4</span>
@@ -231,7 +266,9 @@ include __DIR__ . '/includes/header.php';
             </div>
           </div>
 
-          <!-- STAP 4: Contactgegevens + samenvatting -->
+          <!-- ============================================================
+               STAP 4 — Contactgegevens + samenvatting
+               ============================================================ -->
           <div class="form-stap" id="stap-4" style="display:none;">
             <div class="stap-header">
               <span class="stap-nr">Stap 4 van 4</span>
@@ -258,35 +295,96 @@ include __DIR__ . '/includes/header.php';
 
         </form>
       </div>
-    </div>
+    </div><!-- /.form-right -->
   </div>
 </div>
 
 <script>
-// ── Stap-navigatie ──────────────────────────────────────────────
+// ── Constanten ───────────────────────────────────────────────────
+const HUIDIG_JAAR = <?= date('Y') ?>;
+
+// Repareerbaar-status ophalen via API
+let _repCheck = { geladen: false, gevonden: false, repareerbaar: false, status: '' };
+let _repTimer  = null;
+
+function resetRepareerbaar() {
+  _repCheck = { geladen: false, gevonden: false, repareerbaar: false, status: '' };
+  const fb = document.getElementById('repareerbaar-feedback');
+  if (fb) fb.style.display = 'none';
+  document.getElementById('model_repareerbaar').value = '';
+  clearTimeout(_repTimer);
+  _repTimer = setTimeout(checkRepareerbaar, 600);
+}
+
+function checkRepareerbaar() {
+  const merk  = document.getElementById('merk')?.value || '';
+  const model = document.getElementById('modelnummer')?.value?.trim() || '';
+  if (!merk || merk === 'Anders' || model.length < 3) return;
+
+  fetch(`<?= BASE_URL ?>/api/check-repareerbaar.php?merk=${encodeURIComponent(merk)}&modelnummer=${encodeURIComponent(model)}`)
+    .then(r => r.json())
+    .then(data => {
+      _repCheck = { geladen: true, gevonden: data.gevonden, repareerbaar: data.repareerbaar, status: data.status || '' };
+      document.getElementById('model_repareerbaar').value = data.repareerbaar ? 'ja' : 'nee';
+      toonRepareerbaar();
+      berekenRoute();
+    })
+    .catch(() => {});
+}
+
+function toonRepareerbaar() {
+  const fb = document.getElementById('repareerbaar-feedback');
+  if (!fb || !_repCheck.geladen) return;
+  if (!_repCheck.gevonden) {
+    fb.style.display = 'none';
+    return;
+  }
+  if (_repCheck.repareerbaar) {
+    fb.className  = 'rep-feedback rep-ok';
+    fb.innerHTML  = '<span class="rep-ico">&#9989;</span> Dit model staat in onze database als <strong>repareerbaar</strong>. Reparatie aan huis behoort tot de opties.';
+  } else {
+    fb.className  = 'rep-feedback rep-nee';
+    fb.innerHTML  = '<span class="rep-ico">&#9851;</span> Dit model staat in onze database als <strong>niet-repareerbaar</strong>. Wij begeleiden u richting verantwoorde recycling.';
+  }
+  fb.style.display = 'block';
+}
+
+// ── Stap-navigatie ───────────────────────────────────────────────
 function naarStap(nr) {
-  // Valideer huidige stap vóór verdergaan
-  const huidig = document.querySelector('.form-stap:not([style*="display:none"])');
+  const huidig   = document.querySelector('.form-stap:not([style*="display:none"])');
   const required = huidig ? huidig.querySelectorAll('[required]') : [];
   for (const el of required) {
-    if (!el.value) {
-      el.focus();
-      el.reportValidity();
-      return;
-    }
+    if (!el.value) { el.focus(); el.reportValidity(); return; }
   }
+  _toonStap(nr);
+}
+
+// Stap 2 → 3: ook repareerbaar-API afwachten als nodig
+function naarStapMetCheck(nr) {
+  const huidig   = document.querySelector('.form-stap:not([style*="display:none"])');
+  const required = huidig ? huidig.querySelectorAll('[required]') : [];
+  for (const el of required) {
+    if (!el.value) { el.focus(); el.reportValidity(); return; }
+  }
+  // Trigger check als nog niet gedaan
+  if (!_repCheck.geladen) checkRepareerbaar();
+  _toonStap(nr);
+}
+
+function _toonStap(nr) {
   document.querySelectorAll('.form-stap').forEach(s => s.style.display = 'none');
   const doel = document.getElementById('stap-' + nr);
-  if (doel) doel.style.display = 'block';
-  // Voortgangsbalk updaten
+  if (doel) { doel.style.display = 'block'; doel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  // Voortgangsbollen
   document.querySelectorAll('.stap-dot').forEach((d, i) => {
-    d.classList.toggle('actief', i < nr);
+    d.classList.toggle('actief',   i < nr);
+    d.classList.toggle('huidig',   i === nr - 1);
   });
   berekenRoute();
   if (nr === 4) vulSamenvatting();
 }
 
-// ── Keuze-kaarten activeren ──────────────────────────────────────
+// ── Keuze-kaarten (stap 1) ───────────────────────────────────────
 document.querySelectorAll('.route-keuze input[type=radio]').forEach(r => {
   r.addEventListener('change', function() {
     document.querySelectorAll('.route-keuze').forEach(k => k.classList.remove('geselecteerd'));
@@ -296,60 +394,46 @@ document.querySelectorAll('.route-keuze input[type=radio]').forEach(r => {
 });
 
 // ── Routing engine ───────────────────────────────────────────────
-const HUIDIG_JAAR = <?= date('Y') ?>;
-
 function berekenRoute() {
-  const situatie        = document.querySelector('[name=situatie]:checked')?.value || '';
-  const aanschafjaarEl  = document.getElementById('aanschafjaar');
-  const aanschafwaardeEl= document.getElementById('aanschafwaarde');
-  const locatieEl       = document.getElementById('aankoop_locatie');
-  const faillietEl      = document.getElementById('verkoper_failliet');
-  const klachtEl        = document.getElementById('klacht_type');
+  const situatie       = document.querySelector('[name=situatie]:checked')?.value || '';
+  const aanschafjaar   = parseInt(document.getElementById('aanschafjaar')?.value) || null;
+  const aanschafwaarde = document.getElementById('aanschafwaarde')?.value || '';
+  const locatie        = document.getElementById('aankoop_locatie')?.value || 'nl';
+  const failliet       = document.getElementById('verkoper_failliet')?.checked || false;
+  const klacht         = document.getElementById('klacht_type')?.value || '';
 
-  const aanschafjaar    = aanschafjaarEl  ? parseInt(aanschafjaarEl.value)  : null;
-  const aanschafwaarde  = aanschafwaardeEl ? aanschafwaardeEl.value          : '';
-  const locatie         = locatieEl       ? locatieEl.value                  : 'nl';
-  const failliet        = faillietEl      ? faillietEl.checked               : false;
-  const klacht          = klachtEl        ? klachtEl.value                   : '';
+  // Repareerbaar vanuit DB-check; als niet gevonden → aanname: onbekend (geen blokkade)
+  const repKnown       = _repCheck.geladen && _repCheck.gevonden;
+  const kanRepareren   = !repKnown || _repCheck.repareerbaar;
 
-  let route        = '';
-  let badge        = '';
-  let toelichting  = '';
-  let coulanceKans = 0;
+  let route = '', badge = '', toelichting = '', coulanceKans = 0;
 
-  // --- Schade-route: altijd taxatie ---
   if (situatie === 'schade') {
     route       = 'taxatie';
     badge       = '&#128196; Taxatierapport';
     toelichting = 'Omdat er sprake is van externe schade (stroom, brand, inbraak of val), is een taxatierapport de juiste route voor uw verzekeraar.';
-  }
+  } else if (situatie === 'storing') {
+    const leeftijd        = aanschafjaar ? (HUIDIG_JAAR - aanschafjaar) : null;
+    const geenGarantie    = klacht === 'gebarsten_scherm';
 
-  // --- Storingsroute: bepaal garantie / coulance / reparatie / second life ---
-  else if (situatie === 'storing') {
-    const leeftijd = aanschafjaar ? (HUIDIG_JAAR - aanschafjaar) : null;
-
-    // Schermbreuk = nooit garantie
-    const geenGarantieKlachten = ['gebarsten_scherm'];
-    const isGeenGarantie = geenGarantieKlachten.includes(klacht);
-
-    // Garantiecheck: < 2 jaar, in NL gekocht, verkoper niet failliet
-    if (leeftijd !== null && leeftijd <= 2 && !isGeenGarantie && locatie === 'nl' && !failliet) {
+    if (leeftijd !== null && leeftijd <= 2 && !geenGarantie && locatie === 'nl' && !failliet) {
       route       = 'garantie';
       badge       = '&#9989; Garantie';
       toelichting = 'Op basis van het aanschafjaar valt uw televisie waarschijnlijk nog onder de wettelijke garantietermijn. Wij begeleiden u naar de verkoper of fabrikant.';
-    }
-    // Garantie maar buitenland of failliet: bijzondere situatie
-    else if (leeftijd !== null && leeftijd <= 2 && (locatie === 'buitenland' || failliet)) {
-      route       = 'reparatie';
-      badge       = '&#128295; Reparatie (bijz. situatie)';
-      toelichting = (failliet)
-        ? 'Uw verkoper is failliet gegaan. Dit is een uitzonderingspositie waardoor directe garantie bij de verkoper niet meer mogelijk is. Reparatie aan huis is de meest praktische optie.'
-        : 'Televisies buiten Nederland aangeschaft vallen doorgaans buiten de standaard Nederlandse garantieregels. Reparatie aan huis is de meest praktische optie.';
-    }
-    // Coulance: 2-5 jaar, kijk ook naar aanschafwaarde
-    else if (leeftijd !== null && leeftijd > 2 && leeftijd <= 5 && !isGeenGarantie) {
-      // Kansberekening coulance (0-100)
-      let kans = 60; // basiskans als de tv 2-5 jaar oud is
+    } else if (leeftijd !== null && leeftijd <= 2 && (locatie === 'buitenland' || failliet)) {
+      if (kanRepareren) {
+        route       = 'reparatie';
+        badge       = '&#128295; Reparatie (bijz. situatie)';
+        toelichting = failliet
+          ? 'Uw verkoper is failliet gegaan. Directe garantie is niet meer mogelijk. Reparatie aan huis is de meest praktische optie.'
+          : 'Televisies buiten Nederland gekocht vallen doorgaans buiten de Nederlandse garantieregels. Reparatie aan huis is de meest praktische optie.';
+      } else {
+        route       = 'recycling';
+        badge       = '&#9851; Recycling';
+        toelichting = 'Dit model is niet repareerbaar. Wij begeleiden u richting verantwoorde recycling of inruilmogelijkheden.';
+      }
+    } else if (leeftijd !== null && leeftijd > 2 && leeftijd <= 5 && !geenGarantie) {
+      let kans = 60;
       if (leeftijd <= 3) kans += 20;
       if (aanschafwaarde === '>2000' || aanschafwaarde === '1000-2000') kans += 15;
       if (aanschafwaarde === '<500') kans -= 20;
@@ -357,56 +441,65 @@ function berekenRoute() {
       if (failliet) kans -= 40;
       kans = Math.max(5, Math.min(95, kans));
       coulanceKans = kans;
-
       route       = 'coulance';
       badge       = '&#129309; Coulanceregeling (' + kans + '% kans)';
       toelichting = 'Uw televisie is ' + leeftijd + ' jaar oud. Garantie is verlopen, maar veel fabrikanten bieden een coulanceregeling aan. '
-        + 'Op basis van aanschafjaar en waarde schatten wij de kans op een vergoeding op <strong>' + kans + '%</strong>. '
-        + 'Wij begeleiden u in dit traject.';
-    }
-    // Reparatie: 5-10 jaar
-    else if (leeftijd !== null && leeftijd > 5 && leeftijd <= 10) {
-      route       = 'reparatie';
-      badge       = '&#128295; Reparatie aan huis';
-      toelichting = 'Garantie en coulance zijn niet meer van toepassing. Reparatie aan huis is de meest kostenefficiënte oplossing als het defect technisch herstelbaar is.';
-    }
-    // Second life: ouder dan 10 jaar of gebarsten scherm oud toestel
-    else if (leeftijd !== null && leeftijd > 10) {
-      route       = 'second-life';
-      badge       = '&#9854; Second life advisering';
-      toelichting = 'Een televisie ouder dan 10 jaar heeft een hogere kans dat reparatiekosten de waarde overtreffen. Wij adviseren u eerlijk over doorverkoop, donatie of verantwoorde recycling als alternatief voor reparatie.';
-    }
-    // Klacht gebarsten scherm: altijd reparatie of second life
-    else if (klacht === 'gebarsten_scherm') {
-      route       = 'reparatie';
-      badge       = '&#128295; Reparatie / Second life';
-      toelichting = 'Een gebarsten scherm valt nooit onder garantie (dit is gebruikersschade). Wij kijken of schermsvervanging economisch zinvol is of dat second life de betere keuze is.';
+        + 'Wij schatten de kans op een vergoeding op <strong>' + kans + '%</strong>.';
+    } else if (leeftijd !== null && leeftijd > 5 && leeftijd <= 10) {
+      if (kanRepareren) {
+        route       = 'reparatie';
+        badge       = '&#128295; Reparatie aan huis';
+        toelichting = 'Garantie en coulance zijn niet meer van toepassing. Reparatie aan huis is de meest kosteneffiënte oplossing als het defect technisch herstelbaar is.';
+      } else {
+        route       = 'recycling';
+        badge       = '&#9851; Recycling';
+        toelichting = 'Dit model staat als niet-repareerbaar in onze database. Wij begeleiden u richting verantwoorde recycling of doorverwijzing naar een inruilprogramma.';
+      }
+    } else if (leeftijd !== null && leeftijd > 10) {
+      if (kanRepareren) {
+        route       = 'secondlife';
+        badge       = '&#9854; Second life advisering';
+        toelichting = 'Een televisie ouder dan 10 jaar heeft een hogere kans dat reparatiekosten de waarde overtreffen. Wij adviseren eerlijk over doorverkoop of verantwoorde recycling.';
+      } else {
+        route       = 'recycling';
+        badge       = '&#9851; Recycling';
+        toelichting = 'Dit model is niet repareerbaar en is ouder dan 10 jaar. Verantwoorde recycling is de meest zinvolle route.';
+      }
+    } else if (klacht === 'gebarsten_scherm') {
+      if (kanRepareren) {
+        route       = 'reparatie';
+        badge       = '&#128295; Schermvervanging';
+        toelichting = 'Een gebarsten scherm valt nooit onder garantie. Wij kijken of schermvervanging economisch zinvol is.';
+      } else {
+        route       = 'recycling';
+        badge       = '&#9851; Recycling';
+        toelichting = 'Dit model is niet repareerbaar. Verantwoorde recycling of doorverwijzing naar een inruilprogramma is de beste route.';
+      }
     }
   }
 
-  // Update hidden velden
   document.getElementById('geadviseerde_route').value = route;
-  document.getElementById('coulance_kans').value = coulanceKans;
+  document.getElementById('coulance_kans').value      = coulanceKans;
 
-  // Update indicator links (stap 1-3)
-  const ind = document.getElementById('routing-indicator');
+  // Update routing-indicator (linkerkant)
+  const ind     = document.getElementById('routing-indicator');
   const badgeEl = document.getElementById('routing-badge');
-  const toel = document.getElementById('routing-toelichting');
+  const toel    = document.getElementById('routing-toelichting');
   if (route && ind) {
     ind.style.display = 'block';
     badgeEl.innerHTML = badge;
-    badgeEl.className = 'routing-badge route-' + route.replace(/[^a-z]/g,'');
-    toel.innerHTML = toelichting;
+    badgeEl.className = 'routing-badge route-' + route.replace(/[^a-z]/g, '');
+    toel.innerHTML    = toelichting;
   } else if (ind) {
     ind.style.display = 'none';
   }
 
-  // Update garantie-feedback blok in stap 2
+  // Update feedback-blok in stap 2
   const fb = document.getElementById('garantie-feedback');
   if (fb && route) {
     fb.style.display = 'block';
-    fb.innerHTML = '<strong>Voorlopige route:</strong> ' + badge + '<br><small>' + toelichting + '</small>';
-    fb.className = 'garantie-feedback feedback-' + route.replace(/[^a-z]/g,'');
+    fb.innerHTML  = '<strong>Voorlopige route:</strong> ' + badge + '<br><small>' + toelichting + '</small>';
+    fb.className  = 'garantie-feedback feedback-' + route.replace(/[^a-z]/g, '');
   } else if (fb) {
     fb.style.display = 'none';
   }
@@ -414,12 +507,11 @@ function berekenRoute() {
 
 // ── Stap 4 samenvatting ──────────────────────────────────────────
 function vulSamenvatting() {
-  const merk      = document.querySelector('[name=merk]')?.value || '—';
-  const model     = document.querySelector('[name=modelnummer]')?.value || '—';
+  const merk      = document.getElementById('merk')?.value || '—';
+  const model     = document.getElementById('modelnummer')?.value || '—';
   const jaar      = document.getElementById('aanschafjaar')?.value || '—';
-  const klacht    = document.getElementById('klacht_type');
-  const klachtTxt = klacht?.options[klacht.selectedIndex]?.text || '—';
-  const route     = document.getElementById('geadviseerde_route')?.value || '';
+  const klachtEl  = document.getElementById('klacht_type');
+  const klachtTxt = klachtEl?.options[klachtEl.selectedIndex]?.text || '—';
   const badge     = document.getElementById('routing-badge')?.innerHTML || '';
 
   const el = document.getElementById('route-samenvatting');
