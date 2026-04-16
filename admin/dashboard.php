@@ -7,7 +7,19 @@ requireAdmin();
 $totalAanvragen  = db()->query('SELECT COUNT(*) FROM aanvragen')->fetchColumn();
 $totalModellen   = db()->query('SELECT COUNT(*) FROM tv_modellen WHERE actief=1')->fetchColumn();
 $totalKlachten   = db()->query('SELECT COUNT(*) FROM klachten')->fetchColumn();
-$recentAanvragen = db()->query('SELECT * FROM aanvragen ORDER BY aangemaakt_op DESC LIMIT 5')->fetchAll();
+
+// Bepaal welke datumkolom bestaat (aangemaakt_op of created_at)
+try {
+    $cols = db()->query('SHOW COLUMNS FROM aanvragen')->fetchAll(PDO::FETCH_COLUMN);
+    $datumKolom = in_array('aangemaakt_op', $cols) ? 'aangemaakt_op'
+                : (in_array('created_at', $cols)   ? 'created_at' : 'id');
+} catch (Exception $e) {
+    $datumKolom = 'id';
+}
+
+$recentAanvragen = db()->query(
+    'SELECT * FROM aanvragen ORDER BY ' . $datumKolom . ' DESC LIMIT 5'
+)->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -57,11 +69,11 @@ $recentAanvragen = db()->query('SELECT * FROM aanvragen ORDER BY aangemaakt_op D
         <tbody>
         <?php foreach ($recentAanvragen as $a): ?>
         <tr>
-          <td><?= h($a['email']) ?></td>
+          <td><?= h($a['email'] ?? '') ?></td>
           <td><?= h($a['merk'] ?? '') ?></td>
           <td><?= h($a['modelnummer'] ?? '') ?></td>
           <td><?= h($a['geadviseerde_route'] ?? '') ?></td>
-          <td><?= h($a['aangemaakt_op']) ?></td>
+          <td><?= h($a[$datumKolom] ?? '') ?></td>
         </tr>
         <?php endforeach; ?>
         </tbody>
