@@ -192,12 +192,14 @@ include __DIR__ . '/includes/header.php';
               </select>
             </div>
 
-            <div class="field field-failliet">
-              <label class="checkbox-label">
-                <input type="checkbox" name="verkoper_failliet" id="verkoper_failliet" onchange="berekenRoute()" />
+            <div class="field field-failliet" id="failliet-wrap" style="display:none;">
+              <label class="failliet-vink-label" for="verkoper_failliet">
+                <span class="failliet-vink-box">
+                  <input type="checkbox" name="verkoper_failliet" id="verkoper_failliet" onchange="berekenRoute()">
+                  <span class="failliet-vink-inner"></span>
+                </span>
                 <span>De winkel waar ik het heb gekocht is failliet gegaan</span>
               </label>
-              <p class="field-hint">Dit heeft invloed op garantieaanspraken (faillissement is een uitzonderingspositie).</p>
             </div>
 
             <div id="garantie-feedback" class="garantie-feedback" style="display:none;"></div>
@@ -360,6 +362,9 @@ function _toonStap(nr) {
     d.classList.toggle('actief', i < nr);
     d.classList.toggle('huidig', i === nr - 1);
   });
+  // Failliet-checkbox alleen zichtbaar op de stap waar de winkel-vraag staat
+  const fw = document.getElementById('failliet-wrap');
+  if (fw) fw.style.display = (nr === 2) ? 'block' : 'none';
   berekenRoute();
   if (nr === 4) vulSamenvatting();
 }

@@ -354,11 +354,10 @@ $PAGE_SIZE = 35;
         <div class="form-row-3">
           <div class="field">
             <label>Merk *</label>
-            <select name="merk" required id="edit_merk">
-              <?php foreach ($alleMerken ?: ['Samsung','Philips','Sony','LG','Panasonic','Hisense','TCL','Anders'] as $m): ?>
-              <option value="<?= h($m) ?>" <?= $editModel['merk']===$m ? 'selected' : '' ?>><?= h($m) ?></option>
-              <?php endforeach; ?>
-            </select>
+            <input type="text" name="merk" required id="edit_merk"
+                   list="merken-list" autocomplete="off"
+                   value="<?= h($editModel['merk']) ?>"
+                   placeholder="Samsung, Philips, LG&hellip;">
           </div>
           <div class="field">
             <label>Serie</label>
@@ -413,14 +412,17 @@ $PAGE_SIZE = 35;
       <h2>&#43; Nieuw model toevoegen</h2>
       <form method="POST" class="form-admin" id="add_form">
         <input type="hidden" name="action" value="add">
+        <datalist id="merken-list">
+          <?php foreach ($alleMerken ?: ['Samsung','Philips','Sony','LG','Panasonic','Hisense','TCL','Anders'] as $m): ?>
+          <option value="<?= h($m) ?>">
+          <?php endforeach; ?>
+        </datalist>
         <div class="form-row-3">
           <div class="field">
             <label>Merk *</label>
-            <select name="merk" required id="add_merk">
-              <?php foreach ($alleMerken ?: ['Samsung','Philips','Sony','LG','Panasonic','Hisense','TCL','Anders'] as $m): ?>
-              <option value="<?= h($m) ?>"><?= h($m) ?></option>
-              <?php endforeach; ?>
-            </select>
+            <input type="text" name="merk" required id="add_merk"
+                   list="merken-list" autocomplete="off"
+                   placeholder="Samsung, Philips, LG&hellip;">
           </div>
           <div class="field">
             <label>Serie</label>
@@ -439,18 +441,18 @@ $PAGE_SIZE = 35;
         <div class="cb-row">
           <div class="cb-item">
             <input type="checkbox" id="add_rep" name="repareerbaar" value="1"
-              <?= defaultVoorMerk($repareerbareMerken, $alleMerken[0] ?? 'Samsung') ? 'checked' : '' ?>>
+              <?= empty($repareerbareMerken) ? 'checked' : '' ?>>
             <label for="add_rep">
               Repareerbaar
-              <span class="cb-hint" id="add_hint_rep">Standaard op basis van merk &amp; advies instellingen</span>
+              <span class="cb-hint" id="add_hint_rep">Selecteer een merk om de standaard te zien</span>
             </label>
           </div>
           <div class="cb-item">
             <input type="checkbox" id="add_tax" name="taxatie" value="1"
-              <?= defaultVoorMerk($taxatieMerken, $alleMerken[0] ?? 'Samsung') ? 'checked' : '' ?>>
+              <?= empty($taxatieMerken) ? 'checked' : '' ?>>
             <label for="add_tax">
               Taxatie mogelijk
-              <span class="cb-hint" id="add_hint_tax">Standaard op basis van merk &amp; advies instellingen</span>
+              <span class="cb-hint" id="add_hint_tax">Selecteer een merk om de standaard te zien</span>
             </label>
           </div>
         </div>
@@ -641,12 +643,14 @@ const observer = new IntersectionObserver(entries => {
 laadBatch();
 if (geladen < MODELLEN.length) observer.observe(sentinel);
 
-// ── Add-formulier: checkbox-standaard bij merk-wissel ──
+// ── Add-formulier: checkbox-standaard bij merk-wissel (datalist) ──
 (function() {
   const addMerk = document.getElementById('add_merk');
   if (!addMerk) return;
-  addMerk.addEventListener('change', function() {
-    const m    = this.value;
+  let debounce;
+  function updateDefaults() {
+    const m    = addMerk.value.trim();
+    if (!m) return;
     const dRep = merkDefault(repMerken, m);
     const dTax = merkDefault(taxMerken, m);
     const rep  = document.getElementById('add_rep');
@@ -657,6 +661,12 @@ if (geladen < MODELLEN.length) observer.observe(sentinel);
     if (tax) tax.checked = dTax;
     if (hRep) hRep.textContent = 'DB-standaard voor ' + m + ': ' + (dRep ? '\u2713 aan' : '\u2717 uit');
     if (hTax) hTax.textContent = 'DB-standaard voor ' + m + ': ' + (dTax ? '\u2713 aan' : '\u2717 uit');
+  }
+  // 'change' fires when datalist option is picked; 'input' when typed
+  addMerk.addEventListener('change', updateDefaults);
+  addMerk.addEventListener('input', function() {
+    clearTimeout(debounce);
+    debounce = setTimeout(updateDefaults, 350);
   });
 })();
 
