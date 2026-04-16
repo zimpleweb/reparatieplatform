@@ -81,6 +81,11 @@ if ($aanvraagId) {
     } catch (\PDOException $e) { /* log-tabel nog niet aangemaakt */ }
 }
 
-// ── Redirect ─────────────────────────────────────────────────────
-$param = $casenummer ? '&case=' . urlencode($casenummer) : '';
-redirect(BASE_URL . '/advies.php?verzonden=1' . $param);
+// ── Redirect naar klantenomgeving ────────────────────────────────
+if ($casenummer) {
+    $_SESSION['portal_case']  = $casenummer;
+    $_SESSION['portal_email'] = strtolower($email);
+    redirect(BASE_URL . '/mijn-aanvraag.php?nieuw=1');
+} else {
+    redirect(BASE_URL . '/advies.php?verzonden=1');
+}
