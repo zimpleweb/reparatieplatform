@@ -10,3 +10,7 @@ Thumbs.db
 # Uploads / cache
 uploads/
 cache/
+
+# SQLite database
+data/*.sqlite
+data/*.db
