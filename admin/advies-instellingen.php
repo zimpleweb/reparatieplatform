@@ -90,6 +90,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Laad de (verse) regels NADAT opslaan
 $r = getAdviesRegels();
 
+// Merk-standaarden voor uitzonderingsberekening
+$repareerbareMerken = is_array($r['reparatie_merken'] ?? null) ? $r['reparatie_merken'] : [];
+$taxatieMerken      = is_array($r['taxatie_merken']   ?? null) ? $r['taxatie_merken']   : [];
+
+// Model-uitzonderingen: modellen die afwijken van hun merk-standaard
+$uitzRep = $uitzTax = [];
+try {
+    foreach (
+        db()->query('SELECT merk, modelnummer, repareerbaar, taxatie FROM tv_modellen WHERE actief=1 ORDER BY merk, modelnummer')
+            ->fetchAll(PDO::FETCH_ASSOC)
+        as $m
+    ) {
+        $dRep = empty($repareerbareMerken)
+            || in_array(mb_strtolower(trim($m['merk'])), array_map('mb_strtolower', $repareerbareMerken), true);
+        $dTax = empty($taxatieMerken)
+            || in_array(mb_strtolower(trim($m['merk'])), array_map('mb_strtolower', $taxatieMerken), true);
+
+        if (!$dRep && (int)$m['repareerbaar'] === 1) $uitzRep[] = $m + ['_type' => 'positief'];
+        elseif ($dRep  && (int)$m['repareerbaar'] === 0) $uitzRep[] = $m + ['_type' => 'negatief'];
+
+        if (!$dTax && (int)$m['taxatie'] === 1) $uitzTax[] = $m + ['_type' => 'positief'];
+        elseif ($dTax  && (int)$m['taxatie'] === 0) $uitzTax[] = $m + ['_type' => 'negatief'];
+    }
+} catch (Exception $e) {}
+
 // Haal alle unieke merken uit de TV-database
 $alleMerken = [];
 try {
@@ -274,6 +299,29 @@ $prijsklassenLabels = [
     .section-label {
       font-size:.7rem; font-weight:700; letter-spacing:.08em;
       text-transform:uppercase; color:#9ca3af; margin:.25rem 0 0;
+    }
+    /* Uitzonderingen lijst */
+    .uitzondering-lijst {
+      display:flex; flex-direction:column; gap:.3rem;
+      max-height:260px; overflow-y:auto; margin-top:.25rem;
+    }
+    .uitzondering-item {
+      display:flex; flex-direction:column; gap:.1rem;
+      padding:.4rem .7rem; border-radius:6px; font-size:.78rem;
+      border:1px solid transparent;
+    }
+    .uitzondering-item strong { font-weight:700; font-size:.8rem; }
+    .uitzondering-item span   { font-size:.72rem; opacity:.85; }
+    .uitz-positief { background:#fef9c3; color:#713f12; border-color:#fde68a; }
+    .uitz-negatief { background:#fee2e2; color:#7f1d1d; border-color:#fca5a5; }
+    .uitzondering-leeg { font-size:.8rem; color:#9ca3af; font-style:italic; }
+    .uitz-col-title {
+      font-size:.72rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+      color:#64748b; margin-bottom:.4rem; display:flex; align-items:center; gap:.4rem;
+    }
+    .uitz-count {
+      background:#f1f5f9; color:#475569; border-radius:999px;
+      padding:.1rem .45rem; font-size:.68rem; font-weight:700;
     }
   </style>
 </head>
@@ -630,6 +678,75 @@ $prijsklassenLabels = [
               hebben taxatie ingesteld in de database.
             </p>
           </div>
+        </div>
+      </div>
+
+      <!-- ====================================================== -->
+      <!-- UITZONDERINGEN (synced met TV Modellen)              -->
+      <!-- ====================================================== -->
+      <div class="rule-section full-width">
+        <h3>&#9888; Model-uitzonderingen
+          <span class="rule-badge" style="background:#fef9c3;color:#78350f;">Sync</span>
+        </h3>
+        <p style="font-size:.82rem;color:#6b7280;margin:-.25rem 0 .75rem;">
+          Modellen die afwijken van de merk-standaard voor reparatie of taxatie.
+          Aanpassen kan via <a href="<?= BASE_URL ?>/admin/modellen.php" style="color:#287864;font-weight:600;">TV Modellen &rarr;</a>
+          &mdash; wijzigingen zijn hier direct zichtbaar.
+        </p>
+        <div class="two-col">
+
+          <!-- Reparatie uitzonderingen -->
+          <div>
+            <p class="uitz-col-title">
+              &#128295; Reparatie-uitzonderingen
+              <span class="uitz-count"><?= count($uitzRep) ?></span>
+            </p>
+            <?php if (empty($uitzRep)): ?>
+              <p class="uitzondering-leeg">Geen uitzonderingen &mdash; alle modellen volgen de merk-standaard.</p>
+            <?php else: ?>
+              <div class="uitzondering-lijst">
+                <?php foreach ($uitzRep as $u): ?>
+                <div class="uitzondering-item uitz-<?= $u['_type'] ?>">
+                  <strong><?= h($u['merk']) ?> &nbsp;<?= h($u['modelnummer']) ?></strong>
+                  <span>
+                    <?php if ($u['_type'] === 'positief'): ?>
+                      Merk: standaard <em>niet</em> repareerbaar &rarr; dit model: <strong>wél</strong> repareerbaar
+                    <?php else: ?>
+                      Merk: standaard repareerbaar &rarr; dit model: <strong>niet</strong> repareerbaar
+                    <?php endif; ?>
+                  </span>
+                </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+          </div>
+
+          <!-- Taxatie uitzonderingen -->
+          <div>
+            <p class="uitz-col-title">
+              &#128203; Taxatie-uitzonderingen
+              <span class="uitz-count"><?= count($uitzTax) ?></span>
+            </p>
+            <?php if (empty($uitzTax)): ?>
+              <p class="uitzondering-leeg">Geen uitzonderingen &mdash; alle modellen volgen de merk-standaard.</p>
+            <?php else: ?>
+              <div class="uitzondering-lijst">
+                <?php foreach ($uitzTax as $u): ?>
+                <div class="uitzondering-item uitz-<?= $u['_type'] ?>">
+                  <strong><?= h($u['merk']) ?> &nbsp;<?= h($u['modelnummer']) ?></strong>
+                  <span>
+                    <?php if ($u['_type'] === 'positief'): ?>
+                      Merk: standaard <em>geen</em> taxatie &rarr; dit model: <strong>wél</strong> taxatie
+                    <?php else: ?>
+                      Merk: standaard taxatie &rarr; dit model: <strong>geen</strong> taxatie
+                    <?php endif; ?>
+                  </span>
+                </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+          </div>
+
         </div>
       </div>
 

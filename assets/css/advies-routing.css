@@ -5,33 +5,65 @@
 /* ── Voortgangsbalk ─────────────────────────────────────────── */
 .stap-progress {
   display: flex;
-  align-items: center;
-  gap: 0;
+  align-items: flex-start;
   margin: 0 0 1.75rem;
   padding: 0 .25rem;
 }
-.stap-dot {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
+.stap-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .4rem;
+  flex-shrink: 0;
+}
+.stap-step .stap-dot {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   border-radius: 50%;
   background: #e5e7eb;
   border: 2px solid #e5e7eb;
-  transition: background .25s, border-color .25s;
-  position: relative;
-  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .8rem;
+  font-weight: 700;
+  color: #9ca3af;
+  transition: background .25s, border-color .25s, color .25s;
 }
-.stap-dot.actief {
+.stap-step.actief .stap-dot {
   background: var(--accent, #1d4ed8);
   border-color: var(--accent, #1d4ed8);
+  color: #fff;
 }
-.stap-dot.huidig {
+.stap-step.huidig .stap-dot {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #1d4ed8) 20%, transparent);
+}
+.stap-step .stap-step-label {
+  font-size: .6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #9ca3af;
+  white-space: nowrap;
+  transition: color .25s;
+}
+.stap-step.huidig .stap-step-label {
+  color: var(--accent, #1d4ed8);
+}
+.stap-step.actief:not(.huidig) .stap-step-label {
+  color: #6b7280;
 }
 .stap-lijn {
   flex: 1;
   height: 2px;
   background: #e5e7eb;
+  align-self: flex-start;
+  margin-top: 14px;
+  transition: background .25s;
+}
+.stap-lijn.actief {
+  background: var(--accent, #1d4ed8);
 }
 
 /* ── Stap-header ────────────────────────────────────────────── */
@@ -134,30 +166,78 @@
 .route-keuze-inner strong { font-size: .9rem; color: #111827; line-height: 1.3; }
 .route-keuze-inner span   { font-size: .8rem; color: #6b7280; line-height: 1.45; }
 
-/* ── Checkbox-label (failliet) ──────────────────────────────── */
-.checkbox-label {
-  display: flex;
-  align-items: flex-start;
-  gap: .55rem;
-  cursor: pointer;
-  font-size: .9rem;
-  color: #374151;
-}
-.checkbox-label input[type=checkbox] {
-  margin-top: .15rem;
-  flex-shrink: 0;
-  accent-color: var(--accent, #1d4ed8);
-  width: 16px;
-  height: 16px;
-}
+/* ── Failliet vink (square custom checkbox) ─────────────────── */
 .field-failliet {
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  border-radius: 8px;
-  padding: .75rem 1rem;
-  margin-top: .25rem;
+  margin-top: .5rem;
 }
-.field-failliet .field-hint { margin-top: .4rem; margin-left: 1.6rem; }
+.failliet-vink-label {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  cursor: pointer;
+  padding: .7rem .9rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color .15s, background .15s;
+  font-size: .875rem;
+  font-weight: 500;
+  color: #374151;
+  user-select: none;
+}
+.failliet-vink-label:hover {
+  border-color: var(--accent, #287864);
+  background: color-mix(in srgb, var(--accent, #287864) 5%, #fff);
+}
+.failliet-vink-label:has(input:checked) {
+  border-color: var(--accent, #287864);
+  background: color-mix(in srgb, var(--accent, #287864) 7%, #fff);
+}
+.failliet-vink-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.failliet-vink-box input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.failliet-vink-inner {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border: 2px solid #d1d5db;
+  border-radius: 5px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color .15s, background .15s;
+  position: relative;
+}
+.failliet-vink-inner::after {
+  content: '';
+  display: none;
+  width: 5px;
+  height: 10px;
+  border: 2.5px solid #fff;
+  border-left: 0;
+  border-top: 0;
+  transform: rotate(45deg) translateY(-1px);
+  position: absolute;
+}
+.failliet-vink-label:has(input:checked) .failliet-vink-inner {
+  border-color: var(--accent, #287864);
+  background: var(--accent, #287864);
+}
+.failliet-vink-label:has(input:checked) .failliet-vink-inner::after {
+  display: block;
+}
 
 /* ── Repareerbaar feedback ──────────────────────────────────── */
 .rep-feedback {
@@ -251,6 +331,154 @@
 .samenvatting-rij span   { color: #64748b; font-size: .85rem; }
 .samenvatting-rij strong { color: #0f172a; text-align: right; font-size: .875rem; }
 
+/* ── Status check sectie ────────────────────────────────────── */
+.status-check-wrap {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 3rem 0;
+}
+.status-check-box {
+  max-width: 540px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 2rem 2.25rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+}
+.status-check-box h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: .4rem;
+}
+.status-check-box .lead {
+  font-size: .875rem;
+  color: #64748b;
+  margin-bottom: 1.25rem;
+}
+.status-check-row {
+  display: flex;
+  gap: .75rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.status-check-row .field { margin: 0; flex: 1; min-width: 140px; }
+.status-check-row .btn-check {
+  background: var(--ink, #0f172a);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: .7rem 1.4rem;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .2s;
+}
+.status-check-row .btn-check:hover { background: #1e293b; }
+
+/* Status resultaat panel */
+.status-panel {
+  margin-top: 1.5rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.status-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .9rem 1.25rem;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+}
+.status-panel-header .case-nr {
+  font-size: .85rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.status-panel-body { padding: 1.25rem; }
+
+/* Statusbadge in panel */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .78rem;
+  font-weight: 700;
+  padding: .3rem .8rem;
+  border-radius: 999px;
+}
+.status-badge.s-inzending   { background: #e0f2fe; color: #0369a1; }
+.status-badge.s-doorgestuurd{ background: #fef3c7; color: #92400e; }
+.status-badge.s-aanvraag    { background: #dcfce7; color: #14532d; }
+.status-badge.s-coulance    { background: #fef9c3; color: #78350f; }
+.status-badge.s-recycling   { background: #fdf2f8; color: #701a75; }
+.status-badge.s-behandeld   { background: #f0fdf4; color: #166534; }
+.status-badge.s-archief     { background: #f1f5f9; color: #475569; }
+
+/* Aanvulling form */
+.aanvulling-form { margin-top: 1rem; }
+.aanvulling-form .field { margin-bottom: .9rem; }
+.aanvulling-form label {
+  display: block;
+  font-size: .78rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: .3rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.aanvulling-form input[type=text],
+.aanvulling-form input[type=tel],
+.aanvulling-form textarea {
+  width: 100%;
+  padding: .65rem .9rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: .9rem;
+  font-family: inherit;
+  transition: border-color .2s;
+}
+.aanvulling-form input:focus,
+.aanvulling-form textarea:focus { outline: none; border-color: var(--accent, #1d4ed8); }
+.aanvulling-form input[type=file] {
+  display: block;
+  font-size: .85rem;
+  color: #374151;
+  margin-top: .3rem;
+}
+.btn-submit-aanvulling {
+  width: 100%;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: .85rem 1.5rem;
+  font-size: .95rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: .5rem;
+  transition: background .2s;
+}
+.btn-submit-aanvulling:hover { background: #15803d; }
+
+/* Casenummer display na submit */
+.case-nr-display {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-top: .75rem;
+}
+.case-nr-display .nr {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #15803d;
+  letter-spacing: .04em;
+}
+
 /* ── Mobiel ─────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .route-keuze-grid  { grid-template-columns: 1fr; }
@@ -258,4 +486,6 @@
   .stap-volgende     { margin-left: 0; width: 100%; text-align: center; }
   .samenvatting-rij  { flex-direction: column; gap: .2rem; }
   .rep-feedback      { flex-direction: column; gap: .3rem; }
+  .stap-step-label   { display: none; }
+  .status-check-box  { padding: 1.25rem 1rem; }
 }
