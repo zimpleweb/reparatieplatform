@@ -4,7 +4,7 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCsrf($_POST['csrf_token'] ?? '')) {
-    redirect('/?error=csrf');
+    redirect(BASE_URL . '/?error=csrf');
 }
 
 $merk              = trim($_POST['merk']              ?? '');
@@ -21,7 +21,7 @@ $coulance_kans     = (int) ($_POST['coulance_kans']   ?? 0);
 $model_repareerbaar= trim($_POST['model_repareerbaar']?? '');
 
 if (!$email || !$merk || !$modelnummer) {
-    redirect('/advies.php?error=2');
+    redirect(BASE_URL . '/advies.php?error=2');
 }
 
 // ── Genereer casenummer (YYYY-MM-NNNN, NNNN start bij 1000) ────
@@ -83,4 +83,4 @@ if ($aanvraagId) {
 
 // ── Redirect ─────────────────────────────────────────────────────
 $param = $casenummer ? '&case=' . urlencode($casenummer) : '';
-redirect('/advies.php?verzonden=1' . $param);
+redirect(BASE_URL . '/advies.php?verzonden=1' . $param);

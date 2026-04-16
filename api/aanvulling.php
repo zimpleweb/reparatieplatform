@@ -4,7 +4,7 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCsrf($_POST['csrf_token'] ?? '')) {
-    redirect('/advies.php?error=csrf');
+    redirect(BASE_URL . '/advies.php?error=csrf');
 }
 
 $id    = (int)  ($_POST['aanvraag_id'] ?? 0);
@@ -14,34 +14,34 @@ $naam  = trim(  $_POST['naam']         ?? '');
 $tel   = trim(  $_POST['telefoon']     ?? '');
 $adr   = trim(  $_POST['adres']        ?? '');
 
-if (!$id || !$cn) redirect('/advies.php?error=ongeldig');
+if (!$id || !$cn) redirect(BASE_URL . '/advies.php?error=ongeldig');
 
 // Haal de aanvraag op en controleer casenummer
 $stmt = db()->prepare('SELECT id, status, advies_type, email, casenummer FROM aanvragen WHERE id=? AND casenummer=?');
 $stmt->execute([$id, $cn]);
 $rij = $stmt->fetch();
 
-if (!$rij) redirect('/advies.php?error=ongeldig');
+if (!$rij) redirect(BASE_URL . '/advies.php?error=ongeldig');
 
 // ── Speciale actie: coulance mislukt → omzetten naar reparatie ───
 if ($actie === 'coulance_naar_reparatie') {
-    if ($rij['status'] !== 'coulance') redirect('/advies.php?error=ongeldig');
+    if ($rij['status'] !== 'coulance') redirect(BASE_URL . '/advies.php?error=ongeldig');
     db()->prepare("UPDATE aanvragen SET status='doorgestuurd', advies_type='reparatie' WHERE id=?")
        ->execute([$id]);
     try {
         db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, gedaan_door) VALUES (?,?,?)')
            ->execute([$id, 'Coulance mislukt — omgezet naar reparatieaanvraag', 'klant']);
     } catch (\PDOException $e) {}
-    redirect('/advies.php?verzonden=3&case=' . urlencode($cn));
+    redirect(BASE_URL . '/advies.php?verzonden=3&case=' . urlencode($cn));
 }
 
 // ── Aanvullende gegevens (doorgestuurd of recycling_aanvraag) ────
 $toegestaanStatussen = ['doorgestuurd', 'recycling'];
 if (!in_array($rij['status'], $toegestaanStatussen) && $actie !== 'recycling_aanvraag') {
-    redirect('/advies.php?error=ongeldig');
+    redirect(BASE_URL . '/advies.php?error=ongeldig');
 }
 if (!$naam || !$tel || !$adr) {
-    redirect('/advies.php?error=onvolledig&case=' . urlencode($cn));
+    redirect(BASE_URL . '/advies.php?error=onvolledig&case=' . urlencode($cn));
 }
 
 // ── Fotoupload ───────────────────────────────────────────────────
@@ -84,4 +84,4 @@ try {
        ->execute([$id, $logActie, 'klant']);
 } catch (\PDOException $e) {}
 
-redirect('/advies.php?verzonden=2&case=' . urlencode($cn));
+redirect(BASE_URL . '/advies.php?verzonden=2&case=' . urlencode($cn));
