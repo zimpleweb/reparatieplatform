@@ -1,7 +1,40 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/advies_regels.php';
+
+// ── Status check (POST van status-check formulier) ───────────────
+$inzending   = null;
+$statusFout  = false;
+$statusLabels = [
+    'inzending'    => ['tekst' => 'Ontvangen — wacht op beoordeling',  'css' => 's-inzending'],
+    'doorgestuurd' => ['tekst' => 'In behandeling — aanvulling nodig', 'css' => 's-doorgestuurd'],
+    'aanvraag'     => ['tekst' => 'Aanvraag volledig ontvangen',        'css' => 's-aanvraag'],
+    'coulance'     => ['tekst' => 'Coulance traject',                   'css' => 's-coulance'],
+    'recycling'    => ['tekst' => 'Recycling traject',                  'css' => 's-recycling'],
+    'behandeld'    => ['tekst' => 'Behandeld',                          'css' => 's-behandeld'],
+    'archief'      => ['tekst' => 'Gearchiveerd',                       'css' => 's-archief'],
+];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_case'])) {
+    $cnCheck = strtoupper(trim($_POST['casenummer_check'] ?? ''));
+    $emCheck = strtolower(trim($_POST['email_status'] ?? ''));
+    if ($cnCheck && $emCheck && filter_var($emCheck, FILTER_VALIDATE_EMAIL)) {
+        $chk = db()->prepare('SELECT * FROM aanvragen WHERE casenummer = ? AND LOWER(email) = ?');
+        $chk->execute([$cnCheck, $emCheck]);
+        $inzending = $chk->fetch() ?: null;
+        if ($inzending) {
+            try {
+                $lg = db()->prepare('SELECT * FROM aanvragen_log WHERE aanvraag_id = ? ORDER BY aangemaakt ASC');
+                $lg->execute([$inzending['id']]);
+                $inzending['log'] = $lg->fetchAll();
+            } catch (\PDOException $e) { $inzending['log'] = []; }
+        } else {
+            $statusFout = true;
+        }
+    }
+}
 
 $pageTitle       = 'Gratis advies aanvragen – Televisie kapot? | Reparatieplatform.nl';
 $pageDescription = 'Vraag gratis persoonlijk advies aan over garantie, coulanceregeling, reparatie of taxatie van uw defecte televisie.';
@@ -53,6 +86,147 @@ include __DIR__ . '/includes/header.php';
   </div>
 </div>
 
+<!-- Status controleren -->
+<div class="status-check-wrap">
+  <div class="section" style="max-width:680px;margin:0 auto;padding:0 1.5rem;">
+    <div class="status-check-box">
+      <h3>&#128269; Aanvraagstatus controleren</h3>
+      <p class="lead">Heeft u al een casenummer? Voer het in samen met uw e-mailadres om de status te bekijken.</p>
+      <form method="POST" action="#status">
+        <input type="hidden" name="check_case" value="1" />
+        <div class="status-check-row">
+          <div class="field">
+            <label style="font-size:.75rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.3rem;">Casenummer</label>
+            <input type="text" name="casenummer_check" placeholder="2026-04-1000"
+              value="<?= h($_POST['casenummer_check'] ?? '') ?>"
+              style="width:100%;padding:.65rem .9rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:.9rem;font-family:inherit;" />
+          </div>
+          <div class="field">
+            <label style="font-size:.75rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.3rem;">E-mailadres</label>
+            <input type="email" name="email_status" placeholder="uw@email.nl"
+              value="<?= h($_POST['email_status'] ?? '') ?>"
+              style="width:100%;padding:.65rem .9rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:.9rem;font-family:inherit;" />
+          </div>
+          <button type="submit" class="btn-check">Bekijk status</button>
+        </div>
+      </form>
+
+      <?php if ($statusFout): ?>
+        <div class="alert alert-error" style="margin-top:1rem;">Geen aanvraag gevonden met dit casenummer en e-mailadres.</div>
+      <?php elseif ($inzending): ?>
+        <div class="status-panel" id="status" style="margin-top:1.25rem;">
+          <div class="status-panel-header">
+            <span class="case-nr">Aanvraag <?= h($inzending['casenummer']) ?></span>
+            <?php $sl = $statusLabels[$inzending['status']] ?? ['tekst'=>$inzending['status'],'css'=>'']; ?>
+            <span class="status-badge <?= $sl['css'] ?>"><?= h($sl['tekst']) ?></span>
+          </div>
+          <div class="status-panel-body">
+            <p style="font-size:.875rem;color:#374151;margin:0 0 .75rem;">
+              <strong><?= h($inzending['merk'].' '.$inzending['modelnummer']) ?></strong>
+              &nbsp;&bull;&nbsp; <?= h($inzending['klacht_type'] ?? '') ?>
+              &nbsp;&bull;&nbsp; Aanschafjaar: <?= h($inzending['aanschafjaar'] ?? '—') ?>
+            </p>
+
+            <?php if ($inzending['status'] === 'inzending'): ?>
+              <p style="font-size:.875rem;color:#64748b;">Uw aanvraag is ontvangen en wordt zo spoedig mogelijk beoordeeld door ons team.</p>
+
+            <?php elseif ($inzending['status'] === 'doorgestuurd'): ?>
+              <p style="font-size:.875rem;color:#92400e;font-weight:600;margin-bottom:.75rem;">
+                Uw aanvraag is beoordeeld! Vul de aanvullende gegevens in om uw
+                <strong><?= h($inzending['advies_type'] ?? 'aanvraag') ?></strong> te bevestigen.
+              </p>
+              <form class="aanvulling-form" method="POST" action="<?= BASE_URL ?>/api/aanvulling.php" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token"   value="<?= csrf() ?>" />
+                <input type="hidden" name="aanvraag_id"  value="<?= (int)$inzending['id'] ?>" />
+                <input type="hidden" name="casenummer"   value="<?= h($inzending['casenummer']) ?>" />
+                <div class="field"><label>Naam *</label>
+                  <input type="text" name="naam" required value="<?= h($inzending['naam'] ?? '') ?>" /></div>
+                <div class="field"><label>Telefoonnummer *</label>
+                  <input type="tel" name="telefoon" required value="<?= h($inzending['telefoon'] ?? '') ?>" /></div>
+                <div class="field"><label>Adres (straat + huisnummer, postcode, stad) *</label>
+                  <input type="text" name="adres" required value="<?= h($inzending['adres'] ?? '') ?>" /></div>
+                <div class="field"><label>Foto van het defect</label>
+                  <input type="file" name="foto_defect" accept="image/*" /></div>
+                <div class="field"><label>Foto van het label / serienummer (achterkant TV)</label>
+                  <input type="file" name="foto_label" accept="image/*" /></div>
+                <?php if (($inzending['advies_type'] ?? '') === 'taxatie'): ?>
+                <div class="field"><label>Foto van de aankoopbon</label>
+                  <input type="file" name="foto_bon" accept="image/*" /></div>
+                <?php endif; ?>
+                <button type="submit" class="btn-submit-aanvulling">Aanvraag indienen &rarr;</button>
+              </form>
+
+            <?php elseif ($inzending['status'] === 'aanvraag'): ?>
+              <p style="font-size:.875rem;color:#15803d;font-weight:600;">Uw aanvraag is volledig ontvangen en ligt bij ons team ter beoordeling.</p>
+
+            <?php elseif ($inzending['status'] === 'coulance'): ?>
+              <p style="font-size:.875rem;color:#78350f;margin-bottom:.75rem;">
+                Wij adviseren u om contact op te nemen met de <strong>verkoper of fabrikant</strong> voor een coulanceverzoek.
+                Leg uw situatie rustig uit en verwijs naar de wettelijke regels rondom consumentenkoop.
+              </p>
+              <p style="font-size:.8rem;color:#64748b;margin-bottom:1rem;">
+                Lukt het coulanceverzoek niet? Dan kunt u via onderstaande knop een reparatieaanvraag starten.
+              </p>
+              <form method="POST" action="<?= BASE_URL ?>/api/aanvulling.php">
+                <input type="hidden" name="csrf_token"  value="<?= csrf() ?>" />
+                <input type="hidden" name="aanvraag_id" value="<?= (int)$inzending['id'] ?>" />
+                <input type="hidden" name="casenummer"  value="<?= h($inzending['casenummer']) ?>" />
+                <input type="hidden" name="actie"       value="coulance_naar_reparatie" />
+                <button type="submit" style="background:#d97706;color:#fff;border:none;border-radius:8px;padding:.7rem 1.4rem;font-size:.875rem;font-weight:700;cursor:pointer;">
+                  Coulance lukt niet &mdash; reparatieaanvraag starten
+                </button>
+              </form>
+
+            <?php elseif ($inzending['status'] === 'recycling'): ?>
+              <p style="font-size:.875rem;color:#374151;margin-bottom:.75rem;">
+                Uw televisie komt in aanmerking voor <strong>verantwoorde recycling</strong>.
+                Wilt u een recyclingverzoek indienen?
+              </p>
+              <form class="aanvulling-form" method="POST" action="<?= BASE_URL ?>/api/aanvulling.php" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token"  value="<?= csrf() ?>" />
+                <input type="hidden" name="aanvraag_id" value="<?= (int)$inzending['id'] ?>" />
+                <input type="hidden" name="casenummer"  value="<?= h($inzending['casenummer']) ?>" />
+                <input type="hidden" name="actie"       value="recycling_aanvraag" />
+                <div class="field"><label>Naam *</label>
+                  <input type="text" name="naam" required value="<?= h($inzending['naam'] ?? '') ?>" /></div>
+                <div class="field"><label>Telefoonnummer *</label>
+                  <input type="tel" name="telefoon" required /></div>
+                <div class="field"><label>Adres (ophaaladres) *</label>
+                  <input type="text" name="adres" required /></div>
+                <button type="submit" class="btn-submit-aanvulling" style="background:#7c3aed;">Recyclingverzoek indienen &rarr;</button>
+              </form>
+
+            <?php elseif ($inzending['status'] === 'behandeld'): ?>
+              <p style="font-size:.875rem;color:#166534;font-weight:600;">Uw aanvraag is behandeld. Heeft u vragen? Neem contact met ons op met vermelding van uw casenummer.</p>
+
+            <?php else: ?>
+              <p style="font-size:.875rem;color:#64748b;">Status: <?= h($inzending['status']) ?></p>
+            <?php endif; ?>
+
+            <?php if (!empty($inzending['log'])): ?>
+              <div style="margin-top:1.25rem;border-top:1px solid #f1f5f9;padding-top:1rem;">
+                <p style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin-bottom:.6rem;">Tijdlijn</p>
+                <?php foreach (array_reverse($inzending['log']) as $le): ?>
+                  <div style="display:flex;gap:.75rem;margin-bottom:.5rem;align-items:flex-start;">
+                    <span style="font-size:.75rem;color:#94a3b8;white-space:nowrap;margin-top:.1rem;">
+                      <?= date('d-m H:i', strtotime($le['aangemaakt'])) ?>
+                    </span>
+                    <span style="font-size:.83rem;color:#374151;"><?= h($le['actie']) ?>
+                      <?php if ($le['opmerking']): ?>
+                        <br><span style="color:#64748b;font-size:.78rem;"><?= h($le['opmerking']) ?></span>
+                      <?php endif; ?>
+                    </span>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+    </div>
+  </div>
+</div>
+
 <!-- Formulier -->
 <div class="form-wrap" id="advies">
   <div class="form-inner">
@@ -79,21 +253,58 @@ include __DIR__ . '/includes/header.php';
     <div class="form-right">
       <div class="form-card">
 
-        <?php if (isset($_GET['verzonden'])): ?>
-          <div class="alert alert-success">&#10003; Uw aanvraag is ontvangen! U ontvangt zo snel mogelijk een advies per e-mail.</div>
+        <?php
+        $v = (int)($_GET['verzonden'] ?? 0);
+        if ($v === 1): ?>
+          <div class="alert alert-success">
+            <strong>&#10003; Uw aanvraag is ontvangen!</strong>
+            <?php if (!empty($_GET['case'])): ?>
+              <div class="case-nr-display" style="margin-top:.75rem;">
+                Uw casenummer: <span class="nr"><?= h($_GET['case']) ?></span><br>
+                <small style="color:#15803d;">Bewaar dit nummer. Gebruik het samen met uw e-mailadres om de status te bekijken.</small>
+              </div>
+            <?php endif; ?>
+          </div>
+        <?php elseif ($v === 2): ?>
+          <div class="alert alert-success">
+            <strong>&#10003; Uw aanvraag is volledig ingediend!</strong>
+            <?php if (!empty($_GET['case'])): ?>
+              <div class="case-nr-display" style="margin-top:.75rem;">
+                Casenummer: <span class="nr"><?= h($_GET['case']) ?></span><br>
+                <small style="color:#15803d;">Ons team neemt zo spoedig mogelijk contact met u op.</small>
+              </div>
+            <?php endif; ?>
+          </div>
+        <?php elseif ($v === 3): ?>
+          <div class="alert alert-success">
+            <strong>&#10003; Reparatieaanvraag gestart.</strong>
+            Vul via de statuspagina uw gegevens in om de aanvraag te voltooien.
+          </div>
         <?php elseif (isset($_GET['error'])): ?>
           <div class="alert alert-error">Er is iets misgegaan. Controleer uw gegevens en probeer het opnieuw.</div>
         <?php endif; ?>
 
         <!-- Voortgangsbalk -->
         <div class="stap-progress">
-          <div class="stap-dot actief huidig" data-stap="1"></div>
+          <div class="stap-step actief huidig" data-stap="1">
+            <div class="stap-dot">1</div>
+            <div class="stap-step-label">Situatie</div>
+          </div>
+          <div class="stap-lijn actief"></div>
+          <div class="stap-step" data-stap="2">
+            <div class="stap-dot">2</div>
+            <div class="stap-step-label">TV&nbsp;gegevens</div>
+          </div>
           <div class="stap-lijn"></div>
-          <div class="stap-dot" data-stap="2"></div>
+          <div class="stap-step" data-stap="3">
+            <div class="stap-dot">3</div>
+            <div class="stap-step-label">Defect</div>
+          </div>
           <div class="stap-lijn"></div>
-          <div class="stap-dot" data-stap="3"></div>
-          <div class="stap-lijn"></div>
-          <div class="stap-dot" data-stap="4"></div>
+          <div class="stap-step" data-stap="4">
+            <div class="stap-dot">4</div>
+            <div class="stap-step-label">Contact</div>
+          </div>
         </div>
 
         <form action="<?= BASE_URL ?>/api/send-advies.php" method="POST" id="advies-form">
@@ -105,7 +316,6 @@ include __DIR__ . '/includes/header.php';
           <!-- STAP 1 -->
           <div class="form-stap" id="stap-1">
             <div class="stap-header">
-              <span class="stap-nr">Stap 1 van 4</span>
               <h3>Wat is er aan de hand?</h3>
               <p>Dit bepaalt direct welke route het meest geschikt is.</p>
             </div>
@@ -135,7 +345,6 @@ include __DIR__ . '/includes/header.php';
           <!-- STAP 2 -->
           <div class="form-stap" id="stap-2" style="display:none;">
             <div class="stap-header">
-              <span class="stap-nr">Stap 2 van 4</span>
               <h3>Over uw televisie</h3>
               <p>Merk, model en aankoopinformatie bepalen de route.</p>
             </div>
@@ -192,16 +401,6 @@ include __DIR__ . '/includes/header.php';
               </select>
             </div>
 
-            <div class="field field-failliet" id="failliet-wrap" style="display:none;">
-              <label class="failliet-vink-label" for="verkoper_failliet">
-                <span class="failliet-vink-box">
-                  <input type="checkbox" name="verkoper_failliet" id="verkoper_failliet" onchange="berekenRoute()">
-                  <span class="failliet-vink-inner"></span>
-                </span>
-                <span>De winkel waar ik het heb gekocht is failliet gegaan</span>
-              </label>
-            </div>
-
             <div id="garantie-feedback" class="garantie-feedback" style="display:none;"></div>
 
             <div class="stap-nav">
@@ -213,7 +412,6 @@ include __DIR__ . '/includes/header.php';
           <!-- STAP 3 -->
           <div class="form-stap" id="stap-3" style="display:none;">
             <div class="stap-header">
-              <span class="stap-nr">Stap 3 van 4</span>
               <h3>Beschrijf het defect</h3>
               <p>Hoe specifieker, hoe beter het advies.</p>
             </div>
@@ -257,7 +455,6 @@ include __DIR__ . '/includes/header.php';
           <!-- STAP 4 -->
           <div class="form-stap" id="stap-4" style="display:none;">
             <div class="stap-header">
-              <span class="stap-nr">Stap 4 van 4</span>
               <h3>Uw contactgegevens</h3>
               <p>Hier sturen wij uw persoonlijk advies naartoe.</p>
             </div>
@@ -358,13 +555,13 @@ function _toonStap(nr) {
   document.querySelectorAll('.form-stap').forEach(s => s.style.display = 'none');
   const doel = document.getElementById('stap-' + nr);
   if (doel) { doel.style.display = 'block'; doel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-  document.querySelectorAll('.stap-dot').forEach((d, i) => {
+  document.querySelectorAll('.stap-step').forEach((d, i) => {
     d.classList.toggle('actief', i < nr);
     d.classList.toggle('huidig', i === nr - 1);
   });
-  // Failliet-checkbox alleen zichtbaar op de stap waar de winkel-vraag staat
-  const fw = document.getElementById('failliet-wrap');
-  if (fw) fw.style.display = (nr === 2) ? 'block' : 'none';
+  document.querySelectorAll('.stap-lijn').forEach((l, i) => {
+    l.classList.toggle('actief', i < nr - 1);
+  });
   berekenRoute();
   if (nr === 4) vulSamenvatting();
 }
@@ -385,7 +582,6 @@ function berekenRoute() {
   const aanschJaar = parseInt(document.getElementById('aanschafjaar')?.value) || null;
   const waarde     = document.getElementById('aanschafwaarde')?.value || '';
   const locatie    = document.getElementById('aankoop_locatie')?.value || 'nl';
-  const failliet   = document.getElementById('verkoper_failliet')?.checked || false;
   const klacht     = document.getElementById('klacht_type')?.value || '';
 
   const leeftijd = aanschJaar ? (HUIDIG_JAAR - aanschJaar) : null;
@@ -402,7 +598,6 @@ function berekenRoute() {
   const cMerken           = REGELS.coulance_merken                ?? [];
   const cMatrix           = REGELS.coulance_kans_matrix           ?? [];
   const cAftrekBuitenland = REGELS.coulance_aftrek_buitenland     ?? 30;
-  const cAftrekFailliet   = REGELS.coulance_aftrek_failliet       ?? 40;
 
   const repMin            = REGELS.reparatie_min_jaar             ?? 2;
   const repMax            = REGELS.reparatie_max_jaar             ?? 10;
@@ -453,19 +648,17 @@ function berekenRoute() {
     const merkCoulance = merkToegestaan(cMerken, merk);
 
     // ── 2a. Garantie ─────────────────────────────────────────────
-    if (leeftijd <= gTermijn && !isGUitsluit && (!gAlleenNl || isNl) && !failliet && merkGarantie) {
+    if (leeftijd <= gTermijn && !isGUitsluit && (!gAlleenNl || isNl) && merkGarantie) {
       route = 'garantie';
       badge = '&#9989; Garantie';
       toel  = 'Op basis van het aanschafjaar valt uw televisie waarschijnlijk nog onder de wettelijke garantietermijn van ' + gTermijn + ' jaar.';
     }
-    // ── 2b. Garantietermijn maar bijzondere situatie ─────────────
-    else if (leeftijd <= gTermijn && (locatie === 'buitenland' || failliet)) {
+    // ── 2b. Buitenland aankoop, geen garantie ────────────────────
+    else if (leeftijd <= gTermijn && locatie === 'buitenland') {
       if (kanRep) {
         route = 'reparatie';
-        badge = '&#128295; Reparatie (bijz. situatie)';
-        toel  = failliet
-          ? 'Uw verkoper is failliet. Directe garantie is niet meer mogelijk. Reparatie aan huis is de meest praktische optie.'
-          : 'Televisies buiten Nederland gekocht vallen buiten Nederlandse garantieregels. Reparatie is de meest praktische optie.';
+        badge = '&#128295; Reparatie aan huis';
+        toel  = 'Televisies buiten Nederland gekocht vallen buiten Nederlandse garantieregels. Reparatie is de meest praktische optie.';
       } else {
         route = 'recycling'; badge = '&#9851; Recycling';
         toel  = 'Dit model is niet repareerbaar. Wij begeleiden u richting verantwoorde recycling.';
@@ -495,7 +688,6 @@ function berekenRoute() {
       const jarenBoven  = leeftijd - cMin;
       kans = Math.max(5, Math.min(95, Math.round(basisKans - (aftrekPerJr * jarenBoven))));
       if (locatie === 'buitenland') kans = Math.max(5, kans - cAftrekBuitenland);
-      if (failliet)                 kans = Math.max(5, kans - cAftrekFailliet);
       route = 'coulance';
       badge = '&#129309; Coulanceregeling (' + kans + '% kans)';
       toel  = 'Uw televisie is ' + leeftijd + ' jaar oud. Garantie is verlopen, maar veel fabrikanten bieden coulance aan. Wij schatten de kans op <strong>' + kans + '%</strong>.';

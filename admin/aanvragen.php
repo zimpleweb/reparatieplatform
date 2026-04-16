@@ -4,32 +4,107 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 requireAdmin();
 
-$msg = '';
+$msg  = '';
+$fout = '';
 
-if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['id'])) {
-    db()->prepare('UPDATE aanvragen SET status=?, advies_type=? WHERE id=?')
-       ->execute([$_POST['status'], $_POST['advies_type'] ?: null, $_POST['id']]);
-    $msg = 'Aanvraag bijgewerkt.';
-}
+// ── Filterpapameters ─────────────────────────────────────────────
+$filterStatus = trim($_GET['status'] ?? '');
+$filterRoute  = trim($_GET['route']  ?? '');
+$filterZoek   = trim($_GET['zoek']   ?? '');
 
+$statusLabels = [
+    'inzending'    => ['tekst' => 'Ontvangen',           'badge' => 'badge-blue'],
+    'doorgestuurd' => ['tekst' => 'Aanvulling nodig',    'badge' => 'badge-orange'],
+    'aanvraag'     => ['tekst' => 'Aanvraag ontvangen',  'badge' => 'badge-green'],
+    'coulance'     => ['tekst' => 'Coulance',            'badge' => 'badge-yellow'],
+    'recycling'    => ['tekst' => 'Recycling',           'badge' => 'badge-purple'],
+    'behandeld'    => ['tekst' => 'Behandeld',           'badge' => 'badge-green'],
+    'archief'      => ['tekst' => 'Archief',             'badge' => 'badge-gray'],
+];
+
+// ── Detailweergave ────────────────────────────────────────────────
 $detail = null;
 if (isset($_GET['id']) && is_numeric($_GET['id'])) {
-    $detail = db()->prepare('SELECT * FROM aanvragen WHERE id=?');
-    $detail->execute([$_GET['id']]);
-    $detail = $detail->fetch();
+    $ds = db()->prepare('SELECT * FROM aanvragen WHERE id=?');
+    $ds->execute([$_GET['id']]);
+    $detail = $ds->fetch() ?: null;
+    if ($detail) {
+        try {
+            $ls = db()->prepare('SELECT * FROM aanvragen_log WHERE aanvraag_id=? ORDER BY aangemaakt ASC');
+            $ls->execute([$detail['id']]);
+            $detail['log'] = $ls->fetchAll();
+        } catch (\PDOException $e) { $detail['log'] = []; }
+    }
 }
 
-$aanvragen = db()->query('SELECT * FROM aanvragen ORDER BY created_at DESC')->fetchAll();
+// ── Lijstquery met filters ────────────────────────────────────────
+$where = ['1=1']; $params = [];
+if ($filterStatus) { $where[] = 'status = ?'; $params[] = $filterStatus; }
+if ($filterRoute)  { $where[] = '(geadviseerde_route = ? OR advies_type = ?)'; $params[] = $filterRoute; $params[] = $filterRoute; }
+if ($filterZoek)   {
+    $where[] = '(merk LIKE ? OR modelnummer LIKE ? OR email LIKE ? OR casenummer LIKE ?)';
+    $like = '%' . $filterZoek . '%';
+    $params = array_merge($params, [$like, $like, $like, $like]);
+}
+$sql = 'SELECT * FROM aanvragen WHERE ' . implode(' AND ', $where) . ' ORDER BY id DESC';
+$stmt = db()->prepare($sql);
+$stmt->execute($params);
+$aanvragen = $stmt->fetchAll();
+
+$datumKolom = 'created_at';
+try {
+    $cols = db()->query('SHOW COLUMNS FROM aanvragen LIKE \'aangemaakt_op\'')->fetchColumn();
+    if ($cols) $datumKolom = 'aangemaakt_op';
+} catch (\Exception $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="UTF-8"><title>Aanvragen &ndash; Admin</title>
+  <meta charset="UTF-8"><title>Inzendingen &ndash; Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Epilogue:wght@800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/base.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/components.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css">
   <meta name="robots" content="noindex,nofollow">
+  <style>
+    .filter-bar { display:flex; gap:.75rem; align-items:flex-end; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .filter-bar .field { margin:0; }
+    .filter-bar select, .filter-bar input[type=text] {
+      padding:.55rem .9rem; border:1.5px solid var(--border); border-radius:8px;
+      font-size:.85rem; font-family:inherit; background:#fff; }
+    .filter-bar button { padding:.55rem 1.1rem; background:var(--ink); color:#fff; border:none;
+      border-radius:8px; font-size:.85rem; font-weight:600; cursor:pointer; }
+    .badge-orange { background:#fef3c7; color:#92400e; }
+    .badge-yellow { background:#fef9c3; color:#78350f; }
+    .badge-purple { background:#ede9fe; color:#5b21b6; }
+    .detail-section { margin-bottom:1.25rem; padding-bottom:1.25rem; border-bottom:1px solid #f1f5f9; }
+    .detail-section:last-child { border-bottom:none; }
+    .detail-section h4 { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
+      color:#94a3b8; margin-bottom:.7rem; }
+    .specs-grid { display:grid; grid-template-columns:140px 1fr; gap:.3rem .75rem; font-size:.875rem; }
+    .specs-grid .lbl { color:#64748b; font-size:.82rem; }
+    .specs-grid .val { color:#0f172a; font-weight:500; }
+    .actie-knoppen { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.5rem; }
+    .btn-actie {
+      padding:.6rem 1.1rem; border:none; border-radius:8px; font-size:.85rem;
+      font-weight:700; cursor:pointer; transition:opacity .15s; }
+    .btn-actie:hover { opacity:.85; }
+    .btn-reparatie { background:#16a34a; color:#fff; }
+    .btn-taxatie   { background:#2563eb; color:#fff; }
+    .btn-coulance  { background:#d97706; color:#fff; }
+    .btn-recycling { background:#5b3a29; color:#fff; }
+    .btn-archief   { background:#94a3b8; color:#fff; }
+    .btn-behandeld { background:#475569; color:#fff; }
+    .log-item { display:flex; gap:.75rem; padding:.4rem 0; border-bottom:1px solid #f8fafc; align-items:flex-start; }
+    .log-item:last-child { border-bottom:none; }
+    .log-time { font-size:.72rem; color:#94a3b8; white-space:nowrap; min-width:80px; margin-top:.15rem; }
+    .log-tekst { font-size:.83rem; color:#374151; line-height:1.5; }
+    .log-tekst small { display:block; color:#64748b; font-size:.78rem; }
+    .opmerking-field { width:100%; padding:.5rem .75rem; border:1.5px solid #d1d5db; border-radius:7px;
+      font-size:.85rem; font-family:inherit; margin-top:.5rem; resize:vertical; min-height:50px; }
+    .foto-img { max-width:120px; max-height:80px; border-radius:6px; border:1px solid #e2e8f0; }
+    .casenr-col { font-size:.78rem; font-weight:700; color:#1d4ed8; letter-spacing:.03em; }
+  </style>
 </head>
 <body>
 <div class="admin-wrap">
@@ -40,75 +115,189 @@ $aanvragen = db()->query('SELECT * FROM aanvragen ORDER BY created_at DESC')->fe
 <div class="admin-layout">
   <div class="admin-sidebar">
     <a href="<?= BASE_URL ?>/admin/dashboard.php"><span class="icon">&#128202;</span> Dashboard</a>
-    <a href="<?= BASE_URL ?>/admin/aanvragen.php" class="active"><span class="icon">&#128236;</span> Aanvragen</a>
+    <a href="<?= BASE_URL ?>/admin/aanvragen.php" class="active"><span class="icon">&#128236;</span> Inzendingen</a>
     <a href="<?= BASE_URL ?>/admin/modellen.php"><span class="icon">&#128250;</span> TV Modellen</a>
     <a href="<?= BASE_URL ?>/admin/klachten.php"><span class="icon">&#9888;</span> Klachten</a>
+    <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;</span> Advies instellingen</a>
     <a href="<?= BASE_URL ?>/" target="_blank"><span class="icon">&#127760;</span> Website bekijken</a>
   </div>
   <div class="admin-content">
-    <h1>Aanvragen</h1>
-    <?php if ($msg): ?><div class="alert alert-success"><?= h($msg) ?></div><?php endif; ?>
+    <h1>Inzendingen</h1>
+
+    <?php if ($msg):  ?><div class="alert alert-success"><?= h($msg) ?></div><?php endif; ?>
+    <?php if ($fout): ?><div class="alert alert-error"><?= h($fout) ?></div><?php endif; ?>
+    <?php if (isset($_GET['saved'])): ?><div class="alert alert-success">Wijziging opgeslagen.</div><?php endif; ?>
 
     <?php if ($detail): ?>
+    <!-- ── Detail ───────────────────────────────────────── -->
     <div class="admin-card" style="border:2px solid var(--accent);">
-      <h2>Aanvraag #<?= $detail['id'] ?> &mdash; <?= h($detail['merk'].' '.$detail['modelnummer']) ?></h2>
-      <table class="specs-table" style="margin-bottom:1.5rem;">
-        <tr><td>Datum</td><td><?= date('d-m-Y H:i', strtotime($detail['created_at'])) ?></td></tr>
-        <tr><td>E-mail</td><td><a href="mailto:<?= h($detail['email']) ?>"><?= h($detail['email']) ?></a></td></tr>
-        <tr><td>TV</td><td><?= h($detail['merk'].' '.$detail['modelnummer']) ?></td></tr>
-        <tr><td>Aanschafjaar</td><td><?= h($detail['aanschafjaar']) ?></td></tr>
-        <tr><td>Type klacht</td><td><?= h($detail['klacht_type']) ?></td></tr>
-        <tr><td>Omschrijving</td><td><?= h($detail['omschrijving']) ?></td></tr>
-        <tr><td>IP</td><td><?= h($detail['ip']) ?></td></tr>
-      </table>
-      <form method="POST" style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap;">
-        <input type="hidden" name="id" value="<?= $detail['id'] ?>">
-        <div class="field" style="margin:0;">
-          <label>Status</label>
-          <select name="status">
-            <option value="nieuw"     <?= $detail['status']==='nieuw'     ?'selected':'' ?>>Nieuw</option>
-            <option value="behandeld" <?= $detail['status']==='behandeld' ?'selected':'' ?>>Behandeld</option>
-            <option value="archief"   <?= $detail['status']==='archief'   ?'selected':'' ?>>Archief</option>
-          </select>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem;">
+        <div>
+          <h2 style="margin:0;"><?= h($detail['merk'].' '.$detail['modelnummer']) ?></h2>
+          <?php if (!empty($detail['casenummer'])): ?>
+            <span style="font-size:.8rem;font-weight:700;color:#1d4ed8;">&#128230; <?= h($detail['casenummer']) ?></span>
+          <?php endif; ?>
         </div>
-        <div class="field" style="margin:0;">
-          <label>Adviestype</label>
-          <select name="advies_type">
-            <option value="">Nog niet bepaald</option>
-            <option value="garantie"  <?= $detail['advies_type']==='garantie'  ?'selected':'' ?>>Garantie</option>
-            <option value="coulance"  <?= $detail['advies_type']==='coulance'  ?'selected':'' ?>>Coulance</option>
-            <option value="reparatie" <?= $detail['advies_type']==='reparatie' ?'selected':'' ?>>Reparatie</option>
-            <option value="taxatie"   <?= $detail['advies_type']==='taxatie'   ?'selected':'' ?>>Taxatie</option>
-            <option value="geen"      <?= $detail['advies_type']==='geen'      ?'selected':'' ?>>Geen advies mogelijk</option>
-          </select>
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <?php $sl = $statusLabels[$detail['status']] ?? ['tekst'=>$detail['status'],'badge'=>'badge-gray']; ?>
+          <span class="badge <?= $sl['badge'] ?>"><?= h($sl['tekst']) ?></span>
+          <a href="<?= BASE_URL ?>/admin/aanvragen.php?<?= http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek])) ?>" class="btn btn-secondary btn-sm">&#8592; Terug</a>
         </div>
-        <button type="submit" class="btn btn-primary-sm">Opslaan</button>
-        <a href="<?= BASE_URL ?>/admin/aanvragen.php" class="btn btn-secondary">Sluiten</a>
-      </form>
+      </div>
+
+      <div class="detail-section">
+        <h4>Inzendinggegevens</h4>
+        <div class="specs-grid">
+          <span class="lbl">Casenummer</span>  <span class="val"><?= h($detail['casenummer'] ?? '—') ?></span>
+          <span class="lbl">Datum</span>        <span class="val"><?= h($detail[$datumKolom] ?? '') ?></span>
+          <span class="lbl">E-mail</span>        <span class="val"><a href="mailto:<?= h($detail['email']) ?>"><?= h($detail['email']) ?></a></span>
+          <span class="lbl">Merk / model</span> <span class="val"><?= h($detail['merk'].' '.$detail['modelnummer']) ?></span>
+          <span class="lbl">Aanschafjaar</span> <span class="val"><?= h($detail['aanschafjaar'] ?? '—') ?></span>
+          <span class="lbl">Aanschafwaarde</span><span class="val"><?= h($detail['aanschafwaarde'] ?? '—') ?></span>
+          <span class="lbl">Aankoop</span>      <span class="val"><?= h($detail['aankoop_locatie'] ?? 'nl') ?></span>
+          <span class="lbl">Situatie</span>     <span class="val"><?= h($detail['situatie'] ?? '—') ?></span>
+          <span class="lbl">Klachttype</span>   <span class="val"><?= h($detail['klacht_type'] ?? '—') ?></span>
+          <span class="lbl">Geadv. route</span> <span class="val"><?= h($detail['geadviseerde_route'] ?? '—') ?>
+            <?php if ($detail['coulance_kans'] ?? 0): ?> (<?= (int)$detail['coulance_kans'] ?>%<?php endif; ?>)</span>
+          <?php if (!empty($detail['omschrijving'])): ?>
+          <span class="lbl">Omschrijving</span> <span class="val" style="font-style:italic;"><?= h($detail['omschrijving']) ?></span>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <?php if (!empty($detail['naam']) || !empty($detail['telefoon']) || !empty($detail['adres'])): ?>
+      <div class="detail-section">
+        <h4>Klantgegevens (ingevuld na doorzetten)</h4>
+        <div class="specs-grid">
+          <?php if ($detail['naam']): ?>    <span class="lbl">Naam</span>     <span class="val"><?= h($detail['naam']) ?></span><?php endif; ?>
+          <?php if ($detail['telefoon']): ?><span class="lbl">Telefoon</span> <span class="val"><?= h($detail['telefoon']) ?></span><?php endif; ?>
+          <?php if ($detail['adres']): ?>   <span class="lbl">Adres</span>    <span class="val"><?= h($detail['adres']) ?></span><?php endif; ?>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <?php if (!empty($detail['foto_defect']) || !empty($detail['foto_label']) || !empty($detail['foto_bon'])): ?>
+      <div class="detail-section">
+        <h4>Foto's</h4>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+          <?php foreach (['foto_defect'=>'Defect','foto_label'=>'Label/S/N','foto_bon'=>'Aankoopbon'] as $k=>$lbl): ?>
+            <?php if (!empty($detail[$k])): ?>
+            <div style="text-align:center;">
+              <a href="<?= BASE_URL ?>/<?= h($detail[$k]) ?>" target="_blank">
+                <img src="<?= BASE_URL ?>/<?= h($detail[$k]) ?>" alt="<?= $lbl ?>" class="foto-img" />
+              </a>
+              <div style="font-size:.72rem;color:#64748b;margin-top:.3rem;"><?= $lbl ?></div>
+            </div>
+            <?php endif; ?>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <!-- Actieknoppen -->
+      <div class="detail-section">
+        <h4>Actie uitvoeren</h4>
+        <p style="font-size:.82rem;color:#64748b;margin-bottom:.75rem;">
+          Huidige status: <strong><?= h($sl['tekst']) ?></strong> &bull;
+          Adviestype: <strong><?= h($detail['advies_type'] ?? 'niet bepaald') ?></strong>
+        </p>
+        <form method="POST" action="<?= BASE_URL ?>/api/admin-actie.php">
+          <input type="hidden" name="id" value="<?= (int)$detail['id'] ?>" />
+          <textarea name="opmerking" class="opmerking-field" placeholder="Optionele opmerking bij actie..."></textarea>
+          <div class="actie-knoppen" style="margin-top:.75rem;">
+            <button type="submit" name="actie" value="doorzetten_reparatie" class="btn-actie btn-reparatie">&#128295; Doorzetten: Reparatie</button>
+            <button type="submit" name="actie" value="doorzetten_taxatie"   class="btn-actie btn-taxatie">&#128203; Doorzetten: Taxatie</button>
+            <button type="submit" name="actie" value="coulance"             class="btn-actie btn-coulance">&#129309; Coulance traject</button>
+            <button type="submit" name="actie" value="recycling"            class="btn-actie btn-recycling">&#9851; Recycling traject</button>
+            <button type="submit" name="actie" value="behandeld"            class="btn-actie btn-behandeld">&#10003; Behandeld</button>
+            <button type="submit" name="actie" value="archiveren"           class="btn-actie btn-archief">Archiveren</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Logboek -->
+      <?php if (!empty($detail['log'])): ?>
+      <div class="detail-section">
+        <h4>Logboek (<?= count($detail['log']) ?> entries)</h4>
+        <?php foreach (array_reverse($detail['log']) as $le): ?>
+          <div class="log-item">
+            <span class="log-time"><?= date('d-m H:i', strtotime($le['aangemaakt'])) ?></span>
+            <span class="log-tekst"><?= h($le['actie']) ?>
+              <?php if ($le['opmerking']): ?><small><?= h($le['opmerking']) ?></small><?php endif; ?>
+              <small style="color:#cbd5e1;"><?= h($le['gedaan_door']) ?></small>
+            </span>
+          </div>
+        <?php endforeach; ?>
+      </div>
+      <?php else: ?>
+        <p style="font-size:.82rem;color:#94a3b8;">Nog geen log-entries.</p>
+      <?php endif; ?>
     </div>
     <?php endif; ?>
 
+    <!-- ── Filterbar ─────────────────────────────────────── -->
     <div class="admin-card">
-      <h2>Alle aanvragen (<?= count($aanvragen) ?>)</h2>
+      <form method="GET" class="filter-bar">
+        <div class="field">
+          <select name="status">
+            <option value="">Alle statussen</option>
+            <?php foreach ($statusLabels as $k => $v): ?>
+              <option value="<?= $k ?>" <?= $filterStatus===$k?'selected':'' ?>><?= h($v['tekst']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="field">
+          <select name="route">
+            <option value="">Alle routes</option>
+            <?php foreach (['garantie','coulance','reparatie','taxatie','recycling'] as $r): ?>
+              <option value="<?= $r ?>" <?= $filterRoute===$r?'selected':'' ?>><?= ucfirst($r) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="field">
+          <input type="text" name="zoek" value="<?= h($filterZoek) ?>" placeholder="Zoek op merk, email, casenummer…" style="min-width:220px;" />
+        </div>
+        <button type="submit">Filteren</button>
+        <?php if ($filterStatus || $filterRoute || $filterZoek): ?>
+          <a href="<?= BASE_URL ?>/admin/aanvragen.php" class="btn btn-secondary btn-sm" style="line-height:2.2;">Wis filters</a>
+        <?php endif; ?>
+      </form>
+
+      <h2>Inzendingen (<?= count($aanvragen) ?>)</h2>
       <?php if (empty($aanvragen)): ?>
-        <p style="color:var(--muted);font-size:.875rem;">Nog geen aanvragen ontvangen.</p>
+        <p style="color:var(--muted);font-size:.875rem;">Geen inzendingen gevonden.</p>
       <?php else: ?>
       <table class="admin-table">
-        <thead><tr><th>Datum</th><th>TV</th><th>E-mail</th><th>Klacht</th><th>Status</th><th>Adviestype</th><th></th></tr></thead>
+        <thead>
+          <tr>
+            <th>Casenummer</th>
+            <th>Datum</th>
+            <th>TV</th>
+            <th>E-mail</th>
+            <th>Route</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
         <tbody>
         <?php foreach ($aanvragen as $r): ?>
         <tr>
-          <td style="white-space:nowrap;font-size:.8rem;"><?= date('d-m-Y H:i', strtotime($r['created_at'])) ?></td>
-          <td><strong><?= h($r['merk'].' '.$r['modelnummer']) ?></strong></td>
-          <td style="font-size:.82rem;"><?= h($r['email']) ?></td>
-          <td style="font-size:.82rem;"><?= h($r['klacht_type']) ?></td>
+          <td class="casenr-col"><?= h($r['casenummer'] ?? '#'.$r['id']) ?></td>
+          <td style="white-space:nowrap;font-size:.78rem;color:#64748b;"><?= date('d-m-y H:i', strtotime($r[$datumKolom] ?? '')) ?></td>
+          <td><strong style="font-size:.875rem;"><?= h($r['merk'].' '.$r['modelnummer']) ?></strong></td>
+          <td style="font-size:.8rem;"><?= h($r['email']) ?></td>
           <td>
-            <span class="badge badge-<?= $r['status']==='nieuw'?'red':($r['status']==='behandeld'?'green':'gray') ?>">
-              <?= h($r['status']) ?>
-            </span>
+            <?php $rt = $r['advies_type'] ?: $r['geadviseerde_route']; ?>
+            <?php if ($rt): ?><span class="badge badge-blue" style="font-size:.72rem;"><?= h($rt) ?></span><?php else: ?>—<?php endif; ?>
           </td>
-          <td><?= $r['advies_type'] ? '<span class="badge badge-blue">'.h($r['advies_type']).'</span>' : '<span style="color:var(--muted);font-size:.8rem;">—</span>' ?></td>
-          <td><a href="?id=<?= $r['id'] ?>" class="btn btn-sm btn-secondary">Behandel</a></td>
+          <td>
+            <?php $sl2 = $statusLabels[$r['status']] ?? ['tekst'=>$r['status'],'badge'=>'badge-gray']; ?>
+            <span class="badge <?= $sl2['badge'] ?>" style="font-size:.72rem;"><?= h($sl2['tekst']) ?></span>
+          </td>
+          <td>
+            <a href="?id=<?= $r['id'] ?>&<?= http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek])) ?>"
+               class="btn btn-sm btn-secondary">Openen</a>
+          </td>
         </tr>
         <?php endforeach; ?>
         </tbody>
