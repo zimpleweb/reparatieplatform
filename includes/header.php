@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/footer.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/advies-routing.css" />
-  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/klantenomgeving.css" />
+  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/klantenomgeving.css?v=<?= filemtime(__DIR__.'/../assets/css/klantenomgeving.css') ?>" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/responsive.css" />
   <style>
     @media (max-width: 768px) {

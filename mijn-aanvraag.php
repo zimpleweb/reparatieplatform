@@ -94,9 +94,10 @@ function portalStapNr(string $status): int {
 // Hulpfunctie voor vergrendeld invoerveld met slotje
 function lockedField(string $value, string $type = 'text'): string {
     $val = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
     return '<div class="portal-field-locked-wrap">'
          . '<input type="' . $type . '" value="' . $val . '" readonly class="portal-field-prefilled" />'
-         . '<span class="portal-field-lock-icon">🔒</span>'
+         . '<span class="portal-field-lock-icon" aria-hidden="true">' . $svg . '</span>'
          . '</div>';
 }
 
@@ -252,32 +253,37 @@ include __DIR__ . '/includes/header.php';
               <input type="hidden" name="type"        value="reparatie" />
 
               <div class="portal-form-section">Contactgegevens</div>
-              <div class="portal-field">
-                <label>Naam *</label>
-                <input type="text" name="naam" required value="<?= h($inzending['naam'] ?? '') ?>" />
+              <div class="portal-fields-row">
+                <div class="portal-field">
+                  <label>Naam *</label>
+                  <input type="text" name="naam" required value="<?= h($inzending['naam'] ?? '') ?>" />
+                </div>
+                <div class="portal-field">
+                  <label>E-mail</label>
+                  <?= lockedField($inzending['email'], 'email') ?>
+                </div>
               </div>
-              <div class="portal-field">
-                <label>Plaats *</label>
-                <input type="text" name="plaats" required value="<?= h($inzending['plaats'] ?? '') ?>" />
-              </div>
-              <div class="portal-field">
-                <label>E-mail</label>
-                <?= lockedField($inzending['email'], 'email') ?>
-              </div>
-              <div class="portal-field">
-                <label>Telefoon *</label>
-                <input type="tel" name="telefoon" required value="<?= h($inzending['telefoon'] ?? '') ?>" />
+              <div class="portal-fields-row">
+                <div class="portal-field">
+                  <label>Plaats *</label>
+                  <input type="text" name="plaats" required value="<?= h($inzending['plaats'] ?? '') ?>" />
+                </div>
+                <div class="portal-field">
+                  <label>Telefoon *</label>
+                  <input type="tel" name="telefoon" required value="<?= h($inzending['telefoon'] ?? '') ?>" />
+                </div>
               </div>
 
               <div class="portal-form-section">Televisie</div>
-              <div class="portal-field">
-                <label>Merk televisie</label>
-                <?= lockedField($inzending['merk']) ?>
-              </div>
-              <div class="portal-field">
-                <label>Model televisie *</label>
-                <span class="portal-field-hint">Gelieve het volledige modelnummer in te voeren. Zonder compleet modelnummer kunnen wij u geen reparatieadvies toesturen.</span>
-                <input type="text" name="modelnummer" required value="<?= h($inzending['modelnummer']) ?>" />
+              <div class="portal-fields-row">
+                <div class="portal-field">
+                  <label>Merk televisie</label>
+                  <?= lockedField($inzending['merk']) ?>
+                </div>
+                <div class="portal-field">
+                  <label>Model televisie</label>
+                  <?= lockedField($inzending['modelnummer']) ?>
+                </div>
               </div>
 
               <div class="portal-form-section">Klacht</div>
@@ -287,15 +293,17 @@ include __DIR__ . '/includes/header.php';
               </div>
 
               <div class="portal-form-section">Foto's <em class="portal-form-optional">(niet verplicht)</em></div>
-              <div class="portal-field">
-                <label>Foto van de klacht</label>
-                <span class="portal-field-hint">U kunt een foto van het defect bijvoegen om uw reparatieaanvraag te verduidelijken.</span>
-                <input type="file" name="foto_defect" accept="image/*" />
-              </div>
-              <div class="portal-field">
-                <label>Foto van het modelnummer</label>
-                <span class="portal-field-hint">U kunt een foto van het modelnummer bijvoegen om uw reparatieaanvraag te verduidelijken.</span>
-                <input type="file" name="foto_label" accept="image/*" />
+              <div class="portal-fields-row">
+                <div class="portal-field">
+                  <label>Foto van de klacht</label>
+                  <span class="portal-field-hint">Foto van het defect (optioneel).</span>
+                  <input type="file" name="foto_defect" accept="image/*" />
+                </div>
+                <div class="portal-field">
+                  <label>Foto van het modelnummer</label>
+                  <span class="portal-field-hint">Foto van het modelnummersticker (optioneel).</span>
+                  <input type="file" name="foto_label" accept="image/*" />
+                </div>
               </div>
               <p class="portal-upload-hint">Maximaal 10 MB per foto. Toegestane formaten: JPG, PNG, WebP.</p>
 
@@ -337,23 +345,27 @@ include __DIR__ . '/includes/header.php';
                   <input type="text" name="plaats" required value="<?= h($inzending['plaats'] ?? '') ?>" />
                 </div>
               </div>
-              <div class="portal-field">
-                <label>E-mail</label>
-                <?= lockedField($inzending['email'], 'email') ?>
-              </div>
-              <div class="portal-field">
-                <label>Telefoonnummer *</label>
-                <input type="tel" name="telefoon" required value="<?= h($inzending['telefoon'] ?? '') ?>" />
+              <div class="portal-fields-row">
+                <div class="portal-field">
+                  <label>E-mail</label>
+                  <?= lockedField($inzending['email'], 'email') ?>
+                </div>
+                <div class="portal-field">
+                  <label>Telefoonnummer *</label>
+                  <input type="tel" name="telefoon" required value="<?= h($inzending['telefoon'] ?? '') ?>" />
+                </div>
               </div>
 
               <div class="portal-form-section">Televisie</div>
-              <div class="portal-field">
-                <label>Merk TV</label>
-                <?= lockedField($inzending['merk']) ?>
-              </div>
-              <div class="portal-field">
-                <label>Modelnummer</label>
-                <?= lockedField($inzending['modelnummer']) ?>
+              <div class="portal-fields-row">
+                <div class="portal-field">
+                  <label>Merk TV</label>
+                  <?= lockedField($inzending['merk']) ?>
+                </div>
+                <div class="portal-field">
+                  <label>Modelnummer</label>
+                  <?= lockedField($inzending['modelnummer']) ?>
+                </div>
               </div>
               <div class="portal-field">
                 <label>Serienummer *</label>
@@ -379,13 +391,15 @@ include __DIR__ . '/includes/header.php';
               </div>
 
               <div class="portal-form-section">Aankoop &amp; Verzekering</div>
-              <div class="portal-field">
-                <label>Aankoopbedrag *</label>
-                <input type="text" name="aankoopbedrag" required placeholder="Bijv. 799,00" value="<?= h($inzending['aankoopbedrag'] ?? '') ?>" />
-              </div>
-              <div class="portal-field">
-                <label>Aankoopdatum *</label>
-                <input type="date" name="aankoopdatum" required value="<?= h($inzending['aankoopdatum'] ?? date('Y-m-d')) ?>" />
+              <div class="portal-fields-row">
+                <div class="portal-field">
+                  <label>Aankoopbedrag *</label>
+                  <input type="text" name="aankoopbedrag" required placeholder="Bijv. 799,00" value="<?= h($inzending['aankoopbedrag'] ?? '') ?>" />
+                </div>
+                <div class="portal-field">
+                  <label>Aankoopdatum *</label>
+                  <input type="date" name="aankoopdatum" required value="<?= h($inzending['aankoopdatum'] ?? date('Y-m-d')) ?>" />
+                </div>
               </div>
               <div class="portal-field portal-field-check">
                 <label class="portal-checkbox-label">
@@ -393,31 +407,37 @@ include __DIR__ . '/includes/header.php';
                   Ik heb een bon / aankoopbewijs
                 </label>
               </div>
-              <div class="portal-field">
-                <label>Naam verzekeringsmaatschappij *</label>
-                <input type="text" name="naam_verzekeraar" required value="<?= h($inzending['naam_verzekeraar'] ?? '') ?>" />
-              </div>
-              <div class="portal-field">
-                <label>Polisnummer *</label>
-                <input type="text" name="polisnummer" required value="<?= h($inzending['polisnummer'] ?? '') ?>" />
+              <div class="portal-fields-row">
+                <div class="portal-field">
+                  <label>Naam verzekeringsmaatschappij *</label>
+                  <input type="text" name="naam_verzekeraar" required value="<?= h($inzending['naam_verzekeraar'] ?? '') ?>" />
+                </div>
+                <div class="portal-field">
+                  <label>Polisnummer *</label>
+                  <input type="text" name="polisnummer" required value="<?= h($inzending['polisnummer'] ?? '') ?>" />
+                </div>
               </div>
 
               <div class="portal-form-section">Foto's</div>
-              <div class="portal-field">
-                <label>Foto van het gehele toestel *</label>
-                <input type="file" name="foto_toestel" accept="image/*" required />
+              <div class="portal-fields-row">
+                <div class="portal-field">
+                  <label>Foto van het gehele toestel *</label>
+                  <input type="file" name="foto_toestel" accept="image/*" required />
+                </div>
+                <div class="portal-field">
+                  <label>Foto van de schade (eventueel met toestel aan) *</label>
+                  <input type="file" name="foto_defect" accept="image/*" required />
+                </div>
               </div>
-              <div class="portal-field">
-                <label>Foto van de schade (eventueel met toestel aan) *</label>
-                <input type="file" name="foto_defect" accept="image/*" required />
-              </div>
-              <div class="portal-field">
-                <label>Foto achterkant (met modelnummersticker afleesbaar) *</label>
-                <input type="file" name="foto_label" accept="image/*" required />
-              </div>
-              <div class="portal-field">
-                <label>Extra foto bv. aankoopfactuur <em class="portal-form-optional">(optioneel)</em></label>
-                <input type="file" name="foto_extra" accept="image/*" />
+              <div class="portal-fields-row">
+                <div class="portal-field">
+                  <label>Foto achterkant (modelnummersticker afleesbaar) *</label>
+                  <input type="file" name="foto_label" accept="image/*" required />
+                </div>
+                <div class="portal-field">
+                  <label>Extra foto (bv. aankoopfactuur) <em class="portal-form-optional">(optioneel)</em></label>
+                  <input type="file" name="foto_extra" accept="image/*" />
+                </div>
               </div>
               <p class="portal-upload-hint">Maximaal 10 MB per foto. Toegestane formaten: JPG, PNG, WebP.</p>
 
@@ -547,30 +567,47 @@ include __DIR__ . '/includes/header.php';
             <p class="berichten-leeg">Nog geen berichten. Stel gerust een vraag hieronder.</p>
           <?php else: ?>
             <div class="berichten-lijst" id="berichten-lijst">
-              <?php foreach ($inzending['log'] as $le):
-                $door    = $le['gedaan_door'];
-                $isKlant = $door === 'klant';
-                $isAdmin = $door === 'admin';
-                $isMsg   = $isKlant && $le['actie'] === 'Bericht klant';
+              <?php
+              $chatDatum = null;
+              foreach ($inzending['log'] as $le):
+                $le_datum       = date('Y-m-d', strtotime($le['aangemaakt']));
+                $door           = $le['gedaan_door'];
+                $isKlant        = $door === 'klant';
+                $isAdmin        = $door === 'admin';
+                $heeftBericht   = !empty(trim($le['opmerking'] ?? ''));
+                $isBericht      = str_starts_with(strtolower($le['actie']), 'bericht');
+                $isKlantBericht = $isKlant && ($heeftBericht || $isBericht);
+                $isAdminBericht = $isAdmin && ($heeftBericht || $isBericht);
+
+                if ($le_datum !== $chatDatum):
+                  $chatDatum  = $le_datum;
+                  $vandaag    = date('Y-m-d');
+                  $gisteren   = date('Y-m-d', strtotime('-1 day'));
+                  $datumLabel = $le_datum === $vandaag ? 'Vandaag'
+                              : ($le_datum === $gisteren ? 'Gisteren'
+                              : date('d F Y', strtotime($le['aangemaakt'])));
               ?>
-                <?php if (!$isMsg && !$isAdmin): ?>
+                <div class="bericht-datum-separator"><?= $datumLabel ?></div>
+              <?php endif; ?>
+
+                <?php if (!$isKlantBericht && !$isAdminBericht): ?>
                   <div class="bericht-systeem">
-                    <span class="bericht-systeem-tekst"><?= h($le['actie']) ?></span>
-                    <span class="bericht-systeem-tijd"><?= date('d-m H:i', strtotime($le['aangemaakt'])) ?></span>
+                    <span class="bericht-systeem-label">
+                      <span class="bericht-systeem-tekst"><?= h($le['actie']) ?></span>
+                      <span class="bericht-systeem-tijd"><?= date('H:i', strtotime($le['aangemaakt'])) ?></span>
+                    </span>
                   </div>
                 <?php else: ?>
                   <div class="bericht-rij <?= $isKlant ? 'bericht-rij-klant' : 'bericht-rij-admin' ?>">
+                    <?php if ($isAdmin): ?><div class="bericht-avatar bericht-avatar-admin">R</div><?php endif; ?>
                     <div class="bericht-bubble">
-                      <?php if ($isAdmin): ?>
-                        <div class="bericht-actie-tekst"><?= h($le['actie']) ?></div>
-                      <?php endif; ?>
-                      <?php $inhoud = $le['opmerking'] ?: ($isAdmin ? '' : $le['actie']); ?>
-                      <?php if ($inhoud): ?><div class="bericht-inhoud"><?= h($inhoud) ?></div><?php endif; ?>
+                      <div class="bericht-inhoud"><?= $heeftBericht ? nl2br(h($le['opmerking'])) : '<em style="opacity:.55;font-size:.82em;">Berichtinhoud niet beschikbaar</em>' ?></div>
                       <div class="bericht-meta">
-                        <span><?= $isKlant ? 'U' : 'Reparatieplatform' ?></span>
-                        <span><?= date('d-m H:i', strtotime($le['aangemaakt'])) ?></span>
+                        <span class="bericht-meta-naam"><?= $isKlant ? 'U' : 'Reparatieplatform' ?></span>
+                        <span><?= date('H:i', strtotime($le['aangemaakt'])) ?></span>
                       </div>
                     </div>
+                    <?php if ($isKlant): ?><div class="bericht-avatar bericht-avatar-klant">U</div><?php endif; ?>
                   </div>
                 <?php endif; ?>
               <?php endforeach; ?>
@@ -586,7 +623,9 @@ include __DIR__ . '/includes/header.php';
             <div class="bericht-invoer-wrap">
               <textarea name="bericht_tekst" id="bericht-invoer" class="bericht-invoer"
                         placeholder="Typ een bericht of vraag..." rows="1"></textarea>
-              <button type="submit" class="bericht-verstuur-btn">Versturen</button>
+              <button type="submit" class="bericht-verstuur-btn" title="Versturen">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+              </button>
             </div>
           </form>
           <?php endif; ?>

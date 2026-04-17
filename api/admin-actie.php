@@ -5,17 +5,30 @@ require_once __DIR__ . '/../includes/functions.php';
 requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    redirect('/admin/aanvragen.php');
+    redirect(BASE_URL . '/admin/aanvragen.php');
 }
 
 $id       = (int)  ($_POST['id']        ?? 0);
 $actie    = trim(  $_POST['actie']      ?? '');
 $opmerking= trim(  $_POST['opmerking']  ?? '');
 
-if (!$id || !$actie) redirect('/admin/aanvragen.php');
+if (!$id || !$actie) redirect(BASE_URL . '/admin/aanvragen.php');
 
-$geldig = ['doorzetten_reparatie','doorzetten_taxatie','coulance','recycling','behandeld','archiveren'];
-if (!in_array($actie, $geldig)) redirect('/admin/aanvragen.php?id=' . $id);
+$geldig = ['doorzetten_reparatie','doorzetten_taxatie','coulance','recycling','behandeld','archiveren','bericht_admin'];
+if (!in_array($actie, $geldig)) redirect(BASE_URL . '/admin/aanvragen.php?id=' . $id);
+
+// ── Bericht sturen (alleen loggen, geen statuswijziging) ──────────
+if ($actie === 'bericht_admin') {
+    $tekst = trim($opmerking);
+    if ($tekst) {
+        try {
+            db()->prepare(
+                'INSERT INTO aanvragen_log (aanvraag_id, actie, opmerking, gedaan_door) VALUES (?,?,?,?)'
+            )->execute([$id, 'Bericht verstuurd door admin', $tekst, 'admin']);
+        } catch (\PDOException $e) {}
+    }
+    redirect(BASE_URL . '/admin/aanvragen.php?id=' . $id . '&saved=1');
+}
 
 $statusMap = [
     'doorzetten_reparatie' => 'doorgestuurd',
@@ -59,4 +72,4 @@ try {
     )->execute([$id, $actieLabelMap[$actie], $opmerking ?: null, 'admin']);
 } catch (\PDOException $e) { /* log-tabel nog niet beschikbaar */ }
 
-redirect('/admin/aanvragen.php?id=' . $id . '&saved=1');
+redirect(BASE_URL . '/admin/aanvragen.php?id=' . $id . '&saved=1');

@@ -102,20 +102,23 @@
   box-shadow: none !important;
 }
 .portal-field-locked-wrap {
-  position: relative;
+  position: relative !important;
+  display: block;
 }
 .portal-field-locked-wrap input[readonly] {
-  padding-right: 2.5rem;
+  padding-right: 2.6rem !important;
 }
 .portal-field-lock-icon {
-  position: absolute;
+  position: absolute !important;
   right: .85rem;
   top: 50%;
   transform: translateY(-50%);
-  font-size: .95rem;
   color: #9ca3af;
   pointer-events: none;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  z-index: 1;
 }
 
 /* Hint tekst onder veld */
@@ -558,29 +561,52 @@
   overflow: hidden;
 }
 .portal-berichten > .portal-card-title {
-  padding: 1.1rem 1.6rem .8rem;
+  padding: 1rem 1.5rem .9rem;
   margin: 0;
   background: #fff;
   border-bottom: 1.5px solid #e8f4f1;
   position: sticky;
   top: 0;
   z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  font-size: .75rem;
+}
+.portal-berichten > .portal-card-title::before {
+  content: "💬";
+  font-size: .95rem;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.portal-berichten > .portal-card-title::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .berichten-lijst {
   display: flex;
   flex-direction: column;
-  gap: .6rem;
-  padding: 1.25rem 1.4rem;
-  max-height: 420px;
+  gap: .25rem;
+  padding: 1.25rem 1.35rem 1rem;
+  max-height: 460px;
   overflow-y: auto;
   scroll-behavior: smooth;
-  background: #f9fafb;
+  background: #f4f6f9;
+  background-image: radial-gradient(circle, #dde4ed 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 .berichten-lijst::-webkit-scrollbar { width: 4px; }
 .berichten-lijst::-webkit-scrollbar-track { background: transparent; }
 .berichten-lijst::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #c8cfd9;
   border-radius: 4px;
 }
 
@@ -589,50 +615,111 @@
   font-size: .875rem;
   color: #9ca3af;
   text-align: center;
-  padding: 2.5rem 1.4rem;
-  background: #f9fafb;
+  padding: 3rem 1.4rem;
+  background: #f4f6f9;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: .6rem;
+  margin: 0;
+  line-height: 1.55;
 }
 .berichten-leeg::before {
   content: "💬";
-  font-size: 1.75rem;
+  font-size: 2.2rem;
   display: block;
-  opacity: .45;
+  opacity: .3;
+  line-height: 1;
+  margin-bottom: .2rem;
+}
+
+/* Datum-scheider */
+.bericht-datum-separator {
+  text-align: center;
+  font-size: .67rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin: 1rem 0 .5rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.bericht-datum-separator::before,
+.bericht-datum-separator::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #dde1e7;
 }
 
 /* Systeemmelding (horizontale scheidingslijn-stijl) */
 .bericht-systeem {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: .65rem;
-  margin: .4rem 0;
-}
-.bericht-systeem-tekst {
-  font-size: .765rem;
-  color: #9ca3af;
-  white-space: nowrap;
+  gap: .6rem;
+  margin: .45rem 0;
 }
 .bericht-systeem::before,
 .bericht-systeem::after {
   content: "";
   flex: 1;
   height: 1px;
-  background: #e5e7eb;
+  background: #e9ecef;
+}
+.bericht-systeem-label {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: .18rem .7rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.bericht-systeem-tekst {
+  font-size: .72rem;
+  color: #64748b;
 }
 .bericht-systeem-tijd {
-  font-size: .72rem;
-  color: #b5bcc8;
-  white-space: nowrap;
+  font-size: .68rem;
+  color: #94a3b8;
+}
+
+/* Avatar cirkels */
+.bericht-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .7rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 2px;
+  letter-spacing: .01em;
+}
+.bericht-avatar-admin {
+  background: #e8f4f1;
+  color: #287864;
+  border: 1.5px solid #c3e6dc;
+}
+.bericht-avatar-klant {
+  background: #287864;
+  color: #fff;
 }
 
 /* Chat bubbels */
 .bericht-rij {
   display: flex;
-  margin: .15rem 0;
+  align-items: flex-end;
+  gap: .5rem;
+  margin: .2rem 0;
 }
 .bericht-rij-klant {
   justify-content: flex-end;
@@ -642,81 +729,73 @@
 }
 
 .bericht-bubble {
-  max-width: 72%;
-  border-radius: 14px;
-  padding: .7rem 1rem;
-  font-size: .875rem;
-  line-height: 1.55;
+  max-width: 70%;
+  border-radius: 18px;
+  padding: .8rem 1.05rem .65rem;
+  font-size: .9rem;
+  line-height: 1.6;
 }
 .bericht-rij-klant .bericht-bubble {
-  background: #287864;
+  background: linear-gradient(135deg, #2d8a74, #287864);
   color: #fff;
   border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px rgba(40,120,100,.22);
 }
 .bericht-rij-admin .bericht-bubble {
   background: #fff;
-  border: 1.5px solid #e5e7eb;
+  border: 1.5px solid #e2e8f0;
   color: #1f2937;
   border-bottom-left-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,.07);
 }
 
-.bericht-actie-tekst {
-  font-size: .75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  margin-bottom: .25rem;
-  color: #287864;
-  opacity: .9;
-}
-.bericht-rij-admin .bericht-actie-tekst {
-  color: #287864;
-  opacity: 1;
-}
 .bericht-inhoud {
   word-break: break-word;
 }
 .bericht-meta {
   display: flex;
-  justify-content: space-between;
-  gap: .6rem;
-  font-size: .72rem;
-  margin-top: .45rem;
-  opacity: .7;
+  justify-content: flex-end;
+  gap: .5rem;
+  font-size: .68rem;
+  margin-top: .35rem;
+  align-items: center;
 }
 .bericht-rij-klant .bericht-meta {
-  color: rgba(255,255,255,.85);
+  color: rgba(255,255,255,.65);
 }
 .bericht-rij-admin .bericht-meta {
-  color: #6b7280;
+  color: #94a3b8;
+}
+.bericht-meta-naam {
+  font-weight: 600;
 }
 
 /* Berichtinvoer onderaan */
 .bericht-invoer-form {
-  padding: .9rem 1.4rem 1.1rem;
+  padding: .9rem 1.25rem 1.05rem;
   background: #fff;
   border-top: 1.5px solid #e8f4f1;
 }
 .bericht-invoer-wrap {
   display: flex;
-  gap: .7rem;
+  gap: .55rem;
   align-items: flex-end;
 }
 .bericht-invoer {
   flex: 1;
-  padding: .65rem 1rem;
-  border: 1.5px solid var(--border);
-  border-radius: 20px;
+  padding: .7rem 1.1rem;
+  border: 1.5px solid #dde3ec;
+  border-radius: 24px;
   font-size: .9rem;
   font-family: inherit;
-  background: #f9fafb;
+  background: #f7f8fb;
   resize: none;
-  transition: border-color .18s, box-shadow .18s;
-  min-height: 42px;
+  transition: border-color .18s, box-shadow .18s, background .18s;
+  min-height: 44px;
   max-height: 120px;
   overflow-y: auto;
-  line-height: 1.45;
+  line-height: 1.5;
+  color: var(--text);
 }
 .bericht-invoer:focus {
   outline: none;
@@ -724,36 +803,51 @@
   background: #fff;
   box-shadow: 0 0 0 3px rgba(40,120,100,.1);
 }
+.bericht-invoer::placeholder { color: #adb5bd; }
+
 .bericht-verstuur-btn {
-  padding: .62rem 1.2rem;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   background: #287864;
   color: #fff;
   border: none;
-  border-radius: 20px;
-  font-size: .875rem;
-  font-weight: 700;
-  font-family: inherit;
+  border-radius: 50%;
   cursor: pointer;
-  white-space: nowrap;
   flex-shrink: 0;
-  transition: background .18s, box-shadow .18s;
-  height: 42px;
+  transition: background .18s, box-shadow .18s, transform .1s;
   display: flex;
   align-items: center;
+  justify-content: center;
+}
+.bericht-verstuur-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .bericht-verstuur-btn:hover {
   background: #1d5e4e;
-  box-shadow: 0 2px 8px rgba(40,120,100,.25);
+  box-shadow: 0 3px 10px rgba(40,120,100,.35);
 }
+.bericht-verstuur-btn:active { transform: scale(.93); }
 
 /* ── Responsief ──────────────────────────────────────────────── */
 @media (max-width: 600px) {
-  .portal-login-card   { padding: 2rem 1.25rem; }
-  .portal-wrap         { padding: 1.5rem 1rem 3rem; }
-  .portal-top-bar      { flex-direction: column; align-items: flex-start; }
-  .status-steps-track  { gap: 0; }
-  .status-step-label   { font-size: .6rem; }
-  .portal-action-card  { padding: 1.25rem 1.1rem; }
-  .portal-fields-row   { grid-template-columns: 1fr; }
-  .bericht-bubble      { max-width: 88%; }
+  .portal-login-card        { padding: 2rem 1.25rem; }
+  .portal-wrap              { padding: 1.5rem 1rem 3rem; }
+  .portal-top-bar           { flex-direction: column; align-items: flex-start; }
+  .status-steps-track       { gap: 0; }
+  .status-step-label        { font-size: .6rem; }
+  .portal-action-card       { padding: 1.25rem 1.1rem; }
+  .portal-fields-row        { grid-template-columns: 1fr; }
+  .bericht-bubble           { max-width: 84%; }
+  .bericht-avatar           { width: 28px; height: 28px; font-size: .65rem; }
+  .berichten-lijst          { padding: .85rem .9rem; }
+  .bericht-invoer-form      { padding: .65rem .9rem .8rem; }
+  .bericht-datum-separator  { font-size: .63rem; }
+  .bericht-systeem-label    { max-width: 80%; white-space: normal; text-align: center; }
 }

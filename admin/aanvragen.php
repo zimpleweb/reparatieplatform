@@ -56,6 +56,11 @@ try {
     $cols = db()->query('SHOW COLUMNS FROM aanvragen LIKE \'aangemaakt_op\'')->fetchColumn();
     if ($cols) $datumKolom = 'aangemaakt_op';
 } catch (\Exception $e) {}
+
+$ongelezen = 0;
+try {
+    $ongelezen = (int) db()->query("SELECT COUNT(*) FROM aanvragen_log WHERE gelezen=0 AND gearchiveerd=0")->fetchColumn();
+} catch (\Exception $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -116,6 +121,7 @@ try {
   <div class="admin-sidebar">
     <a href="<?= BASE_URL ?>/admin/dashboard.php"><span class="icon">&#128202;</span> Dashboard</a>
     <a href="<?= BASE_URL ?>/admin/aanvragen.php" class="active"><span class="icon">&#128236;</span> Inzendingen</a>
+    <a href="<?= BASE_URL ?>/admin/meldingen.php"><span class="icon">&#128276;</span> Meldingen</a>
     <a href="<?= BASE_URL ?>/admin/modellen.php"><span class="icon">&#128250;</span> TV Modellen</a>
     <a href="<?= BASE_URL ?>/admin/klachten.php"><span class="icon">&#9888;</span> Klachten</a>
     <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;</span> Advies instellingen</a>
@@ -193,6 +199,18 @@ try {
         </div>
       </div>
       <?php endif; ?>
+
+      <!-- Bericht sturen naar klant -->
+      <div class="detail-section">
+        <h4>Bericht sturen naar klant</h4>
+        <form method="POST" action="<?= BASE_URL ?>/api/admin-actie.php">
+          <input type="hidden" name="id" value="<?= (int)$detail['id'] ?>" />
+          <textarea name="opmerking" class="opmerking-field" placeholder="Typ hier uw bericht aan de klant..." rows="3" required></textarea>
+          <div style="margin-top:.6rem;">
+            <button type="submit" name="actie" value="bericht_admin" class="btn-actie btn-reparatie">&#128172; Bericht versturen</button>
+          </div>
+        </form>
+      </div>
 
       <!-- Actieknoppen -->
       <div class="detail-section">

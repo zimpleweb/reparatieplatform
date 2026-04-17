@@ -1,0 +1,202 @@
+/* ============================================================
+   Admin — Meldingen pagina
+   ============================================================ */
+
+/* ── Type-tabs ───────────────────────────────────────────────── */
+.m-tabs {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.m-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .45rem .9rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: .82rem;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  background: #fff;
+  transition: border-color .15s, background .15s, color .15s;
+  white-space: nowrap;
+}
+.m-tab:hover {
+  border-color: #287864;
+  color: #287864;
+}
+.m-tab.active {
+  background: #287864;
+  border-color: #287864;
+  color: #fff;
+}
+.m-tab-count {
+  background: rgba(0,0,0,.08);
+  border-radius: 999px;
+  padding: .05rem .45rem;
+  font-size: .72rem;
+  font-weight: 700;
+  min-width: 1.4rem;
+  text-align: center;
+}
+.m-tab.active .m-tab-count {
+  background: rgba(255,255,255,.25);
+}
+
+/* ── Filterbar ───────────────────────────────────────────────── */
+.m-filterbar {
+  display: flex;
+  gap: .6rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.m-filterbar select,
+.m-filterbar input[type="text"] {
+  padding: .5rem .85rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: .85rem;
+  font-family: inherit;
+  background: #fff;
+  color: #1f2937;
+}
+.m-filterbar input[type="text"] { min-width: 240px; }
+.m-filterbar button {
+  padding: .5rem 1.1rem;
+  background: #1e293b;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.m-filterbar button:hover { background: #0f172a; }
+.m-reset {
+  font-size: .82rem;
+  color: #94a3b8;
+  text-decoration: none;
+  padding: .4rem .6rem;
+}
+.m-reset:hover { color: #ef4444; }
+
+/* ── Tabel ───────────────────────────────────────────────────── */
+.m-tabel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .855rem;
+}
+.m-tabel thead tr {
+  border-bottom: 2px solid #f1f5f9;
+}
+.m-tabel th {
+  padding: .75rem 1rem;
+  text-align: left;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+.m-tabel td {
+  padding: .8rem 1rem;
+  border-bottom: 1px solid #f8fafc;
+  vertical-align: top;
+  color: #374151;
+}
+.m-tabel tbody tr:last-child td { border-bottom: none; }
+.m-tabel tbody tr:hover td { background: #f8fafc; }
+
+/* ── Cel-inhoud ──────────────────────────────────────────────── */
+.m-datum {
+  font-size: .8rem;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+}
+.m-datum span {
+  font-weight: 400;
+  color: #94a3b8;
+  font-size: .75rem;
+}
+.m-case {
+  font-size: .8rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.m-case:hover { text-decoration: underline; }
+.m-apparaat {
+  font-size: .82rem;
+  font-weight: 600;
+  color: #374151;
+  max-width: 150px;
+}
+.m-apparaat span {
+  font-weight: 400;
+  color: #94a3b8;
+  font-size: .75rem;
+}
+.m-tekst { max-width: 340px; }
+.m-actie {
+  font-size: .83rem;
+  color: #374151;
+  font-weight: 500;
+}
+.m-opmerking {
+  margin-top: .35rem;
+  font-size: .82rem;
+  color: #1f2937;
+  background: #f1f5f9;
+  border-left: 3px solid #287864;
+  padding: .4rem .65rem;
+  border-radius: 0 6px 6px 0;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* ── Type-badges ─────────────────────────────────────────────── */
+.m-badge {
+  display: inline-block;
+  padding: .22rem .65rem;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.mt-bericht      { background: #dbeafe; color: #1e40af; }
+.mt-inzending    { background: #d1fae5; color: #065f46; }
+.mt-doorgestuurd { background: #fef3c7; color: #92400e; }
+.mt-ingediend    { background: #ede9fe; color: #5b21b6; }
+.mt-status       { background: #f1f5f9; color: #475569; }
+
+/* ── Gedaan-door badges ──────────────────────────────────────── */
+.m-door {
+  display: inline-block;
+  padding: .2rem .6rem;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.door-klant  { background: #e8f4f1; color: #287864; }
+.door-admin  { background: #fef3c7; color: #92400e; }
+.door-system { background: #f1f5f9; color: #64748b; }
+
+/* ── Responsief ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .m-tabel .m-apparaat { display: none; }
+}
+@media (max-width: 680px) {
+  .m-tabs      { gap: .25rem; }
+  .m-tab       { font-size: .75rem; padding: .38rem .7rem; }
+  .m-filterbar input[type="text"] { min-width: 160px; }
+  .m-tabel th, .m-tabel td { padding: .6rem .65rem; }
+}
