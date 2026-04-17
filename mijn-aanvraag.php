@@ -91,6 +91,15 @@ function portalStapNr(string $status): int {
     };
 }
 
+// Hulpfunctie voor vergrendeld invoerveld met slotje
+function lockedField(string $value, string $type = 'text'): string {
+    $val = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    return '<div class="portal-field-locked-wrap">'
+         . '<input type="' . $type . '" value="' . $val . '" readonly class="portal-field-prefilled" />'
+         . '<span class="portal-field-lock-icon">🔒</span>'
+         . '</div>';
+}
+
 $pageTitle       = 'Mijn aanvraag — Klantenomgeving | Reparatieplatform.nl';
 $pageDescription = 'Bekijk de status van uw aanvraag en volg uw reparatie-, taxatie- of coulancetraject via uw persoonlijke klantenomgeving.';
 $canonicalUrl    = '/mijn-aanvraag.php';
@@ -115,13 +124,13 @@ include __DIR__ . '/includes/header.php';
   <!-- ── LOGIN FORMULIER ──────────────────────────────────────── -->
   <div class="portal-login-wrap">
     <div class="portal-login-card">
-      <div class="portal-login-icon">&#128274;</div>
+      <div class="portal-login-icon">🔐</div>
       <h2>Aanvraag inzien</h2>
       <p class="lead">Voer uw casenummer en e-mailadres in om uw persoonlijke klantenomgeving te openen.</p>
 
       <?php if ($loginFout): ?>
         <div class="portal-alert alert-error">
-          <span>&#9888;</span>
+          <span>⚠</span>
           <span>Geen aanvraag gevonden met dit casenummer en e-mailadres. Controleer de gegevens en probeer opnieuw.</span>
         </div>
       <?php endif; ?>
@@ -169,20 +178,20 @@ include __DIR__ . '/includes/header.php';
       <div>
         <div class="portal-case-title">
           Aanvraag <?= h($inzending['casenummer']) ?>
-          &nbsp;<span class="portal-status-badge <?= $sl['css'] ?>"><?= h($sl['tekst']) ?></span>
+          <span class="portal-status-badge <?= $sl['css'] ?>"><?= h($sl['tekst']) ?></span>
         </div>
         <div class="portal-case-sub">
           <?= h($inzending['merk'] . ' ' . $inzending['modelnummer']) ?>
           &nbsp;&bull;&nbsp; <?= h($inzending['klacht_type'] ?? '') ?>
         </div>
       </div>
-      <a href="?uitloggen=1" class="portal-logout">&#x2190; Uitloggen</a>
+      <a href="?uitloggen=1" class="portal-logout">← Uitloggen</a>
     </div>
 
     <!-- Melding -->
     <?php if ($melding): ?>
       <div class="portal-alert <?= $meldingOk ? 'alert-success' : 'alert-error' ?>">
-        <span><?= $meldingOk ? '&#10003;' : '&#9888;' ?></span>
+        <span><?= $meldingOk ? '✓' : '⚠' ?></span>
         <span><?= h($melding) ?></span>
       </div>
     <?php endif; ?>
@@ -193,21 +202,21 @@ include __DIR__ . '/includes/header.php';
       <div class="status-steps-track">
 
         <div class="status-step <?= $stapNr >= 1 ? ($stapNr === 1 ? 'active' : 'done') : '' ?>">
-          <div class="status-step-dot"><?= $stapNr > 1 ? '&#10003;' : '1' ?></div>
+          <div class="status-step-dot"><?= $stapNr > 1 ? '✓' : '1' ?></div>
           <div class="status-step-label">Ontvangen</div>
         </div>
 
         <div class="status-step-connector <?= $stapNr >= 2 ? 'done' : '' ?>"></div>
 
         <div class="status-step <?= $stapNr >= 2 ? ($stapNr === 2 ? 'active' : 'done') : '' ?>">
-          <div class="status-step-dot"><?= $stapNr > 2 ? '&#10003;' : '2' ?></div>
+          <div class="status-step-dot"><?= $stapNr > 2 ? '✓' : '2' ?></div>
           <div class="status-step-label">In behandeling</div>
         </div>
 
         <div class="status-step-connector <?= $stapNr >= 3 ? 'done' : '' ?>"></div>
 
         <div class="status-step <?= $stapNr >= 3 ? ($stapNr === 3 ? 'active' : 'done') : '' ?>">
-          <div class="status-step-dot"><?= $stapNr > 3 ? '&#10003;' : '3' ?></div>
+          <div class="status-step-dot"><?= $stapNr > 3 ? '✓' : '3' ?></div>
           <div class="status-step-label">Ingediend</div>
         </div>
 
@@ -230,7 +239,7 @@ include __DIR__ . '/includes/header.php';
           <?php if ($isReparatie): ?>
           <div class="portal-action-card">
             <div class="portal-action-header">
-              <div class="portal-action-icon">&#128295;</div>
+              <div class="portal-action-icon">🔧</div>
               <div>
                 <h3>Reparatieaanvraag</h3>
                 <p>Vul uw gegevens aan om de reparatieaanvraag te voltooien.</p>
@@ -253,7 +262,7 @@ include __DIR__ . '/includes/header.php';
               </div>
               <div class="portal-field">
                 <label>E-mail</label>
-                <input type="email" value="<?= h($inzending['email']) ?>" readonly class="portal-field-prefilled" />
+                <?= lockedField($inzending['email'], 'email') ?>
               </div>
               <div class="portal-field">
                 <label>Telefoon *</label>
@@ -263,7 +272,7 @@ include __DIR__ . '/includes/header.php';
               <div class="portal-form-section">Televisie</div>
               <div class="portal-field">
                 <label>Merk televisie</label>
-                <input type="text" value="<?= h($inzending['merk']) ?>" readonly class="portal-field-prefilled" />
+                <?= lockedField($inzending['merk']) ?>
               </div>
               <div class="portal-field">
                 <label>Model televisie *</label>
@@ -297,7 +306,7 @@ include __DIR__ . '/includes/header.php';
           <?php elseif ($isTaxatie): ?>
           <div class="portal-action-card">
             <div class="portal-action-header">
-              <div class="portal-action-icon">&#128203;</div>
+              <div class="portal-action-icon">📋</div>
               <div>
                 <h3>Taxatieaanvraag</h3>
                 <p>Vul uw gegevens aan om de taxatieaanvraag te voltooien.</p>
@@ -330,7 +339,7 @@ include __DIR__ . '/includes/header.php';
               </div>
               <div class="portal-field">
                 <label>E-mail</label>
-                <input type="email" value="<?= h($inzending['email']) ?>" readonly class="portal-field-prefilled" />
+                <?= lockedField($inzending['email'], 'email') ?>
               </div>
               <div class="portal-field">
                 <label>Telefoonnummer *</label>
@@ -340,11 +349,11 @@ include __DIR__ . '/includes/header.php';
               <div class="portal-form-section">Televisie</div>
               <div class="portal-field">
                 <label>Merk TV</label>
-                <input type="text" value="<?= h($inzending['merk']) ?>" readonly class="portal-field-prefilled" />
+                <?= lockedField($inzending['merk']) ?>
               </div>
               <div class="portal-field">
                 <label>Modelnummer</label>
-                <input type="text" value="<?= h($inzending['modelnummer']) ?>" readonly class="portal-field-prefilled" />
+                <?= lockedField($inzending['modelnummer']) ?>
               </div>
               <div class="portal-field">
                 <label>Serienummer *</label>
@@ -419,7 +428,7 @@ include __DIR__ . '/includes/header.php';
           <?php else: ?>
           <div class="portal-action-card">
             <div class="portal-action-header">
-              <div class="portal-action-icon">&#128203;</div>
+              <div class="portal-action-icon">📋</div>
               <div>
                 <h3>Aanvullende gegevens nodig</h3>
                 <p>Vul uw contactgegevens in om uw aanvraag te voltooien.</p>
@@ -450,18 +459,18 @@ include __DIR__ . '/includes/header.php';
         <?php elseif ($status === 'coulance'): ?>
           <div class="portal-action-card card-warning">
             <div class="portal-action-header">
-              <div class="portal-action-icon icon-warning">&#129309;</div>
+              <div class="portal-action-icon icon-warning">🤝</div>
               <div>
                 <h3>Coulancetraject</h3>
                 <p>Neem contact op met de verkoper of fabrikant voor een coulanceverzoek.</p>
               </div>
             </div>
-            <p style="font-size:.875rem;color:#374151;margin-bottom:1rem;">
+            <p style="font-size:.9rem;color:#374151;margin-bottom:1rem;line-height:1.65;">
               Leg uw situatie rustig uit en verwijs naar de wettelijke regels rondom consumentenkoop.
               Vermeld dat de televisie <?= h((int)(date('Y') - (int)($inzending['aanschafjaar'] ?? date('Y')))) ?> jaar oud is
               en een technisch defect heeft dat niet door uzelf is veroorzaakt.
             </p>
-            <p style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem;">
+            <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.5rem;">
               Lukt het coulanceverzoek niet? Dan kunt u via onderstaande knop een reparatieaanvraag starten.
             </p>
             <form method="POST" action="<?= BASE_URL ?>/api/aanvulling.php">
@@ -479,7 +488,7 @@ include __DIR__ . '/includes/header.php';
         <?php elseif ($status === 'recycling'): ?>
           <div class="portal-action-card card-purple">
             <div class="portal-action-header">
-              <div class="portal-action-icon icon-purple">&#9851;</div>
+              <div class="portal-action-icon icon-purple">♻</div>
               <div>
                 <h3>Recyclingverzoek indienen</h3>
                 <p>Uw televisie komt in aanmerking voor verantwoorde recycling.</p>
@@ -511,32 +520,33 @@ include __DIR__ . '/includes/header.php';
         <!-- ── Status: ontvangen, wacht op beoordeling ──────────── -->
         <?php elseif ($status === 'inzending'): ?>
           <div class="portal-info-card info-blue">
-            <h3>&#128269; Uw aanvraag is ontvangen</h3>
+            <h3>🔍 Uw aanvraag is ontvangen</h3>
             <p>Ons team beoordeelt uw aanvraag zo spoedig mogelijk. U ontvangt bericht zodra er een update is. Gemiddelde verwerkingstijd: 1 werkdag.</p>
           </div>
 
         <!-- ── Status: aanvraag volledig ingediend ──────────────── -->
         <?php elseif ($status === 'aanvraag'): ?>
           <div class="portal-info-card">
-            <h3>&#10003; Aanvraag volledig ontvangen</h3>
+            <h3>✓ Aanvraag volledig ontvangen</h3>
             <p>Uw aanvraag is volledig ontvangen en ligt bij ons team ter beoordeling. Wij nemen zo spoedig mogelijk contact met u op.</p>
           </div>
 
         <!-- ── Status: behandeld / archief ──────────────────────── -->
         <?php elseif (in_array($status, ['behandeld', 'archief'])): ?>
           <div class="portal-info-card info-done">
-            <h3>&#9989; Aanvraag afgehandeld</h3>
+            <h3>✅ Aanvraag afgehandeld</h3>
             <p>Uw aanvraag is <?= $status === 'archief' ? 'gearchiveerd' : 'behandeld' ?>. Heeft u nog vragen? Neem contact op met vermelding van uw casenummer <strong><?= h($inzending['casenummer']) ?></strong>.</p>
           </div>
         <?php endif; ?>
 
         <!-- ── Berichten ─────────────────────────────────────────── -->
-        <div class="portal-card portal-berichten">
+        <div class="portal-card portal-berichten" id="berichten-sectie">
           <div class="portal-card-title">Berichten</div>
+
           <?php if (empty($inzending['log'])): ?>
-            <p class="berichten-leeg">Nog geen berichten.</p>
+            <p class="berichten-leeg">Nog geen berichten. Stel gerust een vraag hieronder.</p>
           <?php else: ?>
-            <div class="berichten-lijst">
+            <div class="berichten-lijst" id="berichten-lijst">
               <?php foreach ($inzending['log'] as $le):
                 $door    = $le['gedaan_door'];
                 $isKlant = $door === 'klant';
@@ -566,6 +576,7 @@ include __DIR__ . '/includes/header.php';
               <?php endforeach; ?>
             </div>
           <?php endif; ?>
+
           <?php if (!in_array($status, ['behandeld', 'archief'])): ?>
           <form class="bericht-invoer-form" method="POST" action="<?= BASE_URL ?>/api/aanvulling.php">
             <input type="hidden" name="csrf_token"  value="<?= csrf() ?>" />
@@ -573,7 +584,8 @@ include __DIR__ . '/includes/header.php';
             <input type="hidden" name="casenummer"  value="<?= h($inzending['casenummer']) ?>" />
             <input type="hidden" name="actie"       value="bericht" />
             <div class="bericht-invoer-wrap">
-              <textarea name="bericht_tekst" class="bericht-invoer" placeholder="Typ een bericht of vraag..." rows="2"></textarea>
+              <textarea name="bericht_tekst" id="bericht-invoer" class="bericht-invoer"
+                        placeholder="Typ een bericht of vraag..." rows="1"></textarea>
               <button type="submit" class="bericht-verstuur-btn">Versturen</button>
             </div>
           </form>
@@ -627,7 +639,7 @@ include __DIR__ . '/includes/header.php';
         <?php if (!empty($inzending['omschrijving'])): ?>
         <div class="portal-card">
           <div class="portal-card-title">Omschrijving defect</div>
-          <p style="font-size:.875rem;color:#374151;line-height:1.6;"><?= h($inzending['omschrijving']) ?></p>
+          <p style="font-size:.875rem;color:#374151;line-height:1.65;"><?= h($inzending['omschrijving']) ?></p>
         </div>
         <?php endif; ?>
 
@@ -650,13 +662,30 @@ include __DIR__ . '/includes/header.php';
 
         <div class="portal-card" style="background:#f8fafc;">
           <div class="portal-card-title">Hulp nodig?</div>
-          <p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;">Neem contact op met vermelding van uw casenummer.</p>
-          <a href="<?= BASE_URL ?>/contact.php" style="font-size:.875rem;font-weight:600;color:var(--accent);">&#128231; Contact opnemen &rarr;</a>
+          <p style="font-size:.85rem;color:var(--muted);margin-bottom:.85rem;line-height:1.5;">Neem contact op met vermelding van uw casenummer.</p>
+          <a href="<?= BASE_URL ?>/contact.php" style="font-size:.9rem;font-weight:600;color:#287864;text-decoration:none;">✉ Contact opnemen &rarr;</a>
         </div>
       </div>
 
     </div><!-- /.portal-grid -->
   </div><!-- /.portal-wrap -->
+
+  <script>
+  // Scroll berichten automatisch naar beneden bij laden
+  (function() {
+    var lijst = document.getElementById('berichten-lijst');
+    if (lijst) lijst.scrollTop = lijst.scrollHeight;
+
+    // Auto-resize textarea bericht-invoer
+    var invoer = document.getElementById('bericht-invoer');
+    if (invoer) {
+      invoer.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+      });
+    }
+  })();
+  </script>
 
 <?php endif; ?>
 </div>
