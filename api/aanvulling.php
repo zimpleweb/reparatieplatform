@@ -7,23 +7,31 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCsrf($_POST['csrf_token'] ??
     redirect(BASE_URL . '/mijn-aanvraag.php?error=csrf');
 }
 
-$id    = (int)  ($_POST['aanvraag_id'] ?? 0);
-$cn    = trim(  $_POST['casenummer']   ?? '');
-$actie = trim(  $_POST['actie']        ?? '');
-$naam  = trim(  $_POST['naam']         ?? '');
-$tel   = trim(  $_POST['telefoon']     ?? '');
-$adr   = trim(  $_POST['adres']        ?? '');
+$id    = (int) ($_POST['aanvraag_id'] ?? 0);
+$cn    = trim( $_POST['casenummer']   ?? '');
+$actie = trim( $_POST['actie']        ?? '');
 
 if (!$id || !$cn) redirect(BASE_URL . '/mijn-aanvraag.php?error=ongeldig');
 
-// Haal de aanvraag op en controleer casenummer
 $stmt = db()->prepare('SELECT id, status, advies_type, email, casenummer FROM aanvragen WHERE id=? AND casenummer=?');
 $stmt->execute([$id, $cn]);
 $rij = $stmt->fetch();
 
 if (!$rij) redirect(BASE_URL . '/mijn-aanvraag.php?error=ongeldig');
 
-// ── Speciale actie: coulance mislukt → omzetten naar reparatie ───
+// ── Bericht van klant (elke status) ─────────────────────────────
+if ($actie === 'bericht') {
+    $tekst = trim($_POST['bericht_tekst'] ?? '');
+    if ($tekst) {
+        try {
+            db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, opmerking, gedaan_door) VALUES (?,?,?,?)')
+               ->execute([$id, 'Bericht klant', $tekst, 'klant']);
+        } catch (\PDOException $e) {}
+    }
+    redirect(BASE_URL . '/mijn-aanvraag.php');
+}
+
+// ── Coulance mislukt → omzetten naar reparatie ───────────────────
 if ($actie === 'coulance_naar_reparatie') {
     if ($rij['status'] !== 'coulance') redirect(BASE_URL . '/advies.php?error=ongeldig');
     db()->prepare("UPDATE aanvragen SET status='doorgestuurd', advies_type='reparatie' WHERE id=?")
@@ -35,48 +43,139 @@ if ($actie === 'coulance_naar_reparatie') {
     redirect(BASE_URL . '/mijn-aanvraag.php?verzonden=3');
 }
 
-// ── Aanvullende gegevens (doorgestuurd of recycling_aanvraag) ────
-$toegestaanStatussen = ['doorgestuurd', 'recycling'];
-if (!in_array($rij['status'], $toegestaanStatussen) && $actie !== 'recycling_aanvraag') {
-    redirect(BASE_URL . '/mijn-aanvraag.php?error=ongeldig');
-}
-if (!$naam || !$tel || !$adr) {
-    redirect(BASE_URL . '/mijn-aanvraag.php?error=onvolledig');
+// ── Recyclingverzoek ─────────────────────────────────────────────
+if ($actie === 'recycling_aanvraag') {
+    if ($rij['status'] !== 'recycling') redirect(BASE_URL . '/mijn-aanvraag.php?error=ongeldig');
+    $naam = trim($_POST['naam']     ?? '');
+    $tel  = trim($_POST['telefoon'] ?? '');
+    $adr  = trim($_POST['adres']    ?? '');
+    if (!$naam || !$tel || !$adr) redirect(BASE_URL . '/mijn-aanvraag.php?error=onvolledig');
+    db()->prepare("UPDATE aanvragen SET naam=?, telefoon=?, adres=?, status='recycling' WHERE id=?")
+       ->execute([$naam, $tel, $adr, $id]);
+    try {
+        db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, gedaan_door) VALUES (?,?,?)')
+           ->execute([$id, 'Recyclingverzoek ingediend door klant', 'klant']);
+    } catch (\PDOException $e) {}
+    redirect(BASE_URL . '/mijn-aanvraag.php?verzonden=2');
 }
 
-// ── Fotoupload ───────────────────────────────────────────────────
+// ── Aanvulling: alleen bij doorgestuurd ──────────────────────────
+if ($rij['status'] !== 'doorgestuurd') {
+    redirect(BASE_URL . '/mijn-aanvraag.php?error=ongeldig');
+}
+
+$type      = trim($_POST['type'] ?? '');
 $uploadDir = __DIR__ . '/../uploads/aanvragen/' . $id . '/';
 if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
 
+function uploadFoto(string $veld, string $uploadDir, int $id): ?string {
+    if (!isset($_FILES[$veld]) || $_FILES[$veld]['error'] !== UPLOAD_ERR_OK) return null;
+    $mime = mime_content_type($_FILES[$veld]['tmp_name']);
+    if (!in_array($mime, ['image/jpeg','image/png','image/webp','image/gif'])) return null;
+    if ($_FILES[$veld]['size'] > 10 * 1024 * 1024) return null;
+    $ext  = strtolower(pathinfo($_FILES[$veld]['name'], PATHINFO_EXTENSION));
+    $bestand = bin2hex(random_bytes(10)) . '.' . $ext;
+    if (move_uploaded_file($_FILES[$veld]['tmp_name'], $uploadDir . $bestand)) {
+        return 'uploads/aanvragen/' . $id . '/' . $bestand;
+    }
+    return null;
+}
+
+// ── Reparatieaanvraag ────────────────────────────────────────────
+if ($type === 'reparatie') {
+    $naam         = trim($_POST['naam']         ?? '');
+    $plaats       = trim($_POST['plaats']       ?? '');
+    $tel          = trim($_POST['telefoon']     ?? '');
+    $modelnummer  = trim($_POST['modelnummer']  ?? '');
+    $omschrijving = trim($_POST['omschrijving'] ?? '');
+    if (!$naam || !$plaats || !$tel || !$modelnummer || !$omschrijving) {
+        redirect(BASE_URL . '/mijn-aanvraag.php?error=onvolledig');
+    }
+    $fotoDefect = uploadFoto('foto_defect', $uploadDir, $id);
+    $fotoLabel  = uploadFoto('foto_label',  $uploadDir, $id);
+    $sql    = "UPDATE aanvragen SET naam=?, telefoon=?, plaats=?, omschrijving=?, modelnummer=?, status='aanvraag'";
+    $params = [$naam, $tel, $plaats, $omschrijving, $modelnummer];
+    if ($fotoDefect) { $sql .= ', foto_defect=?'; $params[] = $fotoDefect; }
+    if ($fotoLabel)  { $sql .= ', foto_label=?';  $params[] = $fotoLabel; }
+    $sql .= ' WHERE id=?'; $params[] = $id;
+    db()->prepare($sql)->execute($params);
+    try {
+        db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, gedaan_door) VALUES (?,?,?)')
+           ->execute([$id, 'Reparatieaanvraag ingediend door klant', 'klant']);
+    } catch (\PDOException $e) {}
+    redirect(BASE_URL . '/mijn-aanvraag.php?verzonden=2');
+}
+
+// ── Taxatieaanvraag ──────────────────────────────────────────────
+if ($type === 'taxatie') {
+    $naam            = trim($_POST['naam']             ?? '');
+    $adres           = trim($_POST['adres']            ?? '');
+    $postcode        = trim($_POST['postcode']         ?? '');
+    $plaats          = trim($_POST['plaats']           ?? '');
+    $tel             = trim($_POST['telefoon']         ?? '');
+    $serienummer     = trim($_POST['serienummer']      ?? '');
+    $redenSchade     = trim($_POST['reden_schade']     ?? '');
+    $beschrijving    = trim($_POST['beschrijving']     ?? '');
+    $aankoopbedrag   = trim($_POST['aankoopbedrag']    ?? '');
+    $aankoopdatum    = trim($_POST['aankoopdatum']     ?? '');
+    $heeftBon        = isset($_POST['heeft_bon']) ? 1 : 0;
+    $naamVerzekeraar = trim($_POST['naam_verzekeraar'] ?? '');
+    $polisnummer     = trim($_POST['polisnummer']      ?? '');
+
+    if (!$naam || !$adres || !$postcode || !$plaats || !$tel || !$serienummer
+        || !$redenSchade || !$aankoopbedrag || !$aankoopdatum
+        || !$naamVerzekeraar || !$polisnummer) {
+        redirect(BASE_URL . '/mijn-aanvraag.php?error=onvolledig');
+    }
+
+    $fotoToestel = uploadFoto('foto_toestel', $uploadDir, $id);
+    $fotoDefect  = uploadFoto('foto_defect',  $uploadDir, $id);
+    $fotoLabel   = uploadFoto('foto_label',   $uploadDir, $id);
+    $fotoExtra   = uploadFoto('foto_extra',   $uploadDir, $id);
+
+    if (!$fotoToestel || !$fotoDefect || !$fotoLabel) {
+        redirect(BASE_URL . '/mijn-aanvraag.php?error=foto_verplicht');
+    }
+
+    $sql = "UPDATE aanvragen SET naam=?, adres=?, postcode=?, plaats=?, telefoon=?,
+            serienummer=?, reden_schade=?, omschrijving=?, aankoopbedrag=?, aankoopdatum=?,
+            heeft_bon=?, naam_verzekeraar=?, polisnummer=?,
+            foto_toestel=?, foto_defect=?, foto_label=?, status='aanvraag'";
+    $params = [
+        $naam, $adres, $postcode, $plaats, $tel,
+        $serienummer, $redenSchade, $beschrijving, $aankoopbedrag, $aankoopdatum ?: null,
+        $heeftBon, $naamVerzekeraar, $polisnummer,
+        $fotoToestel, $fotoDefect, $fotoLabel,
+    ];
+    if ($fotoExtra) { $sql .= ', foto_extra=?'; $params[] = $fotoExtra; }
+    $sql .= ' WHERE id=?'; $params[] = $id;
+    db()->prepare($sql)->execute($params);
+    try {
+        db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, gedaan_door) VALUES (?,?,?)')
+           ->execute([$id, 'Taxatieaanvraag ingediend door klant', 'klant']);
+    } catch (\PDOException $e) {}
+    redirect(BASE_URL . '/mijn-aanvraag.php?verzonden=2');
+}
+
+// ── Generiek (overige typen doorgestuurd) ────────────────────────
+$naam = trim($_POST['naam']     ?? '');
+$tel  = trim($_POST['telefoon'] ?? '');
+$adr  = trim($_POST['adres']    ?? '');
+if (!$naam || !$tel || !$adr) redirect(BASE_URL . '/mijn-aanvraag.php?error=onvolledig');
+
 $uploads = [];
 foreach (['foto_defect', 'foto_label', 'foto_bon'] as $veld) {
-    if (!isset($_FILES[$veld]) || $_FILES[$veld]['error'] !== UPLOAD_ERR_OK) continue;
-    $mime = mime_content_type($_FILES[$veld]['tmp_name']);
-    if (!in_array($mime, ['image/jpeg','image/png','image/webp','image/gif'])) continue;
-    if ($_FILES[$veld]['size'] > 10 * 1024 * 1024) continue;
-    $ext  = strtolower(pathinfo($_FILES[$veld]['name'], PATHINFO_EXTENSION));
-    $naam_bestand = bin2hex(random_bytes(10)) . '.' . $ext;
-    if (move_uploaded_file($_FILES[$veld]['tmp_name'], $uploadDir . $naam_bestand)) {
-        $uploads[$veld] = 'uploads/aanvragen/' . $id . '/' . $naam_bestand;
-    }
+    $pad = uploadFoto($veld, $uploadDir, $id);
+    if ($pad) $uploads[$veld] = $pad;
 }
 
-// ── Status bepalen ───────────────────────────────────────────────
-$nieuweStatus = ($actie === 'recycling_aanvraag') ? 'recycling' : 'aanvraag';
-$logActie     = ($actie === 'recycling_aanvraag')
-    ? 'Recyclingverzoek ingediend door klant'
-    : ucfirst($rij['advies_type'] ?? 'aanvraag') . ' ingediend door klant';
-
-// ── Bijwerken ────────────────────────────────────────────────────
-$sql = 'UPDATE aanvragen SET naam=?, telefoon=?, adres=?, status=?';
-$params = [$naam, $tel, $adr, $nieuweStatus];
-
-foreach (['foto_defect','foto_label','foto_bon'] as $v) {
+$logActie = ucfirst($rij['advies_type'] ?? 'aanvraag') . ' ingediend door klant';
+$sql      = "UPDATE aanvragen SET naam=?, telefoon=?, adres=?, status='aanvraag'";
+$params   = [$naam, $tel, $adr];
+foreach (['foto_defect', 'foto_label', 'foto_bon'] as $v) {
     if (isset($uploads[$v])) { $sql .= ", $v=?"; $params[] = $uploads[$v]; }
 }
-$sql .= ' WHERE id=?';
-$params[] = $id;
-
+$sql .= ' WHERE id=?'; $params[] = $id;
 db()->prepare($sql)->execute($params);
 
 try {
