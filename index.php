@@ -21,8 +21,7 @@ include __DIR__ . '/includes/header.php';
       </div>
       <h1>Je televisie<br>is kapot.<br><em>Wat nu?</em></h1>
       <p class="hero-sub">
-        Beschrijf het probleem en ontvang binnen &eacute;&eacute;n werkdag eerlijk advies.
-        Of je recht hebt op garantie, reparatie aan huis of vergoeding via de verzekeraar.
+        Stuur je merk, modelnummer en een korte klachtomschrijving op. Binnen één werkdag lees je of je recht hebt op garantie, of er via de winkel toch iets mogelijk is, of dat reparatie aan huis de slimste keuze is.
       </p>
       <div class="hero-actions">
         <a href="#advies" class="btn-primary">
@@ -40,8 +39,8 @@ include __DIR__ . '/includes/header.php';
     <div>
       <div class="hero-card">
         <span class="hero-card-tag">Jouw televisie, ons advies</span>
-        <h3>Kapotte televisie?<br>Wij helpen je verder.</h3>
-        <p>Vertel ons wat er mis is en ontvang binnen &eacute;&eacute;n werkdag een eerlijk advies, helemaal gratis.</p>
+        <h3>Kapotte televisie?<br>Zo kom je er uit.</h3>
+        <p>Vul het formulier in — duurt twee minuten — en je krijgt binnen één werkdag bericht wat de beste stap is.</p>
         <div class="hero-card-steps">
           <div class="hero-card-step"><span class="step-circle">1</span> Modelnummer &amp; klacht invullen</div>
           <div class="hero-card-step"><span class="step-circle">2</span> Persoonlijk advies ontvangen</div>
@@ -55,25 +54,25 @@ include __DIR__ . '/includes/header.php';
 <div class="how-wrap" id="hoe">
   <div class="how-inner">
     <h2 class="section-title">Zo werkt het</h2>
-    <p class="section-lead">Geen technische kennis nodig. Beschrijf wat er mis is en wij regelen de rest.</p>
+    <p class="section-lead">Drie vragen over je tv en één veld voor je e-mailadres. Meer hoef je niet te doen.</p>
     <div class="steps-grid">
       <div class="step-item">
         <div class="step-n">01</div>
         <div class="step-icon">&#128221;</div>
         <h3>Formulier invullen</h3>
-        <p>Geef je merk, modelnummer en een korte omschrijving van het probleem. Klaar in twee minuten.</p>
+        <p>Merk, modelnummer en een korte omschrijving van het probleem. Het modelnummer staat achter op de tv. Klaar in twee minuten.</p>
       </div>
       <div class="step-item">
         <div class="step-n">02</div>
         <div class="step-icon">&#128269;</div>
-        <h3>Wij beoordelen je situatie</h3>
-        <p>Een specialist bekijkt je gegevens en bepaalt de beste optie: garantie, coulance, reparatie of taxatie.</p>
+        <h3>We kijken wat er mogelijk is</h3>
+        <p>Een specialist bekijkt je aanvraag en toetst aan de garantieregels, coulancemogelijkheden en de staat van het model.</p>
       </div>
       <div class="step-item">
         <div class="step-n">03</div>
         <div class="step-icon">&#128233;</div>
         <h3>Advies per e-mail</h3>
-        <p>Je ontvangt een e-mail met een directe link naar jouw persoonlijk advies en de concrete vervolgstappen.</p>
+        <p>Je krijgt een mail met een directe link naar jouw advies: wat de situatie is, welke route het meest oplevert en wat de vervolgstap is.</p>
       </div>
     </div>
   </div>
@@ -83,7 +82,7 @@ include __DIR__ . '/includes/header.php';
   <div class="form-inner">
     <div class="form-left">
       <h2 class="section-title">Wat is er mis<br>met je televisie?</h2>
-      <p class="section-lead">Vul je gegevens in en ontvang zo snel mogelijk een persoonlijk advies &mdash; gratis en vrijblijvend.</p>
+      <p class="section-lead">Vul hieronder je gegevens in. Je ontvangt zo snel mogelijk advies — gratis, zonder verplichtingen.</p>
       <div class="outcome-list">
         <div class="outcome-item"><div class="oi-icon oi-blue">&#128737;</div> Garantie aanspreken bij de winkel of fabrikant</div>
         <div class="outcome-item"><div class="oi-icon oi-yellow">&#129309;</div> Coulanceregeling bespreken met de verkoper</div>
@@ -94,7 +93,7 @@ include __DIR__ . '/includes/header.php';
     <div>
       <div class="form-card">
         <h3>Beschrijf het probleem</h3>
-        <p>Vijf velden en je bent klaar. Je ontvangt binnen &eacute;&eacute;n werkdag een reactie.</p>
+        <p>Vijf velden, en je bent klaar. Je hoort normaal gesproken binnen één werkdag van ons.</p>
         <?php if (isset($_GET['verzonden'])): ?>
           <div class="alert alert-success" style="margin-bottom:1.5rem;">&#10003; Uw aanvraag is ontvangen! U ontvangt zo snel mogelijk een advies per e-mail.</div>
         <?php elseif (isset($_GET['error'])): ?>
@@ -167,34 +166,34 @@ include __DIR__ . '/includes/header.php';
 
 <div class="section">
   <h2 class="section-title">Wat kun je verwachten?</h2>
-  <p class="section-lead">Op basis van jouw situatie ontvang je een van de volgende adviezen, met duidelijke vervolgstappen.</p>
+  <p class="section-lead">Afhankelijk van je situatie sturen we je naar één van deze vier routes — met uitleg waarom én wat je concreet moet doen.</p>
   <div class="cards-grid">
     <div class="adv-card">
       <div class="adv-num">01</div>
       <div class="adv-card-icon">&#128737;</div>
       <h3>Garantie aanspreken</h3>
-      <p>Je tv valt nog onder de wettelijke garantie. We leggen je stap voor stap uit hoe je dit aanpakt bij de winkel of fabrikant.</p>
+      <p>Je tv is nog geen twee jaar oud en de fabrikant is verantwoordelijk. Wij leggen uit hoe je dat bij de winkel of fabrikant aankaart, want dat gaat niet altijd vanzelf.</p>
       <span class="adv-tag">Kosteloos</span>
     </div>
     <div class="adv-card">
       <div class="adv-num">02</div>
       <div class="adv-card-icon">&#129309;</div>
       <h3>Coulanceregeling</h3>
-      <p>De garantie is verlopen maar er is via de winkel toch iets mogelijk. Wij kijken samen wat haalbaar is.</p>
+      <p>De garantietermijn is verlopen, maar de tv ging eerder kapot dan je mag verwachten. Veel fabrikanten lossen dat toch op — als je het goed aanpakt.</p>
       <span class="adv-tag">Kans op vergoeding</span>
     </div>
     <div class="adv-card featured">
       <div class="adv-num">03</div>
       <div class="adv-card-icon">&#128295;</div>
       <h3>Reparatie aan huis</h3>
-      <p>Onze monteur komt bij jou thuis. Gespecialiseerd in LED-strips en schermen van Samsung, Philips, Sony en LG.</p>
+      <p>Onze monteur komt bij jou thuis. We zijn gespecialiseerd in backlight-problemen, LED-strips en schermen van Samsung, Philips, Sony en LG.</p>
       <span class="adv-tag">Ons specialisme</span>
     </div>
     <div class="adv-card featured">
       <div class="adv-num">04</div>
       <div class="adv-card-icon">&#128203;</div>
       <h3>Taxatierapport</h3>
-      <p>Een officieel taxatierapport voor je verzekeraar, met een aanbeveling voor reparatie, vergoeding of recycling.</p>
+      <p>Schade door stroom, brand of inbraak? Dan heb je voor je verzekeraar een officieel rapport nodig. Wij stellen dat op — inclusief dagwaarde en herstelkosten.</p>
       <span class="adv-tag">Geaccepteerd door verzekeraars</span>
     </div>
   </div>
@@ -203,11 +202,9 @@ include __DIR__ . '/includes/header.php';
 <div class="duurzaam-wrap">
   <div class="duurzaam-inner">
     <div>
-      <h2 class="section-title">Repareren is beter<br>voor mens en planeet</h2>
+      <h2 class="section-title">Repareren scheelt<br>meer dan je denkt</h2>
       <p class="section-lead">
-        Een nieuwe televisie heeft een enorme milieu-impact. Door te repareren bespaar je CO&#8322;
-        en voorkom je elektronisch afval. Dankzij de EU Right to Repair-wetgeving zijn fabrikanten
-        verplicht om reparatie betaalbaar en toegankelijk te houden.
+        Een nieuwe tv van 55 inch kost al snel zo'n 300 kg CO&#8322; om te produceren. Repareren is bijna altijd goedkoper én beter voor het milieu. Bovendien verplicht de EU Right to Repair-wet fabrikanten om onderdelen beschikbaar te houden — dus er is meer mogelijk dan vroeger.
       </p>
     </div>
     <div class="green-stats">
@@ -224,7 +221,7 @@ include __DIR__ . '/includes/header.php';
     <div class="merken-grid">
       <div>
         <h2 class="section-title" style="font-size:1.75rem;">Merken</h2>
-        <p style="font-size:.9rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.7;">We zijn gespecialiseerd in de populairste televisiemerken.</p>
+        <p style="font-size:.9rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.7;">We kennen de meestvoorkomende defecten per merk van binnen en buiten.</p>
         <div class="merken-row">
           <?php foreach ($merken as $m): ?>
           <a href="/database.php?merk=<?= urlencode($m) ?>" class="merk-pill"><?= h($m) ?></a>
@@ -233,7 +230,7 @@ include __DIR__ . '/includes/header.php';
       </div>
       <div>
         <h2 class="section-title" style="font-size:1.75rem;">Veelvoorkomende klachten</h2>
-        <p style="font-size:.9rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.7;">Herken je jouw klacht? Klik voor meer info per model.</p>
+        <p style="font-size:.9rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.7;">Staat jouw probleem ertussen? Klik voor bekende oorzaken en reparatiemogelijkheden per model.</p>
         <div class="klacht-grid">
           <?php foreach (['Kapot scherm','Strepen in beeld','Geen beeld wel geluid','TV gaat niet aan','Donkere vlekken','Backlight defect','LED strip kapot','Scherm flikkert','Zwart beeld','Halve scherm donker','Witte vlekken','Pixeldefect'] as $k): ?>
           <a href="/database.php?q=<?= urlencode($k) ?>" class="klacht-pill"><?= h($k) ?></a>

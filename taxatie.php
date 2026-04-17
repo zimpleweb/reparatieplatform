@@ -16,7 +16,7 @@ include __DIR__ . '/includes/header.php';
       <span style="color:rgba(255,255,255,.4)">Taxatierapport</span>
     </div>
     <h1>Taxatierapport<br>televisie</h1>
-    <p>Officieel rapport voor uw verzekeraar of schadeclaim — snel opgesteld door een erkende specialist.</p>
+    <p>Heeft uw verzekeraar een officieel taxatierapport nodig? Wij stellen dat op — inclusief dagwaarde, technische beoordeling en herstelkostenindicatie. Digitaal rapport binnen 2 werkdagen.</p>
   </div>
 </div>
 
@@ -26,8 +26,7 @@ include __DIR__ . '/includes/header.php';
     <div class="form-left">
       <h2 class="section-title">Wat is een<br>taxatierapport?</h2>
       <p class="section-lead">
-        Een officieel document waarin de waarde van uw televisie wordt vastgesteld op het moment van het defect of de schade.
-        Uw verzekeraar gebruikt dit rapport om te bepalen welk bedrag u vergoed krijgt.
+        Een officieel document waarin de waarde van uw televisie wordt vastgesteld op het moment van het defect of de schade. Uw verzekeraar gebruikt dat om te bepalen hoeveel u vergoed krijgt. Zonder rapport keert de meeste verzekeraars eenvoudigweg niet uit.
       </p>
       <div class="outcome-list">
         <div class="outcome-item"><div class="oi-icon oi-blue">&#127968;</div> Inboedelverzekering schadeclaim</div>
@@ -38,8 +37,8 @@ include __DIR__ . '/includes/header.php';
     </div>
     <div>
       <div class="form-card">
-        <h3>Wat bevat het rapport?</h3>
-        <p>Een volledig en erkend taxatierapport inclusief alle benodigde gegevens voor uw verzekeraar.</p>
+        <h3>Wat staat er in het rapport?</h3>
+        <p>Alles wat uw verzekeraar nodig heeft om de schade te beoordelen en het bedrag vast te stellen.</p>
         <div class="rapport-inhoud">
           <?php foreach ([
             'Merk, model en serienummer',
@@ -78,7 +77,7 @@ include __DIR__ . '/includes/header.php';
 <div class="section-light">
   <div class="section" style="padding-top:4rem;padding-bottom:4rem;">
     <h2 class="section-title">Veelgestelde vragen</h2>
-    <p class="section-lead">Alles wat u wilt weten over het taxatierapport.</p>
+    <p class="section-lead">De vragen die we het vaakst krijgen over het taxatierapport.</p>
     <div class="faq-lijst-fancy">
       <div class="faq-fancy-item">
         <button class="faq-fancy-q faq-q">
@@ -86,7 +85,7 @@ include __DIR__ . '/includes/header.php';
           <span>Hoe snel ontvang ik het rapport?</span>
         </button>
         <div class="faq-fancy-a faq-a">
-          <p>Na ontvangst van uw gegevens stellen wij het rapport binnen 2 werkdagen op. Spoed is mogelijk — neem contact op voor de mogelijkheden.</p>
+          <p>Binnen 2 werkdagen na ontvangst van uw gegevens. Het rapport wordt digitaal verstuurd, zodat u het direct kunt doorsturen naar uw verzekeraar. Spoedverzoeken zijn in overleg mogelijk.</p>
         </div>
       </div>
       <div class="faq-fancy-item">
@@ -95,7 +94,7 @@ include __DIR__ . '/includes/header.php';
           <span>Accepteert mijn verzekeraar dit rapport?</span>
         </button>
         <div class="faq-fancy-a faq-a">
-          <p>Ons rapport wordt opgesteld door een erkende televisietechnicus en voldoet aan de eisen van de meeste Nederlandse verzekeraars. Twijfelt u? Neem eerst contact op met uw verzekeraar om de exacte eisen te bespreken.</p>
+          <p>Ons rapport wordt opgesteld door een erkende televisietechnicus en voldoet aan de eisen van de meeste Nederlandse verzekeraars — waaronder Centraal Beheer, OHRA en Nationale Nederlanden. Weet u het niet zeker? Check dan eerst bij uw verzekeraar welke eisen zij stellen.</p>
         </div>
       </div>
       <div class="faq-fancy-item">
@@ -104,7 +103,7 @@ include __DIR__ . '/includes/header.php';
           <span>Moet de televisie fysiek worden gekeurd?</span>
         </button>
         <div class="faq-fancy-a faq-a">
-          <p>In de meeste gevallen kunnen wij het rapport opstellen op basis van foto's, het modelnummer en een beschrijving van het defect. Bij complexe schades kan een fysieke keuring nodig zijn.</p>
+          <p>Meestal niet. In de meeste gevallen volstaan duidelijke foto's van de schade, het modelnummer en een beschrijving van de toedracht. Alleen bij complexe of onduidelijke schades vragen we om een fysieke keuring.</p>
         </div>
       </div>
     </div>
@@ -115,9 +114,9 @@ include __DIR__ . '/includes/header.php';
 <div class="duurzaam-wrap">
   <div class="duurzaam-inner" style="grid-template-columns:1fr; text-align:center; gap:2rem;">
     <div>
-      <h2 class="section-title">Direct een taxatierapport aanvragen</h2>
+      <h2 class="section-title">Taxatierapport aanvragen</h2>
       <p class="section-lead" style="max-width:480px;margin:0 auto 2rem;">
-        Vul het formulier in en ontvang uw officiële rapport binnen 2 werkdagen.
+        Vul het formulier in en u ontvangt het rapport binnen 2 werkdagen. Klaar om naar uw verzekeraar te sturen.
       </p>
       <a href="<?= BASE_URL ?>/advies.php" class="btn-primary" style="margin:0 auto;">
         Taxatie aanvragen

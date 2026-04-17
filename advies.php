@@ -25,7 +25,7 @@ include __DIR__ . '/includes/header.php';
       <span style="color:rgba(255,255,255,.4)">Advies aanvragen</span>
     </div>
     <h1>Gratis advies aanvragen</h1>
-    <p>Vertel ons wat er mis is met je televisie — wij geven eerlijk en persoonlijk advies binnen 24 uur.</p>
+    <p>Vul het formulier in en je ontvangt binnen 24 uur bericht. Wat er aan de hand is, welke route je het meest oplevert en wat je concreet moet doen.</p>
   </div>
 </div>
 
@@ -33,25 +33,25 @@ include __DIR__ . '/includes/header.php';
 <div class="section-light">
   <div class="section" style="padding-top:4rem;padding-bottom:4rem;">
     <h2 class="section-title">Zo werkt het</h2>
-    <p class="section-lead">Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.</p>
+    <p class="section-lead">Vier stappen in het formulier, daarna hoef je niets meer te doen — wij nemen het over.</p>
     <div class="steps-grid-light">
       <div class="step-light">
         <div class="step-light-nr">01</div>
         <div class="step-light-icon">&#128221;</div>
         <h3>Formulier invullen</h3>
-        <p>Geef je merk, modelnummer en een korte omschrijving. Klaar in minder dan 2 minuten.</p>
+        <p>Merk, modelnummer, aanschafjaar en een korte klachtomschrijving. Het modelnummer staat achter op de tv of via Instellingen → Ondersteuning.</p>
       </div>
       <div class="step-light">
         <div class="step-light-nr">02</div>
         <div class="step-light-icon">&#128269;</div>
-        <h3>Wij analyseren</h3>
-        <p>Een specialist bekijkt jouw situatie en toetst aan garantie- en coulanceregels van de fabrikant.</p>
+        <h3>We beoordelen je situatie</h3>
+        <p>Een specialist bekijkt je aanvraag: valt het onder garantie, is er coulancekans, of is reparatie of taxatie de juiste route?</p>
       </div>
       <div class="step-light">
         <div class="step-light-nr">03</div>
         <div class="step-light-icon">&#128233;</div>
-        <h3>Persoonlijk advies</h3>
-        <p>Je ontvangt binnen 24 uur een helder advies met concrete vervolgstappen — gratis en vrijblijvend.</p>
+        <h3>Advies in je mailbox</h3>
+        <p>Je ontvangt binnen 24 uur een mail met de route die het meeste oplevert en de stappen die je moet zetten. Gratis, geen verplichtingen.</p>
       </div>
     </div>
   </div>
@@ -63,7 +63,7 @@ include __DIR__ . '/includes/header.php';
     <div class="status-check-box" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
       <div>
         <h3 style="margin-bottom:.3rem;">&#128274; Al een aanvraag ingediend?</h3>
-        <p class="lead" style="margin:0;">Bekijk de status, upload documenten en volg uw traject via uw persoonlijke klantenomgeving.</p>
+        <p class="lead" style="margin:0;">Bekijk de status van je aanvraag, upload documenten en volg het traject in je persoonlijke omgeving.</p>
       </div>
       <a href="<?= BASE_URL ?>/mijn-aanvraag.php" class="btn-check" style="white-space:nowrap;text-decoration:none;">
         Mijn aanvraag bekijken &rarr;
@@ -79,7 +79,7 @@ include __DIR__ . '/includes/header.php';
     <!-- Links -->
     <div class="form-left">
       <h2 class="section-title">Vraag gratis<br>advies aan</h2>
-      <p class="section-lead">Wij filteren automatisch de beste route — garantie, coulance, reparatie of taxatie.</p>
+      <p class="section-lead">Op basis van je antwoorden bepalen we welke route het meest kansrijk is. Dat kan één van de volgende vier zijn:</p>
       <div class="outcome-list">
         <div class="outcome-item"><div class="oi-icon oi-blue">&#128737;</div> Garantie aanspreken bij de winkel of fabrikant</div>
         <div class="outcome-item"><div class="oi-icon oi-yellow">&#129309;</div> Coulanceregeling bespreken met de verkoper</div>
@@ -135,7 +135,7 @@ include __DIR__ . '/includes/header.php';
           <div class="form-stap" id="stap-1">
             <div class="stap-header">
               <h3>Wat is er aan de hand?</h3>
-              <p>Dit bepaalt direct welke route het meest geschikt is.</p>
+              <p>Is de tv vanzelf kapot gegaan, of is er iets mee gebeurd — stroomstoot, val, inbraak?</p>
             </div>
             <div class="route-keuze-grid">
               <label class="route-keuze" data-type="storing">
@@ -163,8 +163,8 @@ include __DIR__ . '/includes/header.php';
           <!-- STAP 2 -->
           <div class="form-stap" id="stap-2" style="display:none;">
             <div class="stap-header">
-              <h3>Over uw televisie</h3>
-              <p>Merk, model en aankoopinformatie bepalen de route.</p>
+              <h3>Uw televisie</h3>
+              <p>Merk, model en aanschafjaar zijn nodig om te bepalen of er nog garantie of coulance mogelijk is.</p>
             </div>
             <div class="field-row">
               <div class="field">
@@ -231,7 +231,7 @@ include __DIR__ . '/includes/header.php';
           <div class="form-stap" id="stap-3" style="display:none;">
             <div class="stap-header">
               <h3>Beschrijf het defect</h3>
-              <p>Hoe specifieker, hoe beter het advies.</p>
+              <p>Kies het type probleem en geef een korte omschrijving. Hoe concreter, hoe nuttiger het advies.</p>
             </div>
             <div class="field">
               <label>Type klacht *</label>
@@ -273,13 +273,13 @@ include __DIR__ . '/includes/header.php';
           <!-- STAP 4 -->
           <div class="form-stap" id="stap-4" style="display:none;">
             <div class="stap-header">
-              <h3>Uw contactgegevens</h3>
-              <p>Hier sturen wij uw persoonlijk advies naartoe.</p>
+              <h3>Uw e-mailadres</h3>
+              <p>Hier sturen we het advies naartoe. Geen nieuwsbrief, geen spam — alleen uw advies.</p>
             </div>
             <div class="field">
               <label>E-mailadres *</label>
               <input type="email" name="email" placeholder="naam@email.nl" required />
-              <p class="field-hint">Geen spam. Alleen uw advies.</p>
+              <p class="field-hint">Alleen voor uw advies. Niets anders.</p>
             </div>
             <div id="route-samenvatting" class="route-samenvatting"></div>
             <div class="disclaimer-box">
