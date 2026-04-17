@@ -56,6 +56,13 @@ if (!empty($_SESSION['portal_case']) && !empty($_SESSION['portal_email'])) {
             $lg->execute([$inzending['id']]);
             $inzending['log'] = $lg->fetchAll();
         } catch (\PDOException $e) { $inzending['log'] = []; }
+
+        // Berichten laden
+        try {
+            $bq = db()->prepare('SELECT * FROM aanvragen_berichten WHERE aanvraag_id = ? ORDER BY aangemaakt ASC');
+            $bq->execute([$inzending['id']]);
+            $inzending['berichten'] = $bq->fetchAll();
+        } catch (\PDOException $e) { $inzending['berichten'] = []; }
     }
 }
 
@@ -222,20 +229,14 @@ include __DIR__ . '/includes/header.php';
     <div class="portal-grid">
       <div class="portal-main">
 
-        <!-- ── Actie: aanvulling nodig (doorgestuurd) ───────────── -->
-        <?php if ($status === 'doorgestuurd'): ?>
-          <?php
-            $isTaxatie   = $advType === 'taxatie';
-            $isReparatie = $advType === 'reparatie';
-            $labelType   = $isTaxatie ? 'Taxatie' : ($isReparatie ? 'Reparatie' : ucfirst($advType));
-            $iconType    = $isTaxatie ? '&#128203;' : '&#128295;';
-          ?>
+        <!-- ── Actie: doorgestuurd → Reparatieaanvraag ──────────── -->
+        <?php if ($status === 'doorgestuurd' && $advType === 'reparatie'): ?>
           <div class="portal-action-card">
             <div class="portal-action-header">
-              <div class="portal-action-icon"><?= $iconType ?></div>
+              <div class="portal-action-icon">&#128295;</div>
               <div>
-                <h3>Aanvullende gegevens nodig — <?= h($labelType) ?></h3>
-                <p>Vul uw contactgegevens en foto's in om uw <?= h(strtolower($labelType)) ?>aanvraag te voltooien.</p>
+                <h3>Reparatieaanvraag</h3>
+                <p>Vul onderstaande gegevens in om uw reparatieaanvraag te voltooien.</p>
               </div>
             </div>
             <form class="portal-form" method="POST" action="<?= BASE_URL ?>/api/aanvulling.php" enctype="multipart/form-data">
@@ -248,6 +249,241 @@ include __DIR__ . '/includes/header.php';
                 <input type="text" name="naam" required value="<?= h($inzending['naam'] ?? '') ?>" />
               </div>
               <div class="portal-field">
+                <label>Plaats *</label>
+                <input type="text" name="plaats" required value="<?= h($inzending['plaats'] ?? '') ?>" />
+              </div>
+              <div class="portal-field">
+                <label>E-mail *</label>
+                <input type="email" name="email" required value="<?= h($inzending['email'] ?? '') ?>" />
+              </div>
+              <div class="portal-field">
+                <label>Telefoon *</label>
+                <input type="tel" name="telefoon" required value="<?= h($inzending['telefoon'] ?? '') ?>" />
+              </div>
+              <div class="portal-field">
+                <label>Merk televisie *</label>
+                <select name="merk" required>
+                  <option value="">Selecteer merk</option>
+                  <?php
+                  $merken = ['Samsung','LG','Sony','Philips','Panasonic','Hisense','TCL','Grundig','Loewe','Toshiba','Anders'];
+                  foreach ($merken as $m):
+                    $sel = ($inzending['merk'] ?? '') === $m ? 'selected' : '';
+                  ?>
+                  <option value="<?= h($m) ?>" <?= $sel ?>><?= h($m) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div class="portal-field">
+                <label>Model televisie *</label>
+                <input type="text" name="modelnummer" required value="<?= h($inzending['modelnummer'] ?? '') ?>" />
+                <p class="portal-field-hint">Gelieve het volledige modelnummer in te voeren. Zonder compleet modelnummer kunnen wij u geen reparatieadvies toesturen.</p>
+              </div>
+              <div class="portal-field">
+                <label>Klachtomschrijving *</label>
+                <textarea name="klacht_omschrijving" rows="4" required placeholder="Beschrijf het defect zo nauwkeurig mogelijk..."><?= h($inzending['omschrijving'] ?? '') ?></textarea>
+              </div>
+
+              <div class="portal-upload-section">
+                <p class="portal-upload-titel">Foto's (optioneel)</p>
+                <div class="portal-field">
+                  <label>Foto van de klacht</label>
+                  <div class="portal-file-wrap">
+                    <input type="file" name="foto_klacht" accept="image/*" />
+                  </div>
+                  <p class="portal-field-hint">U kunt een foto van het defect aan uw televisie bijvoegen om uw reparatieaanvraag te verduidelijken (niet verplicht).</p>
+                </div>
+                <div class="portal-field">
+                  <label>Foto van het modelnummer</label>
+                  <div class="portal-file-wrap">
+                    <input type="file" name="foto_modelnummer" accept="image/*" />
+                  </div>
+                  <p class="portal-field-hint">U kunt een foto van het modelnummer bijvoegen om uw reparatieaanvraag te verduidelijken (niet verplicht).</p>
+                </div>
+              </div>
+
+              <button type="submit" class="portal-submit-btn">
+                Reparatieaanvraag indienen &rarr;
+              </button>
+            </form>
+          </div>
+
+        <!-- ── Actie: doorgestuurd → Taxatieaanvraag ────────────── -->
+        <?php elseif ($status === 'doorgestuurd' && $advType === 'taxatie'): ?>
+          <div class="portal-action-card">
+            <div class="portal-action-header">
+              <div class="portal-action-icon">&#128203;</div>
+              <div>
+                <h3>Taxatieaanvraag</h3>
+                <p>Vul onderstaande gegevens in om uw taxatieaanvraag te voltooien.</p>
+              </div>
+            </div>
+            <form class="portal-form" method="POST" action="<?= BASE_URL ?>/api/aanvulling.php" enctype="multipart/form-data">
+              <input type="hidden" name="csrf_token"  value="<?= csrf() ?>" />
+              <input type="hidden" name="aanvraag_id" value="<?= (int)$inzending['id'] ?>" />
+              <input type="hidden" name="casenummer"  value="<?= h($inzending['casenummer']) ?>" />
+
+              <div class="portal-field">
+                <label>Voor- en achternaam *</label>
+                <input type="text" name="naam" required value="<?= h($inzending['naam'] ?? '') ?>" />
+              </div>
+              <div class="portal-field">
+                <label>Adres *</label>
+                <input type="text" name="adres" required value="<?= h($inzending['adres'] ?? '') ?>" placeholder="Straat en huisnummer" />
+              </div>
+              <div class="portal-field-row">
+                <div class="portal-field">
+                  <label>Postcode *</label>
+                  <input type="text" name="postcode" required value="<?= h($inzending['postcode'] ?? '') ?>" placeholder="1234 AB" />
+                </div>
+                <div class="portal-field">
+                  <label>Plaats *</label>
+                  <input type="text" name="plaats" required value="<?= h($inzending['plaats'] ?? '') ?>" />
+                </div>
+              </div>
+              <div class="portal-field">
+                <label>E-mail *</label>
+                <input type="email" name="email" required value="<?= h($inzending['email'] ?? '') ?>" />
+              </div>
+              <div class="portal-field">
+                <label>Telefoonnummer *</label>
+                <input type="tel" name="telefoon" required value="<?= h($inzending['telefoon'] ?? '') ?>" />
+              </div>
+              <div class="portal-field">
+                <label>Merk TV *</label>
+                <select name="merk" required>
+                  <option value="">Selecteer merk</option>
+                  <?php foreach ($merken as $m):
+                    $sel = ($inzending['merk'] ?? '') === $m ? 'selected' : '';
+                  ?>
+                  <option value="<?= h($m) ?>" <?= $sel ?>><?= h($m) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div class="portal-field">
+                <label>Modelnummer *</label>
+                <input type="text" name="modelnummer" required value="<?= h($inzending['modelnummer'] ?? '') ?>" />
+              </div>
+              <div class="portal-field">
+                <label>Serienummer *</label>
+                <input type="text" name="serienummer" required value="<?= h($inzending['serienummer'] ?? '') ?>" />
+              </div>
+
+              <div class="portal-field">
+                <label>Reden schade *</label>
+                <div class="portal-radio-group">
+                  <label class="portal-radio-item">
+                    <input type="radio" name="reden_schade" value="iets_tegen_scherm" required />
+                    <span>Iets tegen scherm gekomen</span>
+                  </label>
+                  <label class="portal-radio-item">
+                    <input type="radio" name="reden_schade" value="tv_gevallen" />
+                    <span>De TV is gevallen</span>
+                  </label>
+                  <label class="portal-radio-item">
+                    <input type="radio" name="reden_schade" value="water_vocht" />
+                    <span>Water/vochtschade</span>
+                  </label>
+                  <label class="portal-radio-item">
+                    <input type="radio" name="reden_schade" value="anders" />
+                    <span>Anders, namelijk (vul hieronder in)</span>
+                  </label>
+                </div>
+              </div>
+              <div class="portal-field">
+                <label>Beschrijving (optioneel)</label>
+                <textarea name="schade_beschrijving" rows="3" placeholder="Toelichting bij de schade..."><?= h($inzending['omschrijving'] ?? '') ?></textarea>
+              </div>
+
+              <div class="portal-field-row">
+                <div class="portal-field">
+                  <label>Aankoopbedrag *</label>
+                  <input type="text" name="aankoopbedrag" required value="<?= h($inzending['aanschafwaarde'] ?? '') ?>" placeholder="Bijv. €899" />
+                </div>
+                <div class="portal-field">
+                  <label>Aankoopdatum *</label>
+                  <input type="date" name="aankoopdatum" required value="<?= h($inzending['aankoopdatum'] ?? date('Y-m-d')) ?>" />
+                </div>
+              </div>
+
+              <div class="portal-field">
+                <label>Heeft u een bon/aankoopbewijs?</label>
+                <div class="portal-radio-group portal-radio-group--inline">
+                  <label class="portal-radio-item">
+                    <input type="radio" name="heeft_bon" value="ja" />
+                    <span>Ja</span>
+                  </label>
+                  <label class="portal-radio-item">
+                    <input type="radio" name="heeft_bon" value="nee" />
+                    <span>Nee</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="portal-field-row">
+                <div class="portal-field">
+                  <label>Naam verzekeringsmaatschappij *</label>
+                  <input type="text" name="verzekeraar" required value="<?= h($inzending['verzekeraar'] ?? '') ?>" />
+                </div>
+                <div class="portal-field">
+                  <label>Polisnummer *</label>
+                  <input type="text" name="polisnummer" required value="<?= h($inzending['polisnummer'] ?? '') ?>" />
+                </div>
+              </div>
+
+              <div class="portal-upload-section">
+                <p class="portal-upload-titel">Foto's uploaden</p>
+                <div class="portal-field">
+                  <label>Foto van het gehele toestel *</label>
+                  <div class="portal-file-wrap">
+                    <input type="file" name="foto_toestel" accept="image/*" required />
+                  </div>
+                </div>
+                <div class="portal-field">
+                  <label>Foto van de schade (eventueel met toestel aan) *</label>
+                  <div class="portal-file-wrap">
+                    <input type="file" name="foto_schade" accept="image/*" required />
+                  </div>
+                </div>
+                <div class="portal-field">
+                  <label>Foto achterkant (met modelnummersticker afleesbaar) *</label>
+                  <div class="portal-file-wrap">
+                    <input type="file" name="foto_achterkant" accept="image/*" required />
+                  </div>
+                </div>
+                <div class="portal-field">
+                  <label>Extra foto bijv. aankoopfactuur</label>
+                  <div class="portal-file-wrap">
+                    <input type="file" name="foto_extra" accept="image/*" />
+                  </div>
+                </div>
+                <p class="portal-field-hint" style="margin-top:.5rem;">Maximaal 10 MB per foto. Toegestane formaten: JPG, PNG, WebP.</p>
+              </div>
+
+              <button type="submit" class="portal-submit-btn">
+                Taxatieaanvraag indienen &rarr;
+              </button>
+            </form>
+          </div>
+
+        <!-- ── Actie: doorgestuurd → overig (fallback) ──────────── -->
+        <?php elseif ($status === 'doorgestuurd'): ?>
+          <div class="portal-action-card">
+            <div class="portal-action-header">
+              <div class="portal-action-icon">&#128203;</div>
+              <div>
+                <h3>Aanvullende gegevens nodig</h3>
+                <p>Vul uw contactgegevens en foto's in om uw aanvraag te voltooien.</p>
+              </div>
+            </div>
+            <form class="portal-form" method="POST" action="<?= BASE_URL ?>/api/aanvulling.php" enctype="multipart/form-data">
+              <input type="hidden" name="csrf_token"  value="<?= csrf() ?>" />
+              <input type="hidden" name="aanvraag_id" value="<?= (int)$inzending['id'] ?>" />
+              <input type="hidden" name="casenummer"  value="<?= h($inzending['casenummer']) ?>" />
+              <div class="portal-field">
+                <label>Naam *</label>
+                <input type="text" name="naam" required value="<?= h($inzending['naam'] ?? '') ?>" />
+              </div>
+              <div class="portal-field">
                 <label>Telefoonnummer *</label>
                 <input type="tel" name="telefoon" required value="<?= h($inzending['telefoon'] ?? '') ?>" />
               </div>
@@ -255,29 +491,23 @@ include __DIR__ . '/includes/header.php';
                 <label>Adres (straat + huisnummer, postcode, stad) *</label>
                 <input type="text" name="adres" required value="<?= h($inzending['adres'] ?? '') ?>" />
               </div>
-
-              <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border);">
-                <p style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:1rem;">Foto's uploaden</p>
+              <div class="portal-upload-section">
+                <p class="portal-upload-titel">Foto's uploaden</p>
                 <div class="portal-field">
-                  <label>Foto van het defect <?= $isTaxatie ? '*' : '' ?></label>
-                  <input type="file" name="foto_defect" accept="image/*" <?= $isTaxatie ? 'required' : '' ?> />
+                  <label>Foto van het defect</label>
+                  <div class="portal-file-wrap">
+                    <input type="file" name="foto_defect" accept="image/*" />
+                  </div>
                 </div>
                 <div class="portal-field">
                   <label>Foto van het label / serienummer (achterkant TV)</label>
-                  <input type="file" name="foto_label" accept="image/*" />
+                  <div class="portal-file-wrap">
+                    <input type="file" name="foto_label" accept="image/*" />
+                  </div>
                 </div>
-                <?php if ($isTaxatie): ?>
-                <div class="portal-field">
-                  <label>Foto van de aankoopbon *</label>
-                  <input type="file" name="foto_bon" accept="image/*" required />
-                </div>
-                <?php endif; ?>
-                <p style="font-size:.75rem;color:var(--muted);margin-top:.5rem;">Maximaal 10 MB per foto. Toegestane formaten: JPG, PNG, WebP.</p>
+                <p class="portal-field-hint">Maximaal 10 MB per foto. Toegestane formaten: JPG, PNG, WebP.</p>
               </div>
-
-              <button type="submit" class="portal-submit-btn">
-                <?= h($labelType) ?>aanvraag indienen &rarr;
-              </button>
+              <button type="submit" class="portal-submit-btn">Aanvulling indienen &rarr;</button>
             </form>
           </div>
 
@@ -365,31 +595,83 @@ include __DIR__ . '/includes/header.php';
           </div>
         <?php endif; ?>
 
-        <!-- ── Tijdlijn ──────────────────────────────────────────── -->
-        <?php if (!empty($inzending['log'])): ?>
-          <div class="portal-card">
-            <div class="portal-card-title">Tijdlijn</div>
-            <ul class="portal-timeline-list">
-              <?php foreach (array_reverse($inzending['log']) as $le): ?>
-                <li class="portal-timeline-item">
-                  <div class="portal-timeline-dot"></div>
-                  <div class="portal-timeline-time"><?= date('d-m H:i', strtotime($le['aangemaakt'])) ?></div>
-                  <div>
-                    <div class="portal-timeline-actie"><?= h($le['actie']) ?></div>
-                    <?php if ($le['opmerking']): ?>
-                      <div class="portal-timeline-opmerking"><?= h($le['opmerking']) ?></div>
-                    <?php endif; ?>
+        <!-- ── Berichten ─────────────────────────────────────────── -->
+        <div class="portal-card portal-berichten-card">
+          <div class="portal-card-title">&#128172; Berichten</div>
+
+          <?php if (empty($inzending['berichten'])): ?>
+            <div class="portal-berichten-leeg">
+              <span class="portal-berichten-leeg-icon">&#128172;</span>
+              <p>Nog geen berichten. Zodra ons team een update stuurt, verschijnt die hier.</p>
+            </div>
+          <?php else: ?>
+            <div class="portal-berichten-lijst">
+              <?php foreach ($inzending['berichten'] as $bericht): ?>
+                <?php $isKlant = ($bericht['afzender'] ?? 'team') === 'klant'; ?>
+                <div class="portal-bericht <?= $isKlant ? 'bericht-klant' : 'bericht-team' ?>">
+                  <div class="portal-bericht-meta">
+                    <span class="portal-bericht-afzender">
+                      <?= $isKlant ? 'U' : 'Reparatieplatform' ?>
+                    </span>
+                    <span class="portal-bericht-tijd">
+                      <?= date('d-m-Y H:i', strtotime($bericht['aangemaakt'])) ?>
+                    </span>
                   </div>
-                </li>
+                  <div class="portal-bericht-tekst">
+                    <?= nl2br(h($bericht['bericht'])) ?>
+                  </div>
+                </div>
               <?php endforeach; ?>
-            </ul>
-          </div>
-        <?php endif; ?>
+            </div>
+          <?php endif; ?>
+
+          <!-- Invoerveld nieuw bericht -->
+          <form class="portal-bericht-form" method="POST" action="<?= BASE_URL ?>/api/aanvulling.php">
+            <input type="hidden" name="csrf_token"  value="<?= csrf() ?>" />
+            <input type="hidden" name="aanvraag_id" value="<?= (int)$inzending['id'] ?>" />
+            <input type="hidden" name="casenummer"  value="<?= h($inzending['casenummer']) ?>" />
+            <input type="hidden" name="actie"       value="stuur_bericht" />
+            <div class="portal-bericht-invoer-wrap">
+              <textarea name="bericht" rows="3" class="portal-bericht-invoer"
+                        placeholder="Stel een vraag of stuur een aanvulling..." required></textarea>
+              <button type="submit" class="portal-bericht-verzend-btn">
+                Verstuur
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+                </svg>
+              </button>
+            </div>
+          </form>
+        </div>
 
       </div><!-- /.portal-main -->
 
-      <!-- ── Zijbalk: aanvraagdetails ────────────────────────────── -->
+      <!-- ── Zijbalk ──────────────────────────────────────────────── -->
       <div class="portal-sidebar">
+
+        <!-- Tijdlijn -->
+        <?php if (!empty($inzending['log'])): ?>
+        <div class="portal-card">
+          <div class="portal-card-title">Tijdlijn</div>
+          <ul class="portal-timeline-list">
+            <?php foreach (array_reverse($inzending['log']) as $le): ?>
+              <li class="portal-timeline-item">
+                <div class="portal-timeline-dot"></div>
+                <div class="portal-timeline-time"><?= date('d-m H:i', strtotime($le['aangemaakt'])) ?></div>
+                <div>
+                  <div class="portal-timeline-actie"><?= h($le['actie']) ?></div>
+                  <?php if ($le['opmerking']): ?>
+                    <div class="portal-timeline-opmerking"><?= h($le['opmerking']) ?></div>
+                  <?php endif; ?>
+                </div>
+              </li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+        <?php endif; ?>
+
+        <!-- Aanvraagdetails -->
         <div class="portal-card">
           <div class="portal-card-title">Aanvraagdetails</div>
           <div class="portal-detail-row">
@@ -437,12 +719,13 @@ include __DIR__ . '/includes/header.php';
         </div>
         <?php endif; ?>
 
-        <div class="portal-card" style="background:#f8fafc;">
+        <div class="portal-card portal-hulp-card">
           <div class="portal-card-title">Hulp nodig?</div>
-          <p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;">Neem contact op met vermelding van uw casenummer.</p>
-          <a href="<?= BASE_URL ?>/contact.php" style="font-size:.875rem;font-weight:600;color:var(--accent);">&#128231; Contact opnemen &rarr;</a>
+          <p>Neem contact op met vermelding van uw casenummer.</p>
+          <a href="<?= BASE_URL ?>/contact.php" class="portal-hulp-link">&#128231; Contact opnemen &rarr;</a>
         </div>
-      </div>
+
+      </div><!-- /.portal-sidebar -->
 
     </div><!-- /.portal-grid -->
   </div><!-- /.portal-wrap -->
