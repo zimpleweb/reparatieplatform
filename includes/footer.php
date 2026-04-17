@@ -48,7 +48,12 @@
 </footer>
 
 <script>const BASE_URL = '<?= BASE_URL ?>';</script>
-<script src="<?= BASE_URL ?>/assets/js/main.js?v=<?= filemtime(__DIR__ . '/assets/js/main.js') ?>"></script>
+<?php
+// Veilige versie-cache buster: geen fatal als bestand ontbreekt
+$_jsPath = __DIR__ . '/../assets/js/main.js';
+$_jsV    = file_exists($_jsPath) ? filemtime($_jsPath) : time();
+?>
+<script src="<?= BASE_URL ?>/assets/js/main.js?v=<?= $_jsV ?>"></script>
 <script>
 (function () {
   const BREAKPOINT = 768;
@@ -94,11 +99,9 @@
       const links = col.querySelector('.footer-col-links');
       if (!h4 || !links) return;
 
-      // Kloon om oude listeners te verwijderen
       const newH4 = h4.cloneNode(true);
       col.replaceChild(newH4, h4);
 
-      // Zet klasse en sluit dicht — ná replaceChild zodat newH4 in de DOM zit
       newH4.classList.add('is-toggle');
       newH4.setAttribute('aria-expanded', 'false');
 
@@ -110,12 +113,10 @@
       newH4.addEventListener('click', function () {
         const isOpen = this.getAttribute('aria-expanded') === 'true';
 
-        // Sluit alle andere kolommen
         document.querySelectorAll('.footer-col h4.is-toggle').forEach(other => {
           if (other !== this) closeLinks(other);
         });
 
-        // Toggle huidige — links opnieuw ophalen via nextElementSibling
         if (isOpen) {
           closeLinks(this);
         } else {

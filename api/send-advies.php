@@ -4,54 +4,88 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCsrf($_POST['csrf_token'] ?? '')) {
-    redirect('/?error=csrf');
+    redirect(BASE_URL . '/?error=csrf');
 }
 
-$merk         = trim($_POST['merk']         ?? '');
-$modelnummer  = trim($_POST['modelnummer']  ?? '');
-$aanschafjaar = trim($_POST['aanschafjaar'] ?? '');
-$klacht_type  = trim($_POST['klacht_type']  ?? '');
-$omschrijving = trim($_POST['omschrijving'] ?? '');
-$email        = filter_var(trim($_POST['email'] ?? ''), FILTER_VALIDATE_EMAIL);
+$merk              = trim($_POST['merk']              ?? '');
+$modelnummer       = trim($_POST['modelnummer']       ?? '');
+$aanschafjaar      = trim($_POST['aanschafjaar']      ?? '');
+$aanschafwaarde    = trim($_POST['aanschafwaarde']    ?? '');
+$aankoop_locatie   = trim($_POST['aankoop_locatie']   ?? 'nl');
+$situatie          = trim($_POST['situatie']          ?? '');
+$klacht_type       = trim($_POST['klacht_type']       ?? '');
+$omschrijving      = trim($_POST['omschrijving']      ?? '');
+$email             = filter_var(trim($_POST['email']  ?? ''), FILTER_VALIDATE_EMAIL);
+$geadviseerde_route= trim($_POST['geadviseerde_route']?? '');
+$coulance_kans     = (int) ($_POST['coulance_kans']   ?? 0);
+$model_repareerbaar= trim($_POST['model_repareerbaar']?? '');
 
 if (!$email || !$merk || !$modelnummer) {
-    redirect('/?error=2');
+    redirect(BASE_URL . '/advies.php?error=2');
 }
 
+// ── Genereer casenummer (YYYY-MM-NNNN, NNNN start bij 1000) ────
+$jaar   = date('Y');
+$maand  = date('m');
+$prefix = $jaar . '-' . $maand . '-';
+$stmt   = db()->prepare(
+    "SELECT MAX(CAST(SUBSTRING_INDEX(casenummer, '-', -1) AS UNSIGNED))
+       FROM aanvragen WHERE casenummer LIKE ?"
+);
+$stmt->execute([$prefix . '%']);
+$maxNr      = (int) $stmt->fetchColumn();
+$volgnummer = max(1000, $maxNr + 1);
+$casenummer = $prefix . $volgnummer;
+
+// ── Sla op in DB ────────────────────────────────────────────────
 $token = bin2hex(random_bytes(32));
 
-$stmt = db()->prepare('
-    INSERT INTO aanvragen (merk, modelnummer, aanschafjaar, klacht_type, omschrijving, email, ip, token)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-');
-$stmt->execute([$merk, $modelnummer, $aanschafjaar, $klacht_type, $omschrijving, $email, $_SERVER['REMOTE_ADDR'], $token]);
+try {
+    $ins = db()->prepare('
+        INSERT INTO aanvragen
+          (casenummer, merk, modelnummer, aanschafjaar, aanschafwaarde, aankoop_locatie,
+           situatie, klacht_type, omschrijving, email,
+           geadviseerde_route, coulance_kans, model_repareerbaar, ip, token, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'inzending\')
+    ');
+    $ins->execute([
+        $casenummer, $merk, $modelnummer, $aanschafjaar, $aanschafwaarde, $aankoop_locatie,
+        $situatie, $klacht_type, $omschrijving, $email,
+        $geadviseerde_route, $coulance_kans, $model_repareerbaar,
+        $_SERVER['REMOTE_ADDR'], $token,
+    ]);
+} catch (\PDOException $e) {
+    // Fallback voor oudere tabelstructuur zonder nieuwe kolommen
+    $ins = db()->prepare('
+        INSERT INTO aanvragen (merk, modelnummer, aanschafjaar, klacht_type, omschrijving, email, ip, token)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ');
+    $ins->execute([$merk, $modelnummer, $aanschafjaar, $klacht_type, $omschrijving, $email,
+                   $_SERVER['REMOTE_ADDR'], $token]);
+    $casenummer = null;
+}
 
-$klantMail = "Bedankt voor uw aanvraag!\n\n"
-    . "Wij hebben uw gegevens ontvangen en sturen u zo snel mogelijk (binnen 1 werkdag) een persoonlijk advies.\n\n"
-    . "Uw televisie: $merk $modelnummer\n"
-    . "Klacht: $klacht_type\n\n"
-    . "Met vriendelijke groet,\nReparatieplatform.nl\nonderdeel van TV Reparatie Service Nederland";
+$aanvraagId = db()->lastInsertId();
 
-mail(
-    $email,
-    'Uw adviesaanvraag is ontvangen – Reparatieplatform.nl',
-    $klantMail,
-    "From: noreply@reparatieplatform.nl\r\nContent-Type: text/plain; charset=UTF-8"
-);
+// ── Eerste log-entry ─────────────────────────────────────────────
+if ($aanvraagId) {
+    try {
+        db()->prepare(
+            'INSERT INTO aanvragen_log (aanvraag_id, actie, opmerking, gedaan_door) VALUES (?, ?, ?, ?)'
+        )->execute([
+            $aanvraagId,
+            'Inzending ontvangen via stappenplan',
+            "Route: $geadviseerde_route" . ($coulance_kans ? " (coulance: {$coulance_kans}%)" : ''),
+            'systeem',
+        ]);
+    } catch (\PDOException $e) { /* log-tabel nog niet aangemaakt */ }
+}
 
-$adminMail = "Nieuwe adviesaanvraag ontvangen\n\n"
-    . "E-mail: $email\n"
-    . "TV: $merk $modelnummer\n"
-    . "Aanschafjaar: $aanschafjaar\n"
-    . "Klacht: $klacht_type\n\n"
-    . "Omschrijving:\n$omschrijving\n\n"
-    . "Behandelen via:\nhttps://reparatieplatform.nl/admin/aanvragen.php";
-
-mail(
-    'info@tvreparatieservicenederland.nl',
-    "Nieuwe aanvraag: $merk $modelnummer",
-    $adminMail,
-    "From: noreply@reparatieplatform.nl\r\nContent-Type: text/plain; charset=UTF-8"
-);
-
-redirect('/?verzonden=1');
+// ── Redirect naar klantenomgeving ────────────────────────────────
+if ($casenummer) {
+    $_SESSION['portal_case']  = $casenummer;
+    $_SESSION['portal_email'] = strtolower($email);
+    redirect(BASE_URL . '/mijn-aanvraag.php?nieuw=1');
+} else {
+    redirect(BASE_URL . '/advies.php?verzonden=1');
+}

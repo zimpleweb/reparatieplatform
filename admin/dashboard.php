@@ -4,13 +4,22 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 requireAdmin();
 
-$stats = [
-    'modellen'  => db()->query('SELECT COUNT(*) FROM tv_modellen WHERE actief=1')->fetchColumn(),
-    'aanvragen' => db()->query('SELECT COUNT(*) FROM aanvragen')->fetchColumn(),
-    'nieuw'     => db()->query('SELECT COUNT(*) FROM aanvragen WHERE status="nieuw"')->fetchColumn(),
-    'behandeld' => db()->query('SELECT COUNT(*) FROM aanvragen WHERE status="behandeld"')->fetchColumn(),
-];
-$recent = db()->query('SELECT * FROM aanvragen ORDER BY created_at DESC LIMIT 10')->fetchAll();
+$totalAanvragen  = db()->query('SELECT COUNT(*) FROM aanvragen')->fetchColumn();
+$totalModellen   = db()->query('SELECT COUNT(*) FROM tv_modellen WHERE actief=1')->fetchColumn();
+$totalKlachten   = db()->query('SELECT COUNT(*) FROM klachten')->fetchColumn();
+
+// Bepaal welke datumkolom bestaat (aangemaakt_op of created_at)
+try {
+    $cols = db()->query('SHOW COLUMNS FROM aanvragen')->fetchAll(PDO::FETCH_COLUMN);
+    $datumKolom = in_array('aangemaakt_op', $cols) ? 'aangemaakt_op'
+                : (in_array('created_at', $cols)   ? 'created_at' : 'id');
+} catch (Exception $e) {
+    $datumKolom = 'id';
+}
+
+$recentAanvragen = db()->query(
+    'SELECT * FROM aanvragen ORDER BY ' . $datumKolom . ' DESC LIMIT 5'
+)->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -34,65 +43,41 @@ $recent = db()->query('SELECT * FROM aanvragen ORDER BY created_at DESC LIMIT 10
     <a href="<?= BASE_URL ?>/admin/aanvragen.php"><span class="icon">&#128236;</span> Aanvragen</a>
     <a href="<?= BASE_URL ?>/admin/modellen.php"><span class="icon">&#128250;</span> TV Modellen</a>
     <a href="<?= BASE_URL ?>/admin/klachten.php"><span class="icon">&#9888;</span> Klachten</a>
+    <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;</span> Advies instellingen</a>
     <a href="<?= BASE_URL ?>/" target="_blank"><span class="icon">&#127760;</span> Website bekijken</a>
   </div>
   <div class="admin-content">
     <h1>Dashboard</h1>
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-val"><?= $stats['modellen'] ?></div>
-        <div class="stat-label">TV Modellen</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem;">
+      <div class="admin-card" style="text-align:center;">
+        <div style="font-size:2rem;font-weight:800;color:#287864;"><?= $totalAanvragen ?></div>
+        <div style="font-size:.85rem;color:#6b7280;margin-top:.25rem;">Aanvragen</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-val"><?= $stats['aanvragen'] ?></div>
-        <div class="stat-label">Totaal aanvragen</div>
+      <div class="admin-card" style="text-align:center;">
+        <div style="font-size:2rem;font-weight:800;color:#1d4ed8;"><?= $totalModellen ?></div>
+        <div style="font-size:.85rem;color:#6b7280;margin-top:.25rem;">TV Modellen</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-val" style="color:#b91c1c"><?= $stats['nieuw'] ?></div>
-        <div class="stat-label">Nieuw / onbehandeld</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" style="color:#166534"><?= $stats['behandeld'] ?></div>
-        <div class="stat-label">Behandeld</div>
+      <div class="admin-card" style="text-align:center;">
+        <div style="font-size:2rem;font-weight:800;color:#d97706;"><?= $totalKlachten ?></div>
+        <div style="font-size:.85rem;color:#6b7280;margin-top:.25rem;">Klachten</div>
       </div>
     </div>
-
     <div class="admin-card">
       <h2>Recente aanvragen</h2>
-      <?php if (empty($recent)): ?>
-        <p style="color:var(--muted);font-size:.875rem;">Nog geen aanvragen ontvangen.</p>
-      <?php else: ?>
       <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Datum</th>
-            <th>TV</th>
-            <th>E-mail</th>
-            <th>Klacht</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
+        <thead><tr><th>E-mail</th><th>Merk</th><th>Model</th><th>Route</th><th>Datum</th></tr></thead>
         <tbody>
-        <?php foreach ($recent as $r): ?>
+        <?php foreach ($recentAanvragen as $a): ?>
         <tr>
-          <td style="white-space:nowrap"><?= date('d-m-Y H:i', strtotime($r['created_at'])) ?></td>
-          <td><strong><?= h($r['merk'] . ' ' . $r['modelnummer']) ?></strong></td>
-          <td><?= h($r['email']) ?></td>
-          <td><?= h($r['klacht_type']) ?></td>
-          <td>
-            <span class="badge badge-<?= $r['status']==='nieuw' ? 'red' : ($r['status']==='behandeld' ? 'green' : 'gray') ?>">
-              <?= h($r['status']) ?>
-            </span>
-          </td>
-          <td>
-            <a href="<?= BASE_URL ?>/admin/aanvragen.php?id=<?= $r['id'] ?>" class="btn btn-sm btn-secondary">Bekijk</a>
-          </td>
+          <td><?= h($a['email'] ?? '') ?></td>
+          <td><?= h($a['merk'] ?? '') ?></td>
+          <td><?= h($a['modelnummer'] ?? '') ?></td>
+          <td><?= h($a['geadviseerde_route'] ?? '') ?></td>
+          <td><?= h($a[$datumKolom] ?? '') ?></td>
         </tr>
         <?php endforeach; ?>
         </tbody>
       </table>
-      <?php endif; ?>
     </div>
   </div>
 </div>

@@ -22,6 +22,8 @@
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/model.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/footer.css" />
+  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/advies-routing.css" />
+  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/klantenomgeving.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/responsive.css" />
   <style>
     @media (max-width: 768px) {
@@ -40,11 +42,12 @@
   </a>
   <button class="nav-toggle" id="navToggle" aria-label="Menu openen">&#9776;</button>
   <div class="nav-menu" id="navMenu">
-    <a href="<?= BASE_URL ?>/hoe-het-werkt.php" <?= $cur==='hoe-het-werkt' ? 'class="active"':'' ?>>Hoe het werkt</a>
-    <a href="<?= BASE_URL ?>/advies.php"        <?= $cur==='advies'        ? 'class="active"':'' ?>>Advies</a>
-    <a href="<?= BASE_URL ?>/reparatie.php"     <?= $cur==='reparatie'     ? 'class="active"':'' ?>>Reparatie</a>
-    <a href="<?= BASE_URL ?>/taxatie.php"       <?= $cur==='taxatie'       ? 'class="active"':'' ?>>Taxatie</a>
-    <a href="<?= BASE_URL ?>/database.php"      <?= $cur==='database'      ? 'class="active"':'' ?>>Database</a>
+    <a href="<?= BASE_URL ?>/hoe-het-werkt.php"  <?= $cur==='hoe-het-werkt'  ? 'class="active"':'' ?>>Hoe het werkt</a>
+    <a href="<?= BASE_URL ?>/advies.php"         <?= $cur==='advies'         ? 'class="active"':'' ?>>Advies</a>
+    <a href="<?= BASE_URL ?>/reparatie.php"      <?= $cur==='reparatie'      ? 'class="active"':'' ?>>Reparatie</a>
+    <a href="<?= BASE_URL ?>/taxatie.php"        <?= $cur==='taxatie'        ? 'class="active"':'' ?>>Taxatie</a>
+    <a href="<?= BASE_URL ?>/database.php"       <?= $cur==='database'       ? 'class="active"':'' ?>>Database</a>
+    <a href="<?= BASE_URL ?>/mijn-aanvraag.php"  <?= $cur==='mijn-aanvraag'  ? 'class="active"':'' ?>>Mijn aanvraag</a>
   </div>
   <a href="<?= BASE_URL ?>/#advies" class="nav-btn">
     <span class="nav-btn-dot"></span>

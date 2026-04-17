@@ -79,7 +79,14 @@ footer {
     padding: 2.5rem 1.25rem 2rem;
   }
 
-  /* ── Brand: gecentreerd ── */
+  .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding-bottom: 2rem;
+    text-align: center;
+  }
+
+  /* Brand gecentreerd */
   .footer-brand {
     grid-column: 1 / -1;
     display: flex;
@@ -94,26 +101,21 @@ footer {
     text-align: center;
   }
 
-  .footer-inner {
-    grid-template-columns: 1fr;
-    gap: .5rem;
-    padding-bottom: 2rem;
-  }
-
-  /* ── h4 als button ── */
+  /* h4 als prominente toggle-button */
   .footer-col h4 {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    font-size: .95rem;
+    justify-content: center;
+    gap: .5rem;
+    font-size: 1rem;
     font-weight: 700;
-    letter-spacing: .01em;
+    letter-spacing: .02em;
     text-transform: none;
     color: white;
     background: rgba(255,255,255,.07);
     border: 1px solid rgba(255,255,255,.12);
     border-radius: 10px;
-    padding: .85rem 1.1rem;
+    padding: .9rem 1.25rem;
     margin-bottom: 0;
     cursor: pointer;
     user-select: none;
@@ -125,30 +127,32 @@ footer {
     background: rgba(255,255,255,.13);
   }
 
-  .footer-col h4.is-toggle.open {
+  .footer-col h4.open {
     background: rgba(255,255,255,.11);
     border-color: rgba(255,255,255,.2);
     border-radius: 10px 10px 0 0;
   }
 
-  /* Pijl rechts in de button */
+  /* Pijl via ::after — altijd rechts uitgelijnd */
   .footer-col h4::after {
     content: '›';
     font-size: 1.3rem;
     line-height: 1;
     display: inline-block;
+    margin-left: auto;
+    padding-left: .5rem;
     transition: transform 0.25s ease;
     color: rgba(255,255,255,.4);
   }
 
-  .footer-col h4.is-toggle.open::after {
+  .footer-col h4.open::after {
     transform: rotate(90deg);
   }
 
-  /* ── Links uitklapbaar ── */
+  /* Links uitklapbaar, gecentreerd */
   .footer-col-links {
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     overflow: hidden;
     background: rgba(255,255,255,.04);
     border: 1px solid rgba(255,255,255,.12);
@@ -159,12 +163,13 @@ footer {
   }
 
   .footer-col a {
-    font-size: .95rem;
-    color: rgba(255,255,255,.6);
+    font-size: 1rem;
+    color: rgba(255,255,255,.65);
     padding: .7rem 1.1rem;
     margin-bottom: 0;
     text-align: center;
     border-bottom: 1px solid rgba(255,255,255,.06);
+    width: 100%;
     transition: background .15s, color .15s;
   }
 
@@ -177,8 +182,8 @@ footer {
     color: white;
   }
 
-  /* ── Footer bottom gecentreerd ── */
-  .footer{
+  /* Footer bottom gecentreerd */
+  .footer-bottom {
     flex-direction: column;
     align-items: center;
     text-align: center;
