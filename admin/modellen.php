@@ -510,9 +510,9 @@ $PAGE_SIZE = 35;
           <tr>
             <th style="width:120px">Merk</th>
             <th>Modelnummer</th>
-            <th style="width:130px">&#128295; Repareerbaar</th>
-            <th style="width:130px">&#128203; Taxatie</th>
-            <th style="width:160px">Acties</th>
+            <th style="width:90px">&#128295; Repareerbaar</th>
+            <th style="width:150px">&#128203; Taxatie</th>
+            <th style="width:190px">Acties</th>
           </tr>
         </thead>
         <tbody id="modellen-tbody">
