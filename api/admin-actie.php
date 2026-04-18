@@ -8,14 +8,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect(BASE_URL . '/admin/aanvragen.php');
 }
 
-$id       = (int)  ($_POST['id']        ?? 0);
-$actie    = trim(  $_POST['actie']      ?? '');
-$opmerking= trim(  $_POST['opmerking']  ?? '');
+// ── CSRF check ────────────────────────────────────────────────────
+if (!verifyCsrf($_POST['csrf'] ?? '')) {
+    http_response_code(403);
+    die('Ongeldig verzoek. Ververs de pagina en probeer opnieuw.');
+}
+
+$id        = (int)  ($_POST['id']       ?? 0);
+$actie     = trim(  $_POST['actie']     ?? '');
+$opmerking = trim(  $_POST['opmerking'] ?? '');
 
 if (!$id || !$actie) redirect(BASE_URL . '/admin/aanvragen.php');
 
 $geldig = ['doorzetten_reparatie','doorzetten_taxatie','coulance','recycling','behandeld','archiveren','bericht_admin'];
-if (!in_array($actie, $geldig)) redirect(BASE_URL . '/admin/aanvragen.php?id=' . $id);
+if (!in_array($actie, $geldig, true)) redirect(BASE_URL . '/admin/aanvragen.php?id=' . $id);
 
 // ── Bericht sturen (alleen loggen, geen statuswijziging) ──────────
 if ($actie === 'bericht_admin') {
@@ -56,7 +62,7 @@ $actieLabelMap = [
 $nieuweStatus = $statusMap[$actie];
 $nieuwType    = $typeMap[$actie] ?? null;
 
-// Update aanvraag: status altijd, advies_type alleen als er een nieuw type is
+// ── Whitelist datumkolom — SQL injection fix ──────────────────────
 if ($nieuwType) {
     db()->prepare('UPDATE aanvragen SET status=?, advies_type=? WHERE id=?')
        ->execute([$nieuweStatus, $nieuwType, $id]);

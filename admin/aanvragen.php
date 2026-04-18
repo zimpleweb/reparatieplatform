@@ -7,7 +7,7 @@ requireAdmin();
 $msg  = '';
 $fout = '';
 
-// ── Filterparameters ─────────────────────────────────────────────
+// ── Filterparameters ──────────────────────────────────────────────
 $filterStatus = trim($_GET['status'] ?? '');
 $filterRoute  = trim($_GET['route']  ?? '');
 $filterZoek   = trim($_GET['zoek']   ?? '');
@@ -22,7 +22,6 @@ $statusLabels = [
     'archief'      => ['tekst' => 'Archief',             'badge' => 'badge-gray'],
 ];
 
-// Statussen waarvoor de actieknoppen verborgen worden (al definitief bepaald)
 $statusDefinitief = ['doorgestuurd', 'coulance', 'recycling', 'behandeld', 'archief'];
 
 // ── Detailweergave ────────────────────────────────────────────────
@@ -37,6 +36,18 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             $ls->execute([$detail['id']]);
             $detail['log'] = $ls->fetchAll();
         } catch (\PDOException $e) { $detail['log'] = []; }
+
+        // ── Foto-pad validatie (path traversal fix) ──────────────── ← FIX
+        $uploadBase = realpath(__DIR__ . '/../uploads');
+        foreach (['foto_defect', 'foto_label', 'foto_bon'] as $fotoKey) {
+            if (!empty($detail[$fotoKey])) {
+                $absPath = realpath(__DIR__ . '/../' . $detail[$fotoKey]);
+                // Alleen tonen als het pad daadwerkelijk binnen uploads/ valt
+                if ($absPath === false || strpos($absPath, $uploadBase) !== 0) {
+                    $detail[$fotoKey] = null;
+                }
+            }
+        }
     }
 }
 
@@ -54,11 +65,14 @@ $stmt = db()->prepare($sql);
 $stmt->execute($params);
 $aanvragen = $stmt->fetchAll();
 
+// ── Whitelist datumkolom (SQL injection fix) ──────────────────────── ← FIX
+$TOEGESTANE_KOLOMMEN = ['aangemaakt_op', 'created_at', 'id'];
 $datumKolom = 'created_at';
 try {
     $cols = db()->query('SHOW COLUMNS FROM aanvragen LIKE \'aangemaakt_op\'')->fetchColumn();
     if ($cols) $datumKolom = 'aangemaakt_op';
 } catch (\Exception $e) {}
+if (!in_array($datumKolom, $TOEGESTANE_KOLOMMEN, true)) $datumKolom = 'id'; // ← FIX
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -71,7 +85,6 @@ try {
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin-aanvragen.css">
   <meta name="robots" content="noindex,nofollow">
   <style>
-    /* ── Filter bar: alles op één rij ───────────────────────────── */
     .filter-bar {
       display: flex;
       flex-direction: row;
@@ -119,7 +132,6 @@ try {
       white-space: nowrap;
     }
 
-    /* ── Overige stijlen ────────────────────────────────────────── */
     .badge-orange { background:#fef3c7; color:#92400e; }
     .badge-yellow { background:#fef9c3; color:#78350f; }
     .badge-purple { background:#ede9fe; color:#5b21b6; }
@@ -147,7 +159,6 @@ try {
     .foto-img { max-width:120px; max-height:80px; border-radius:6px; border:1px solid #e2e8f0; }
     .foto-lbl { font-size:.72rem; color:#64748b; margin-top:.3rem; }
 
-    /* Berichten: twee kolommen */
     .berichten-sectie { padding:0!important; border:none!important; }
     .berichten-kolommen {
       display:grid; grid-template-columns:1fr 1fr; gap:0;
@@ -195,7 +206,6 @@ try {
 
     .casenr-col { font-size:.78rem; font-weight:700; color:#1d4ed8; letter-spacing:.03em; }
 
-    /* Optiemenu */
     .optiemenu-wrap { position:relative; }
     .optiemenu-btn {
       display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -249,13 +259,11 @@ try {
     <?php if (isset($_GET['saved'])): ?><div class="alert alert-success">Wijziging opgeslagen.</div><?php endif; ?>
 
     <?php if ($detail): ?>
-    <!-- ── Detail ───────────────────────────────────────── -->
     <?php
       $sl = $statusLabels[$detail['status']] ?? ['tekst'=>$detail['status'],'badge'=>'badge-gray'];
       $isDefinitief = in_array($detail['status'], $statusDefinitief);
     ?>
     <div class="admin-card detail-card">
-      <!-- Header -->
       <div class="detail-header">
         <div>
           <h2><?= h($detail['merk'].' '.$detail['modelnummer']) ?></h2>
@@ -274,6 +282,7 @@ try {
             <div class="optiemenu-dropdown">
               <div class="optiemenu-header">Status wijzigen</div>
               <form method="POST" action="<?= BASE_URL ?>/api/admin-actie.php">
+                <input type="hidden" name="csrf" value="<?= csrf() ?>"> <!-- ← FIX -->
                 <input type="hidden" name="id" value="<?= (int)$detail['id'] ?>" />
                 <input type="hidden" name="opmerking" value="" />
                 <button type="submit" name="actie" value="doorzetten_reparatie" class="optiemenu-item item-reparatie">&#128295; Reparatie</button>
@@ -291,7 +300,6 @@ try {
         </div>
       </div>
 
-      <!-- Inzendinggegevens -->
       <div class="detail-section">
         <h4>Inzendinggegevens</h4>
         <div class="specs-grid">
@@ -331,7 +339,7 @@ try {
             <?php if (!empty($detail[$k])): ?>
             <div class="foto-item">
               <a href="<?= BASE_URL ?>/<?= h($detail[$k]) ?>" target="_blank">
-                <img src="<?= BASE_URL ?>/<?= h($detail[$k]) ?>" alt="<?= $lbl ?>" class="foto-img" />
+                <img src="<?= BASE_URL ?>/<?= h($detail[$k]) ?>" alt="<?= $lbl ?>" class="foto-img" loading="lazy" />
               </a>
               <div class="foto-lbl"><?= $lbl ?></div>
             </div>
@@ -341,11 +349,9 @@ try {
       </div>
       <?php endif; ?>
 
-      <!-- ── Berichten & Actie gecombineerd ── -->
       <div class="detail-section berichten-sectie">
         <div class="berichten-kolommen">
 
-          <!-- Logboek / berichtenoverzicht -->
           <div class="berichten-overzicht">
             <h4>Berichtenoverzicht</h4>
             <?php if (!empty($detail['log'])): ?>
@@ -365,10 +371,10 @@ try {
             <?php endif; ?>
           </div>
 
-          <!-- Bericht sturen -->
           <div class="bericht-sturen">
             <h4>Bericht sturen naar klant</h4>
             <form method="POST" action="<?= BASE_URL ?>/api/admin-actie.php">
+              <input type="hidden" name="csrf" value="<?= csrf() ?>"> <!-- ← FIX -->
               <input type="hidden" name="id" value="<?= (int)$detail['id'] ?>" />
               <textarea name="opmerking" class="opmerking-field" placeholder="Typ hier uw bericht aan de klant..." rows="4" required></textarea>
               <div class="bericht-footer">
@@ -383,6 +389,7 @@ try {
               Adviestype: <strong><?= h($detail['advies_type'] ?? 'niet bepaald') ?></strong>
             </p>
             <form method="POST" action="<?= BASE_URL ?>/api/admin-actie.php">
+              <input type="hidden" name="csrf" value="<?= csrf() ?>"> <!-- ← FIX -->
               <input type="hidden" name="id" value="<?= (int)$detail['id'] ?>" />
               <textarea name="opmerking" class="opmerking-field" placeholder="Optionele opmerking bij actie..." rows="2"></textarea>
               <div class="actie-knoppen">
@@ -403,7 +410,6 @@ try {
     </div>
     <?php endif; ?>
 
-    <!-- ── Filterbar ─────────────────────────────────────── -->
     <div class="admin-card">
       <form method="GET" class="filter-bar">
         <select name="status">

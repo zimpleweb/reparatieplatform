@@ -1,10 +1,11 @@
 <?php
 session_start();
 
-// ── HTTP Security Headers ────────────────────────────────────
+// ── HTTP Security Headers ────────────────────────────────────────
 header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains'); // ← NIEUW
 header("Content-Security-Policy: default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;");
 
 require_once __DIR__ . '/../includes/db.php';
@@ -15,8 +16,10 @@ if (isAdmin()) {
     exit;
 }
 
-// ── Rate limiting (max 5 pogingen per IP, 15 min blokkering) ─
-$ip          = md5($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+// ── Rate limiting (max 5 pogingen per IP, 15 min blokkering) ─────
+// IP ophalen met validatie (REMOTE_ADDR is meest betrouwbaar)
+$rawIp  = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+$ip     = md5(filter_var($rawIp, FILTER_VALIDATE_IP) !== false ? $rawIp : 'unknown'); // ← NIEUW: validatie
 $atKey       = 'login_attempts_' . $ip;
 $lockKey     = 'login_locked_until_' . $ip;
 $maxPogingen = 5;
@@ -31,25 +34,25 @@ $errorMsg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // ── CSRF check ──────────────────────────────────────────
+    // ── CSRF check ───────────────────────────────────────────────
     if (!verifyCsrf($_POST['csrf'] ?? '')) {
         $errorMsg = 'Ongeldig verzoek. Ververs de pagina en probeer opnieuw.';
 
-    // ── Lockout check ───────────────────────────────────────
+    // ── Lockout check ────────────────────────────────────────────
     } elseif ($isLocked) {
         $min = ceil($remainSecs / 60);
         $errorMsg = "Te veel mislukte pogingen. Probeer over {$min} minuut" . ($min === 1 ? '' : 'en') . " opnieuw.";
 
     } else {
-        // ── Timing-bescherming: kunstmatige vertraging ──────
-        usleep(200000); // 200ms — maakt timing-aanvallen moeilijker
+        // ── Timing-bescherming: kunstmatige vertraging ───────────
+        usleep(200000); // 200ms
 
         $row = db()->prepare('SELECT * FROM admins WHERE username = ? LIMIT 1');
         $row->execute([trim($_POST['username'] ?? '')]);
         $admin = $row->fetch();
 
         if ($admin && password_verify($_POST['password'] ?? '', $admin['password'])) {
-            // ── Succes: reset tellers, vernieuw sessie ───────
+            // ── Succes: reset tellers, vernieuw sessie ────────────
             unset($_SESSION[$atKey], $_SESSION[$lockKey]);
             session_regenerate_id(true);
             $_SESSION['admin'] = true;
@@ -57,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
 
         } else {
-            // ── Mislukt: teller ophogen ──────────────────────
+            // ── Mislukt: teller ophogen ───────────────────────────
             $pogingen++;
             $_SESSION[$atKey] = $pogingen;
 
@@ -285,10 +288,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label for="username">Gebruikersnaam</label>
         <input type="text" id="username" name="username"
                placeholder="Uw gebruikersnaam"
-               value="<?= htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                required
                <?= $isLocked ? 'disabled' : 'autofocus' ?>
                autocomplete="off">
+               <!-- ↑ value="" verwijderd: geen username terugkoppeling na mislukte login -->
       </div>
       <div class="portal-field">
         <label for="password">Wachtwoord</label>

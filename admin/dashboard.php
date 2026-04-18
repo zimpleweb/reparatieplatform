@@ -8,14 +8,18 @@ $totalAanvragen  = db()->query('SELECT COUNT(*) FROM aanvragen')->fetchColumn();
 $totalModellen   = db()->query('SELECT COUNT(*) FROM tv_modellen WHERE actief=1')->fetchColumn();
 $totalKlachten   = db()->query('SELECT COUNT(*) FROM klachten')->fetchColumn();
 
-// Bepaal welke datumkolom bestaat (aangemaakt_op of created_at)
+// ── Whitelist datumkolom (SQL injection fix) ──────────────────────
+$TOEGESTANE_KOLOMMEN = ['aangemaakt_op', 'created_at', 'id'];
+$datumKolom = 'id'; // veilige standaard
 try {
     $cols = db()->query('SHOW COLUMNS FROM aanvragen')->fetchAll(PDO::FETCH_COLUMN);
-    $datumKolom = in_array('aangemaakt_op', $cols) ? 'aangemaakt_op'
-                : (in_array('created_at', $cols)   ? 'created_at' : 'id');
+    if (in_array('aangemaakt_op', $cols, true))      $datumKolom = 'aangemaakt_op';
+    elseif (in_array('created_at', $cols, true))     $datumKolom = 'created_at';
 } catch (Exception $e) {
     $datumKolom = 'id';
 }
+// Definitieve whitelist-check — nooit een niet-toegestane waarde in de query
+if (!in_array($datumKolom, $TOEGESTANE_KOLOMMEN, true)) $datumKolom = 'id';
 
 $recentAanvragen = db()->query(
     'SELECT * FROM aanvragen ORDER BY ' . $datumKolom . ' DESC LIMIT 5'
