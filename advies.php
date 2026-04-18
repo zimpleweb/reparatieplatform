@@ -4,14 +4,10 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/advies_regels.php';
 
-// ── Status check (POST van status-check formulier) ───────────────
-// Status check verplaatst naar /mijn-aanvraag.php
-
 $pageTitle       = 'Gratis advies aanvragen – Televisie kapot? | Reparatieplatform.nl';
 $pageDescription = 'Vraag gratis persoonlijk advies aan over garantie, coulanceregeling, reparatie of taxatie van uw defecte televisie.';
 $canonicalUrl    = '/advies.php';
 
-// Laad regels op server (ook als JSON voor JS routing engine)
 $r   = getAdviesRegels();
 $rJs = json_encode($r, JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
 
@@ -29,30 +25,18 @@ include __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<!-- Hoe het werkt -->
-<div class="section-light">
-  <div class="section" style="padding-top:4rem;padding-bottom:4rem;">
-    <h2 class="section-title">Zo werkt het</h2>
-    <p class="section-lead">Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.</p>
-    <div class="steps-grid-light">
-      <div class="step-light">
-        <div class="step-light-nr">01</div>
-        <div class="step-light-icon">&#128221;</div>
-        <h3>Formulier invullen</h3>
-        <p>Geef je merk, modelnummer en een korte omschrijving. Klaar in minder dan 2 minuten.</p>
-      </div>
-      <div class="step-light">
-        <div class="step-light-nr">02</div>
-        <div class="step-light-icon">&#128269;</div>
-        <h3>Wij analyseren</h3>
-        <p>Een specialist bekijkt jouw situatie en toetst aan garantie- en coulanceregels van de fabrikant.</p>
-      </div>
-      <div class="step-light">
-        <div class="step-light-nr">03</div>
-        <div class="step-light-icon">&#128233;</div>
-        <h3>Persoonlijk advies</h3>
-        <p>Je ontvangt binnen 24 uur een helder advies met concrete vervolgstappen — gratis en vrijblijvend.</p>
-      </div>
+<!-- Zo werkt het – Stap-wizard component -->
+<div class="wizard-section">
+  <div class="section" style="padding-top:4.5rem;padding-bottom:4.5rem;">
+    <div style="text-align:center;margin-bottom:2.75rem;">
+      <h2 class="section-title">Zo werkt het</h2>
+      <p class="section-lead" style="max-width:52ch;margin:.5rem auto 0;">
+        Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.
+      </p>
+    </div>
+    <?php include __DIR__ . '/includes/stap-wizard.php'; ?>
+    <div style="text-align:center;margin-top:2.5rem;">
+      <a href="#advies" class="btn-primary">Advies aanvragen &rarr;</a>
     </div>
   </div>
 </div>
@@ -299,20 +283,14 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <script>
-// ── Adviesregels vanuit de database (server-side inject) ──────────
 const REGELS = <?= $rJs ?>;
 const HUIDIG_JAAR = <?= date('Y') ?>;
 
-/**
- * Helpercheck: is merk toegestaan voor een route?
- * Lege array = alle merken toegestaan.
- */
 function merkToegestaan(merkLijst, merk) {
   if (!merkLijst || merkLijst.length === 0) return true;
   return merkLijst.map(m => m.toLowerCase()).includes((merk || '').toLowerCase());
 }
 
-// ── Repareerbaar DB-check ─────────────────────────────────────────
 let _rep    = { geladen: false, gevonden: false, repareerbaar: false };
 let _repTimer = null;
 
@@ -353,7 +331,6 @@ function toonRepFeedback() {
   fb.style.display = 'block';
 }
 
-// ── Stap-navigatie ────────────────────────────────────────────────
 function naarStap(nr) {
   const huidig = document.querySelector('.form-stap:not([style*="display:none"])');
   for (const el of (huidig?.querySelectorAll('[required]') || [])) {
@@ -384,7 +361,6 @@ function _toonStap(nr) {
   if (nr === 4) vulSamenvatting();
 }
 
-// Keuze-kaarten stap 1
 document.querySelectorAll('.route-keuze input[type=radio]').forEach(r => {
   r.addEventListener('change', function() {
     document.querySelectorAll('.route-keuze').forEach(k => k.classList.remove('geselecteerd'));
@@ -393,7 +369,6 @@ document.querySelectorAll('.route-keuze input[type=radio]').forEach(r => {
   });
 });
 
-// ── Routing engine (volledig op basis van REGELS uit DB) ──────────
 function berekenRoute() {
   const situatie   = document.querySelector('[name=situatie]:checked')?.value || '';
   const merk       = document.getElementById('merk')?.value || '';
@@ -404,7 +379,6 @@ function berekenRoute() {
 
   const leeftijd = aanschJaar ? (HUIDIG_JAAR - aanschJaar) : null;
 
-  // ── Regels uit DB ──────────────────────────────────────────────
   const gTermijn          = REGELS.garantie_termijn_jaar          ?? 2;
   const gAlleenNl         = REGELS.garantie_alleen_nl             ?? true;
   const gUitsluit         = REGELS.garantie_uitsluiten_klachten   ?? ['gebarsten_scherm'];
@@ -426,25 +400,17 @@ function berekenRoute() {
   const taxBijSchade      = REGELS.taxatie_bij_schade             ?? true;
   const taxMerken         = REGELS.taxatie_merken                 ?? [];
 
-  // ── Repareerbaar-check ──────────────────────────────────────────
-  // Model is repareerbaar als:
-  //   1. reparatie_vereist_repareerbaar = false, OF
-  //   2. DB-check nog niet geladen (voordeel van twijfel), OF
-  //   3. DB-check geladen + repareerbaar = true
-  // Daarnaast: merk moet in repMerken zitten (als lijst niet leeg is)
   const kanRep = (!vereistRep || !_rep.geladen || _rep.repareerbaar)
                  && merkToegestaan(repMerken, merk);
 
   let route = '', badge = '', toel = '', kans = 0;
 
-  // ── 1. Taxatie (bij externe schade) ────────────────────────────
   if (situatie === 'schade' && taxBijSchade) {
     if (!merk || merkToegestaan(taxMerken, merk)) {
       route = 'taxatie';
       badge = '&#128203; Taxatierapport';
       toel  = 'Omdat er sprake is van externe schade is een taxatierapport de juiste route voor uw verzekeraar.';
     } else {
-      // Merk niet in taxatie-lijst: val terug op reparatie of recycling
       if (kanRep) {
         route = 'reparatie';
         badge = '&#128295; Reparatie aan huis';
@@ -457,7 +423,6 @@ function berekenRoute() {
     }
   }
 
-  // ── 2. Storing ─────────────────────────────────────────────────
   else if (situatie === 'storing' && leeftijd !== null) {
     const isGUitsluit = gUitsluit.includes(klacht);
     const isCUitsluit = cUitsluit.includes(klacht);
@@ -465,13 +430,11 @@ function berekenRoute() {
     const merkGarantie = merkToegestaan(gMerken, merk);
     const merkCoulance = merkToegestaan(cMerken, merk);
 
-    // ── 2a. Garantie ─────────────────────────────────────────────
     if (leeftijd <= gTermijn && !isGUitsluit && (!gAlleenNl || isNl) && merkGarantie) {
       route = 'garantie';
       badge = '&#9989; Garantie';
       toel  = 'Op basis van het aanschafjaar valt uw televisie waarschijnlijk nog onder de wettelijke garantietermijn van ' + gTermijn + ' jaar.';
     }
-    // ── 2b. Buitenland aankoop, geen garantie ────────────────────
     else if (leeftijd <= gTermijn && locatie === 'buitenland') {
       if (kanRep) {
         route = 'reparatie';
@@ -482,11 +445,9 @@ function berekenRoute() {
         toel  = 'Dit model is niet repareerbaar. Wij begeleiden u richting verantwoorde recycling.';
       }
     }
-    // ── 2c. Garantie: merk niet toegestaan ───────────────────────
     else if (leeftijd <= gTermijn && !merkGarantie) {
-      // Merk staat niet op de garantielijst: direct naar coulance of reparatie
       if (merkCoulance && leeftijd > cMin && leeftijd <= cMax && !isCUitsluit) {
-        // val door naar coulance-blok hieronder
+        // val door naar coulance-blok
       } else if (kanRep) {
         route = 'reparatie';
         badge = '&#128295; Reparatie aan huis';
@@ -497,7 +458,6 @@ function berekenRoute() {
       }
     }
 
-    // ── 2d. Coulance ─────────────────────────────────────────────
     if (!route && leeftijd > cMin && leeftijd <= cMax && !isCUitsluit && merkCoulance) {
       const matrixRij = cMatrix.find(m => m.prijsklasse === waarde)
                      || cMatrix.find(m => m.prijsklasse === '');
@@ -510,24 +470,21 @@ function berekenRoute() {
       badge = '&#129309; Coulanceregeling (' + kans + '% kans)';
       toel  = 'Uw televisie is ' + leeftijd + ' jaar oud. Garantie is verlopen, maar veel fabrikanten bieden coulance aan. Wij schatten de kans op <strong>' + kans + '%</strong>.';
     }
-    // ── 2e. Reparatie ────────────────────────────────────────────
     else if (!route && leeftijd > repMin && leeftijd <= repMax) {
       if (kanRep) {
         route = 'reparatie';
         badge = '&#128295; Reparatie aan huis';
-        toel  = 'Garantie en coulance zijn niet meer van toepassing. Reparatie aan huis is de meest kosteneffi\u00ebnte oplossing.';
+        toel  = 'Garantie en coulance zijn niet meer van toepassing. Reparatie aan huis is de meest kostenefficiënte oplossing.';
       } else {
         route = 'recycling'; badge = '&#9851; Recycling';
         toel  = 'Dit model staat als niet-repareerbaar in onze database. Wij begeleiden u richting verantwoorde recycling.';
       }
     }
-    // ── 2f. Recycling (oud) ──────────────────────────────────────
     else if (!route && leeftijd > recycMin) {
       route = 'recycling';
       badge = '&#9851; Recycling';
       toel  = 'Een televisie ouder dan ' + recycMin + ' jaar — reparatiekosten overtreffen vaak de waarde. Wij adviseren eerlijk over recycling of doorverkoop.';
     }
-    // ── 2g. Gebarsten scherm edge case ───────────────────────────
     else if (!route && klacht === 'gebarsten_scherm') {
       if (kanRep) {
         route = 'reparatie'; badge = '&#128295; Schermvervanging';
@@ -565,11 +522,11 @@ function berekenRoute() {
 }
 
 function vulSamenvatting() {
-  const merk      = document.getElementById('merk')?.value || '\u2014';
-  const model     = document.getElementById('modelnummer')?.value || '\u2014';
-  const jaar      = document.getElementById('aanschafjaar')?.value || '\u2014';
+  const merk      = document.getElementById('merk')?.value || '—';
+  const model     = document.getElementById('modelnummer')?.value || '—';
+  const jaar      = document.getElementById('aanschafjaar')?.value || '—';
   const klachtEl  = document.getElementById('klacht_type');
-  const klachtTxt = klachtEl?.options[klachtEl.selectedIndex]?.text || '\u2014';
+  const klachtTxt = klachtEl?.options[klachtEl.selectedIndex]?.text || '—';
   const badge     = document.getElementById('routing-badge')?.innerHTML || '';
   const el = document.getElementById('route-samenvatting');
   if (!el) return;

@@ -42,40 +42,22 @@ include __DIR__ . '/includes/header.php';
         <span class="hero-card-tag">Jouw televisie, ons advies</span>
         <h3>Kapotte televisie?<br>Wij helpen je verder.</h3>
         <p>Vertel ons wat er mis is en ontvang binnen &eacute;&eacute;n werkdag een eerlijk advies, helemaal gratis.</p>
-        <div class="hero-card-steps">
-          <div class="hero-card-step"><span class="step-circle">1</span> Modelnummer &amp; klacht invullen</div>
-          <div class="hero-card-step"><span class="step-circle">2</span> Persoonlijk advies ontvangen</div>
-          <div class="hero-card-step"><span class="step-circle">3</span> Beste oplossing kiezen</div>
-        </div>
+        <?php $wizardCompact = true; include __DIR__ . '/includes/stap-wizard.php'; ?>
       </div>
     </div>
   </div>
 </section>
 
-<div class="how-wrap" id="hoe">
-  <div class="how-inner">
-    <h2 class="section-title">Zo werkt het</h2>
-    <p class="section-lead">Geen technische kennis nodig. Beschrijf wat er mis is en wij regelen de rest.</p>
-    <div class="steps-grid">
-      <div class="step-item">
-        <div class="step-n">01</div>
-        <div class="step-icon">&#128221;</div>
-        <h3>Formulier invullen</h3>
-        <p>Geef je merk, modelnummer en een korte omschrijving van het probleem. Klaar in twee minuten.</p>
-      </div>
-      <div class="step-item">
-        <div class="step-n">02</div>
-        <div class="step-icon">&#128269;</div>
-        <h3>Wij beoordelen je situatie</h3>
-        <p>Een specialist bekijkt je gegevens en bepaalt de beste optie: garantie, coulance, reparatie of taxatie.</p>
-      </div>
-      <div class="step-item">
-        <div class="step-n">03</div>
-        <div class="step-icon">&#128233;</div>
-        <h3>Advies per e-mail</h3>
-        <p>Je ontvangt een e-mail met een directe link naar jouw persoonlijk advies en de concrete vervolgstappen.</p>
-      </div>
+<!-- Zo werkt het – Stap-wizard component -->
+<div class="wizard-section" id="hoe">
+  <div class="section" style="padding-top:4.5rem;padding-bottom:4.5rem;">
+    <div style="text-align:center;margin-bottom:2.5rem;">
+      <h2 class="section-title">Zo werkt het</h2>
+      <p class="section-lead" style="max-width:52ch;margin:.5rem auto 0;">
+        Geen technische kennis nodig. Beschrijf wat er mis is en wij regelen de rest.
+      </p>
     </div>
+    <?php unset($wizardCompact); include __DIR__ . '/includes/stap-wizard.php'; ?>
   </div>
 </div>
 
@@ -219,7 +201,7 @@ include __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<div style="background:white; padding:5rem 0;">
+<div style="background:white;padding:5rem 0;">
   <div class="section" style="padding-top:0;padding-bottom:0;">
     <div class="merken-grid">
       <div>
