@@ -155,6 +155,77 @@ function mailTemplateDefault(string $key): array {
                 'https://reparatieplatform.nl/admin/aanvragen.php'
             ),
         ],
+
+        // ── NIEUW: Chat-berichten en statuswijziging ──────────────────────
+
+        'admin_nieuw_chatbericht' => [
+            'subject' => '[Admin] Nieuw chatbericht – {{casenummer}}',
+            'body_html' => mailWrap(
+                'Nieuw chatbericht ontvangen',
+                '<p>Er is een nieuw bericht ontvangen via de chat voor inzending <strong>{{casenummer}}</strong>.</p>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border:1.5px solid #e5e4e0;border-radius:12px;overflow:hidden;">
+                  <tr style="background:#0d0f14;"><td style="padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#287864;">Berichtdetails</td></tr>
+                  <tr><td style="padding:8px 16px 4px;"><strong>Zaaknummer:</strong> {{casenummer}}</td></tr>
+                  <tr><td style="padding:4px 16px;"><strong>Inzender:</strong> {{email}}</td></tr>
+                  <tr><td style="padding:4px 16px;"><strong>Televisie:</strong> {{merk}} {{modelnummer}}</td></tr>
+                  <tr><td style="padding:4px 16px 12px;"><strong>Ontvangen op:</strong> {{datum_bericht}}</td></tr>
+                </table>
+                <div style="background:#f8fafc;border:1.5px solid #e5e4e0;border-radius:12px;padding:20px 24px;margin:0 0 24px;">
+                  <p style="margin:0 0 6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;">Bericht van inzender</p>
+                  <p style="margin:0;font-size:15px;color:#0d0f14;line-height:1.65;">{{chatbericht}}</p>
+                </div>
+                <p style="font-size:13px;color:#6b7280;">Reageer zo snel mogelijk via het adminpaneel zodat de inzender geholpen wordt.</p>',
+                'Bekijken &amp; beantwoorden',
+                'https://reparatieplatform.nl/admin/aanvragen.php'
+            ),
+        ],
+
+        'inzender_nieuw_chatbericht' => [
+            'subject' => 'Nieuw bericht over uw aanvraag – {{casenummer}}',
+            'body_html' => mailWrap(
+                'U heeft een nieuw bericht',
+                '<p>Beste,</p>
+                <p>U heeft een nieuw bericht ontvangen van ons team over uw aanvraag <strong>{{casenummer}}</strong>.</p>
+                <div style="background:#f8fafc;border:1.5px solid #e5e4e0;border-radius:12px;padding:20px 24px;margin:24px 0;">
+                  <p style="margin:0 0 6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;">Bericht van ReparatiePlatform.nl</p>
+                  <p style="margin:0;font-size:15px;color:#0d0f14;line-height:1.65;">{{chatbericht}}</p>
+                </div>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border:1.5px solid #e5e4e0;border-radius:12px;overflow:hidden;">
+                  <tr style="background:#f5f4f1;"><td style="padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;">Uw aanvraag</td></tr>
+                  <tr><td style="padding:8px 16px 4px;"><strong>Zaaknummer:</strong> {{casenummer}}</td></tr>
+                  <tr><td style="padding:4px 16px 12px;"><strong>Televisie:</strong> {{merk}} {{modelnummer}}</td></tr>
+                </table>
+                <p>U kunt direct reageren via uw persoonlijke aanvraagpagina.</p>',
+                'Naar mijn aanvraag',
+                'https://reparatieplatform.nl/mijn-aanvraag.php'
+            ),
+        ],
+
+        'inzender_status_gewijzigd' => [
+            'subject' => 'Status gewijzigd voor uw aanvraag – {{casenummer}}',
+            'body_html' => mailWrap(
+                'Status van uw aanvraag gewijzigd',
+                '<p>Beste,</p>
+                <p>De status van uw aanvraag <strong>{{casenummer}}</strong> is bijgewerkt door ons team.</p>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border:1.5px solid #e5e4e0;border-radius:12px;overflow:hidden;">
+                  <tr style="background:#f5f4f1;"><td style="padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;">Statuswijziging</td></tr>
+                  <tr><td style="padding:8px 16px 4px;"><strong>Zaaknummer:</strong> {{casenummer}}</td></tr>
+                  <tr><td style="padding:4px 16px;"><strong>Televisie:</strong> {{merk}} {{modelnummer}}</td></tr>
+                  <tr><td style="padding:4px 16px;"><strong>Vorige status:</strong> <span style="color:#64748b;">{{status_oud}}</span></td></tr>
+                  <tr><td style="padding:4px 16px 12px;"><strong>Nieuwe status:</strong> <span style="font-weight:700;color:#287864;">{{status_nieuw}}</span></td></tr>
+                </table>
+                {{#toelichting_status}}
+                <div style="background:#e8f4f1;border-left:4px solid #287864;border-radius:0 12px 12px 0;padding:16px 20px;margin:0 0 24px;">
+                  <p style="margin:0;font-weight:700;color:#287864;font-size:13px;text-transform:uppercase;letter-spacing:.06em;">Toelichting</p>
+                  <p style="margin:8px 0 0;font-size:14px;color:#0d0f14;line-height:1.65;">{{toelichting_status}}</p>
+                </div>
+                {{/toelichting_status}}
+                <p>Bekijk uw aanvraag voor meer details en de volgende stappen.</p>',
+                'Mijn aanvraag bekijken',
+                'https://reparatieplatform.nl/mijn-aanvraag.php'
+            ),
+        ],
+
         default => ['subject' => 'Bericht van ReparatiePlatform.nl', 'body_html' => mailWrap('Bericht', '<p>{{bericht}}</p>')],
     };
 }
@@ -162,9 +233,12 @@ function mailTemplateDefault(string $key): array {
 /* ── Haal alle beschikbare template-slugs + defaults op ── */
 function getAllMailTemplates(): array {
     $defaults = [
-        'inzender_bevestiging'  => ['label' => 'Inzender: Ontvangstbevestiging',   'richting' => 'inzender'],
-        'inzender_advies'       => ['label' => 'Inzender: Advies klaar',            'richting' => 'inzender'],
-        'admin_nieuwe_inzending'=> ['label' => 'Admin: Nieuwe inzending',           'richting' => 'admin'],
+        'inzender_bevestiging'       => ['label' => 'Inzender: Ontvangstbevestiging',         'richting' => 'inzender'],
+        'inzender_advies'            => ['label' => 'Inzender: Advies klaar',                  'richting' => 'inzender'],
+        'admin_nieuwe_inzending'     => ['label' => 'Admin: Nieuwe inzending',                 'richting' => 'admin'],
+        'admin_nieuw_chatbericht'    => ['label' => 'Admin: Nieuw chatbericht',                'richting' => 'admin'],
+        'inzender_nieuw_chatbericht' => ['label' => 'Inzender: Nieuw chatbericht',             'richting' => 'inzender'],
+        'inzender_status_gewijzigd'  => ['label' => 'Inzender: Status gewijzigd',             'richting' => 'inzender'],
     ];
     $result = [];
     foreach ($defaults as $slug => $meta) {

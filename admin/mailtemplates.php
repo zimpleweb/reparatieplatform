@@ -24,9 +24,12 @@ try {
 
 // ── Sla standaardtemplates op als ze nog niet in DB staan ─────────
 $defaults = [
-    ['slug' => 'inzender_bevestiging',   'label' => 'Inzender: Ontvangstbevestiging', 'richting' => 'inzender'],
-    ['slug' => 'inzender_advies',        'label' => 'Inzender: Advies klaar',         'richting' => 'inzender'],
-    ['slug' => 'admin_nieuwe_inzending', 'label' => 'Admin: Nieuwe inzending',        'richting' => 'admin'],
+    ['slug' => 'inzender_bevestiging',       'label' => 'Inzender: Ontvangstbevestiging',    'richting' => 'inzender'],
+    ['slug' => 'inzender_advies',            'label' => 'Inzender: Advies klaar',             'richting' => 'inzender'],
+    ['slug' => 'admin_nieuwe_inzending',     'label' => 'Admin: Nieuwe inzending',            'richting' => 'admin'],
+    ['slug' => 'admin_nieuw_chatbericht',    'label' => 'Admin: Nieuw chatbericht',           'richting' => 'admin'],
+    ['slug' => 'inzender_nieuw_chatbericht', 'label' => 'Inzender: Nieuw chatbericht',        'richting' => 'inzender'],
+    ['slug' => 'inzender_status_gewijzigd',  'label' => 'Inzender: Status gewijzigd',        'richting' => 'inzender'],
 ];
 foreach ($defaults as $d) {
     $check = db()->prepare('SELECT COUNT(*) FROM mail_templates WHERE slug = ?');
@@ -104,6 +107,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'testm
                 'email'              => $testTo,
                 'advies_toelichting' => 'Uw televisie valt nog binnen de garantietermijn van 2 jaar.',
                 'bericht'            => 'Dit is een testbericht.',
+                'chatbericht'        => 'Dit is een testbericht via de chat.',
+                'datum_bericht'      => date('d-m-Y H:i'),
+                'status_oud'         => 'In behandeling',
+                'status_nieuw'       => 'Advies gegeven',
+                'toelichting_status' => 'Uw aanvraag is volledig afgehandeld.',
             ];
             $ok = sendMail($testTo, $slug, $vars);
             if ($ok) {
@@ -221,6 +229,7 @@ if (!$editTpl && !empty($templates)) $editTpl = $templates[0];
     <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;</span> Advies instellingen</a>
     <a href="<?= BASE_URL ?>/admin/mailtemplates.php" class="active"><span class="icon">&#128140;</span> Mailtemplates</a>
     <a href="<?= BASE_URL ?>/admin/admins.php"><span class="icon">&#128100;</span> Admin accounts</a>
+    <a href="<?= BASE_URL ?>/admin/account-instellingen.php"><span class="icon">&#128274;</span> Account instellingen</a>
     <a href="<?= BASE_URL ?>/" target="_blank"><span class="icon">&#127760;</span> Website bekijken</a>
   </div>
   <div class="admin-content">
@@ -299,7 +308,12 @@ if (!$editTpl && !empty($templates)) $editTpl = $templates[0];
               <code>{{klacht_type}}</code> &nbsp;
               <code>{{omschrijving}}</code> &nbsp;
               <code>{{email}}</code> &nbsp;
-              <code>{{advies_toelichting}}</code>
+              <code>{{advies_toelichting}}</code> &nbsp;
+              <code>{{chatbericht}}</code> &nbsp;
+              <code>{{datum_bericht}}</code> &nbsp;
+              <code>{{status_oud}}</code> &nbsp;
+              <code>{{status_nieuw}}</code> &nbsp;
+              <code>{{toelichting_status}}</code>
             </div>
             <form method="POST" id="editForm">
               <input type="hidden" name="csrf"   value="<?= csrf() ?>">
@@ -384,6 +398,11 @@ const PREVIEW_VARS = {
   email:              'gebruiker@voorbeeld.nl',
   advies_toelichting: 'Uw televisie valt nog binnen de garantietermijn.',
   bericht:            'Dit is een testbericht.',
+  chatbericht:        'Dit is een testbericht via de chat.',
+  datum_bericht:      '20-04-2026 15:45',
+  status_oud:         'In behandeling',
+  status_nieuw:       'Advies gegeven',
+  toelichting_status: 'Uw aanvraag is volledig afgehandeld.',
 };
 
 function renderVars(html) {
@@ -406,7 +425,6 @@ function switchTab(name, btn) {
   if (name === 'preview') updatePreview();
 }
 
-// Initialiseer preview
 updatePreview();
 </script>
 </body>
