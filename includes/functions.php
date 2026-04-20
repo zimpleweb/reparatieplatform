@@ -65,5 +65,5 @@ function isAdmin(): bool {
     return isset($_SESSION['admin']) && $_SESSION['admin'] === true;
 }
 function requireAdmin(): void {
-    if (!isAdmin()) redirect('/admin/login.php');
+    if (!isAdmin()) redirect(BASE_URL . '/admin/login.php');
 }

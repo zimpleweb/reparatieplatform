@@ -13,7 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
         $errorMsg = 'Ongeldig verzoek.';
     } else {
         $deleteId = (int)($_POST['id'] ?? 0);
-        // Verwijder niet het account waarmee je bent ingelogd
         $huidig = db()->prepare('SELECT id FROM admins WHERE username = ? LIMIT 1');
         $huidig->execute([$_SESSION['admin_username'] ?? '']);
         $huidigId = (int)($huidig->fetchColumn() ?: 0);
@@ -31,27 +30,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
     if (!verifyCsrf($_POST['csrf'] ?? '')) {
         $errorMsg = 'Ongeldig verzoek.';
     } else {
-        $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
+        $username  = trim($_POST['username'] ?? '');
+        $email     = trim($_POST['email'] ?? '');
+        $password  = $_POST['password'] ?? '';
         $password2 = $_POST['password2'] ?? '';
 
         if (!$username || !$password) {
             $errorMsg = 'Gebruikersnaam en wachtwoord zijn verplicht.';
+        } elseif ($email && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errorMsg = 'Ongeldig e-mailadres.';
         } elseif (strlen($password) < 10) {
             $errorMsg = 'Wachtwoord moet minimaal 10 tekens lang zijn.';
         } elseif ($password !== $password2) {
             $errorMsg = 'Wachtwoorden komen niet overeen.';
         } else {
-            // Check duplicate
             $check = db()->prepare('SELECT COUNT(*) FROM admins WHERE username = ?');
             $check->execute([$username]);
             if ($check->fetchColumn() > 0) {
                 $errorMsg = 'Deze gebruikersnaam is al in gebruik.';
             } else {
                 $hash = password_hash($password, PASSWORD_DEFAULT);
-                db()->prepare('INSERT INTO admins (username, password) VALUES (?, ?)')
-                     ->execute([$username, $hash]);
+                try {
+                    db()->prepare('INSERT INTO admins (username, email, password) VALUES (?, ?, ?)')
+                         ->execute([$username, $email ?: null, $hash]);
+                } catch (\PDOException $e) {
+                    // Tabel heeft nog geen email-kolom
+                    db()->prepare('INSERT INTO admins (username, password) VALUES (?, ?)')
+                         ->execute([$username, $hash]);
+                }
                 $successMsg = 'Nieuw admin-account aangemaakt voor "' . h($username) . '".';
+            }
+        }
+    }
+}
+
+// ── E-mail bijwerken ──────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update_email') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        $errorMsg = 'Ongeldig verzoek.';
+    } else {
+        $editId   = (int)($_POST['id'] ?? 0);
+        $newEmail = trim($_POST['new_email'] ?? '');
+        if ($newEmail && !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
+            $errorMsg = 'Ongeldig e-mailadres.';
+        } elseif ($editId) {
+            try {
+                db()->prepare('UPDATE admins SET email = ? WHERE id = ?')
+                     ->execute([$newEmail ?: null, $editId]);
+                $successMsg = 'E-mailadres bijgewerkt.';
+            } catch (\PDOException $e) {
+                $errorMsg = 'Kan e-mail niet opslaan (kolom ontbreekt — voer migratie uit).';
             }
         }
     }
@@ -62,9 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'chang
     if (!verifyCsrf($_POST['csrf'] ?? '')) {
         $errorMsg = 'Ongeldig verzoek.';
     } else {
-        $editId    = (int)($_POST['id'] ?? 0);
-        $newPw     = $_POST['new_password'] ?? '';
-        $newPw2    = $_POST['new_password2'] ?? '';
+        $editId  = (int)($_POST['id'] ?? 0);
+        $newPw   = $_POST['new_password'] ?? '';
+        $newPw2  = $_POST['new_password2'] ?? '';
         if (strlen($newPw) < 10) {
             $errorMsg = 'Wachtwoord moet minimaal 10 tekens lang zijn.';
         } elseif ($newPw !== $newPw2) {
@@ -77,7 +105,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'chang
     }
 }
 
-$admins = db()->query('SELECT id, username, created_at FROM admins ORDER BY id ASC')->fetchAll();
+// ── 2FA uitschakelen ──────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'disable_2fa') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        $errorMsg = 'Ongeldig verzoek.';
+    } else {
+        $editId = (int)($_POST['id'] ?? 0);
+        if ($editId) {
+            try {
+                db()->prepare('UPDATE admins SET totp_secret = NULL, totp_enabled = 0 WHERE id = ?')
+                     ->execute([$editId]);
+                $successMsg = '2FA uitgeschakeld.';
+            } catch (\PDOException $e) {
+                $errorMsg = 'Kan 2FA niet uitschakelen (kolom ontbreekt — voer migratie uit).';
+            }
+        }
+    }
+}
+
+try {
+    $admins = db()->query('SELECT id, username, email, totp_enabled, created_at FROM admins ORDER BY id ASC')->fetchAll();
+} catch (\PDOException $e) {
+    $admins = db()->query('SELECT id, username, created_at FROM admins ORDER BY id ASC')->fetchAll();
+}
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -104,6 +154,10 @@ $admins = db()->query('SELECT id, username, created_at FROM admins ORDER BY id A
     .pw-strength.strong { color: #16a34a; }
     .badge-you { background: #d6f0eb; color: #287864; font-size: .7rem; font-weight: 700;
       padding: .15rem .5rem; border-radius: 99px; margin-left: .5rem; vertical-align: middle; }
+    .badge-2fa-on  { background: #dcfce7; color: #15803d; font-size: .7rem; font-weight: 700;
+      padding: .15rem .5rem; border-radius: 99px; margin-left: .4rem; vertical-align: middle; }
+    .badge-2fa-off { background: #fef9c3; color: #854d0e; font-size: .7rem; font-weight: 700;
+      padding: .15rem .5rem; border-radius: 99px; margin-left: .4rem; vertical-align: middle; }
     .modal-overlay {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
       z-index: 9999; align-items: center; justify-content: center;
@@ -115,6 +169,27 @@ $admins = db()->query('SELECT id, username, created_at FROM admins ORDER BY id A
     }
     .modal-box h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
     .modal-close { float: right; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted); }
+    .btn-admin-sm {
+      padding: .35rem .75rem; border-radius: 8px; font-size: .8rem;
+      font-weight: 600; cursor: pointer; transition: all .15s; border: none;
+    }
+    .btn-admin-outline {
+      border: 1.5px solid var(--border); background: white; color: var(--ink);
+    }
+    .btn-admin-outline:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-admin-danger {
+      background: #fee2e2; color: #b91c1c; border: 1.5px solid #fecaca;
+    }
+    .btn-admin-danger:hover { background: #fecaca; }
+    .btn-admin-warning {
+      background: #fef9c3; color: #854d0e; border: 1.5px solid #fef08a;
+    }
+    .btn-admin-warning:hover { background: #fef08a; }
+    .sql-hint {
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 1rem 1.25rem; margin-top: 1.5rem; font-size: .82rem; color: #475569;
+    }
+    .sql-hint code { background: #e2e8f0; padding: .1rem .35rem; border-radius: 4px; font-size: .8rem; }
   </style>
 </head>
 <body>
@@ -131,6 +206,7 @@ $admins = db()->query('SELECT id, username, created_at FROM admins ORDER BY id A
     <a href="<?= BASE_URL ?>/admin/modellen.php"><span class="icon">&#128250;</span> TV Modellen</a>
     <a href="<?= BASE_URL ?>/admin/klachten.php"><span class="icon">&#9888;</span> Klachten</a>
     <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;</span> Advies instellingen</a>
+    <a href="<?= BASE_URL ?>/admin/mailtemplates.php"><span class="icon">&#128140;</span> Mailtemplates</a>
     <a href="<?= BASE_URL ?>/admin/admins.php" class="active"><span class="icon">&#128100;</span> Admin accounts</a>
     <a href="<?= BASE_URL ?>/" target="_blank"><span class="icon">&#127760;</span> Website bekijken</a>
   </div>
@@ -152,13 +228,16 @@ $admins = db()->query('SELECT id, username, created_at FROM admins ORDER BY id A
           <tr>
             <th>#</th>
             <th>Gebruikersnaam</th>
+            <th>E-mailadres</th>
+            <th>2FA</th>
             <th>Aangemaakt op</th>
             <th>Acties</th>
           </tr>
         </thead>
         <tbody>
-        <?php foreach ($admins as $a): 
+        <?php foreach ($admins as $a):
           $isJij = ($a['username'] === ($_SESSION['admin_username'] ?? ''));
+          $has2fa = !empty($a['totp_enabled']);
         ?>
         <tr>
           <td style="color:var(--muted);font-size:.8rem;"><?= (int)$a['id'] ?></td>
@@ -166,14 +245,45 @@ $admins = db()->query('SELECT id, username, created_at FROM admins ORDER BY id A
             <strong><?= h($a['username']) ?></strong>
             <?php if ($isJij): ?><span class="badge-you">jij</span><?php endif; ?>
           </td>
+          <td style="font-size:.85rem;">
+            <?php if (!empty($a['email'])): ?>
+              <?= h($a['email']) ?>
+            <?php else: ?>
+              <span style="color:var(--muted);font-style:italic;">—</span>
+            <?php endif; ?>
+          </td>
+          <td>
+            <?php if ($has2fa): ?>
+              <span class="badge-2fa-on">&#128274; Aan</span>
+            <?php else: ?>
+              <span class="badge-2fa-off">Uit</span>
+            <?php endif; ?>
+          </td>
           <td style="font-size:.8rem;color:var(--muted);"><?= h($a['created_at'] ?? '—') ?></td>
           <td>
             <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+              <button type="button"
+                onclick="openEmailModal(<?= (int)$a['id'] ?>, '<?= h(addslashes($a['username'])) ?>', '<?= h(addslashes($a['email'] ?? '')) ?>')"
+                class="btn-admin-sm btn-admin-outline">
+                &#9993; E-mail
+              </button>
               <button type="button"
                 onclick="openPwModal(<?= (int)$a['id'] ?>, '<?= h(addslashes($a['username'])) ?>')"
                 class="btn-admin-sm btn-admin-outline">
                 &#128273; Wachtwoord
               </button>
+              <?php if ($isJij && !$has2fa): ?>
+              <a href="<?= BASE_URL ?>/admin/2fa-setup.php" class="btn-admin-sm btn-admin-warning" style="text-decoration:none;">
+                &#128272; 2FA instellen
+              </a>
+              <?php elseif ($has2fa && $isJij): ?>
+              <form method="POST" style="margin:0;" onsubmit="return confirm('2FA uitschakelen voor dit account?');">
+                <input type="hidden" name="csrf"   value="<?= csrf() ?>">
+                <input type="hidden" name="action" value="disable_2fa">
+                <input type="hidden" name="id"     value="<?= (int)$a['id'] ?>">
+                <button type="submit" class="btn-admin-sm btn-admin-warning">&#128274; 2FA uitzetten</button>
+              </form>
+              <?php endif; ?>
               <?php if (!$isJij): ?>
               <form method="POST" style="margin:0;"
                     onsubmit="return confirm('Admin \"<?= h(addslashes($a['username'])) ?>\" verwijderen?');">
@@ -189,6 +299,13 @@ $admins = db()->query('SELECT id, username, created_at FROM admins ORDER BY id A
         <?php endforeach; ?>
         </tbody>
       </table>
+
+      <div class="sql-hint">
+        <strong>&#128268; Databasemigratie vereist</strong> &mdash; Voer de volgende SQL uit als de e-mail- of 2FA-kolommen nog ontbreken:<br>
+        <code>ALTER TABLE admins ADD COLUMN email VARCHAR(255) NULL AFTER username;</code><br>
+        <code>ALTER TABLE admins ADD COLUMN totp_secret VARCHAR(64) NULL;</code><br>
+        <code>ALTER TABLE admins ADD COLUMN totp_enabled TINYINT(1) NOT NULL DEFAULT 0;</code>
+      </div>
     </div>
 
     <!-- Nieuw account aanmaken -->
@@ -200,6 +317,10 @@ $admins = db()->query('SELECT id, username, created_at FROM admins ORDER BY id A
         <div class="field">
           <label>Gebruikersnaam *</label>
           <input type="text" name="username" placeholder="bijv. admin2" autocomplete="off" required />
+        </div>
+        <div class="field">
+          <label>E-mailadres <small style="font-weight:400;color:var(--muted);">(optioneel, voor meldingen)</small></label>
+          <input type="email" name="email" placeholder="admin@voorbeeld.nl" autocomplete="off" />
         </div>
         <div class="field">
           <label>Wachtwoord * <small style="font-weight:400;color:var(--muted);">(minimaal 10 tekens)</small></label>
@@ -223,6 +344,27 @@ $admins = db()->query('SELECT id, username, created_at FROM admins ORDER BY id A
     </div>
   </div><!-- /admin-content -->
 </div>
+</div>
+
+<!-- Modal: e-mail wijzigen -->
+<div class="modal-overlay" id="emailModal">
+  <div class="modal-box">
+    <button type="button" class="modal-close" onclick="closeEmailModal()">&#10005;</button>
+    <h3 id="emailModalTitle">E-mailadres wijzigen</h3>
+    <form method="POST" class="form-admin" id="emailForm">
+      <input type="hidden" name="csrf"   value="<?= csrf() ?>">
+      <input type="hidden" name="action" value="update_email">
+      <input type="hidden" name="id"     id="emailModalId">
+      <div class="field">
+        <label>E-mailadres <small style="font-weight:400;color:var(--muted);">(leeg = geen)</small></label>
+        <input type="email" name="new_email" id="modalEmail" placeholder="admin@voorbeeld.nl" autocomplete="off" />
+      </div>
+      <div style="display:flex;gap:.75rem;margin-top:1rem;">
+        <button type="submit" class="btn-primary">Opslaan</button>
+        <button type="button" class="btn-ghost" onclick="closeEmailModal()">Annuleren</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Modal: wachtwoord wijzigen -->
@@ -257,22 +399,20 @@ $admins = db()->query('SELECT id, username, created_at FROM admins ORDER BY id A
   </div>
 </div>
 
-<style>
-.btn-admin-sm {
-  padding: .35rem .75rem; border-radius: 8px; font-size: .8rem;
-  font-weight: 600; cursor: pointer; transition: all .15s; border: none;
-}
-.btn-admin-outline {
-  border: 1.5px solid var(--border); background: white; color: var(--ink);
-}
-.btn-admin-outline:hover { border-color: var(--accent); color: var(--accent); }
-.btn-admin-danger {
-  background: #fee2e2; color: #b91c1c; border: 1.5px solid #fecaca;
-}
-.btn-admin-danger:hover { background: #fecaca; }
-</style>
-
 <script>
+function openEmailModal(id, username, currentEmail) {
+  document.getElementById('emailModalId').value = id;
+  document.getElementById('emailModalTitle').textContent = 'E-mail wijzigen – ' + username;
+  document.getElementById('modalEmail').value = currentEmail;
+  document.getElementById('emailModal').classList.add('open');
+}
+function closeEmailModal() {
+  document.getElementById('emailModal').classList.remove('open');
+}
+document.getElementById('emailModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEmailModal();
+});
+
 function openPwModal(id, username) {
   document.getElementById('pwModalId').value = id;
   document.getElementById('pwModalTitle').textContent = 'Wachtwoord wijzigen – ' + username;
