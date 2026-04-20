@@ -306,3 +306,297 @@
 .badge-yellow { background: #fef9c3; color: #854d0e; }
 .badge-gray   { background: #f1f5f9; color: #64748b; }
 .badge-red    { background: #fef2f2; color: #991b1b; }
+/* ═══════════════════════════════════════════════════════════════════
+   ADMIN HEADER – Horizontaal, modern, component-gebaseerd
+   Klassen beginnen met adm- (geen conflict met bestaande .admin-*)
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --adm-h:          58px;
+  --adm-bg:         #ffffff;
+  --adm-border:     rgba(0,0,0,.07);
+  --adm-text:       #374151;
+  --adm-muted:      #6b7280;
+  --adm-accent:     #01696f;
+  --adm-accent-bg:  #eef7f6;
+  --adm-active-txt: #01696f;
+  --adm-hover-bg:   #f3f4f6;
+  --adm-badge-bg:   #ef4444;
+  --adm-badge-txt:  #fff;
+  --adm-radius:     8px;
+  --adm-shadow:     0 1px 3px rgba(0,0,0,.06), 0 1px 0 rgba(0,0,0,.04);
+}
+
+/* ── Sticky header bar ─────────────────────────────────────────── */
+.adm-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  height: var(--adm-h);
+  background: var(--adm-bg);
+  border-bottom: 1px solid var(--adm-border);
+  box-shadow: var(--adm-shadow);
+}
+
+.adm-header-inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 1.25rem;
+  gap: .5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* ── Spacer zodat content niet achter header verdwijnt ─────────── */
+.adm-header-spacer { height: var(--adm-h); }
+
+/* ── Logo ──────────────────────────────────────────────────────── */
+.adm-logo {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  text-decoration: none;
+  flex-shrink: 0;
+  margin-right: .5rem;
+}
+.adm-logo-icon { border-radius: 7px; flex-shrink: 0; }
+.adm-logo-text {
+  font-size: .92rem;
+  color: #111827;
+  white-space: nowrap;
+  letter-spacing: -.01em;
+}
+.adm-logo-text strong {
+  font-weight: 700;
+  color: var(--adm-accent);
+}
+
+/* ── Navigatie ─────────────────────────────────────────────────── */
+.adm-nav {
+  display: flex;
+  align-items: center;
+  gap: .15rem;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.adm-nav::-webkit-scrollbar { display: none; }
+
+.adm-nav-link {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .4rem .65rem;
+  border-radius: var(--adm-radius);
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--adm-text);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+  position: relative;
+}
+.adm-nav-link:hover {
+  background: var(--adm-hover-bg);
+  color: #111827;
+}
+.adm-nav-link.is-active {
+  background: var(--adm-accent-bg);
+  color: var(--adm-active-txt);
+  font-weight: 600;
+}
+.adm-nav-icon {
+  font-size: .85rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Badge op nav-link */
+.adm-nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: var(--adm-badge-bg);
+  color: var(--adm-badge-txt);
+  font-size: .65rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: .1rem;
+}
+
+/* ── Rechts: acties + account ──────────────────────────────────── */
+.adm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.adm-action-link,
+.adm-logout-link {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .4rem .6rem;
+  border-radius: var(--adm-radius);
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--adm-muted);
+  text-decoration: none;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+.adm-action-link:hover  { background: var(--adm-hover-bg); color: #111827; }
+.adm-logout-link:hover  { background: #fef2f2; color: #dc2626; }
+
+.adm-header-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--adm-border);
+  margin: 0 .25rem;
+  flex-shrink: 0;
+}
+
+/* Account avatar + naam */
+.adm-account-link {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .3rem .6rem .3rem .35rem;
+  border-radius: var(--adm-radius);
+  text-decoration: none;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--adm-text);
+  transition: background .15s;
+}
+.adm-account-link:hover  { background: var(--adm-hover-bg); }
+.adm-account-link.is-active { background: var(--adm-accent-bg); color: var(--adm-active-txt); }
+.adm-account-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--adm-accent);
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.adm-account-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Hamburger (mobiel) ────────────────────────────────────────── */
+.adm-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 36px;
+  height: 36px;
+  padding: 0 7px;
+  background: none;
+  border: 1px solid var(--adm-border);
+  border-radius: 7px;
+  cursor: pointer;
+  margin-left: auto;
+  order: 10;
+  flex-shrink: 0;
+}
+.adm-hamburger span {
+  display: block;
+  height: 2px;
+  background: var(--adm-text);
+  border-radius: 2px;
+  transition: transform .2s, opacity .2s;
+}
+.adm-hamburger.is-open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.adm-hamburger.is-open span:nth-child(2) { opacity: 0; }
+.adm-hamburger.is-open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+/* ── Admin wrap (geen sidebar meer, alleen content) ────────────── */
+.admin-wrap { min-height: 100vh; background: #f8fafc; }
+
+/* Pagina-content: geen admin-layout / sidebar nodig */
+.admin-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* ── Responsive: mobiel ────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .adm-header-actions .adm-action-label { display: none; }
+  .adm-account-name { display: none; }
+}
+
+@media (max-width: 768px) {
+  .adm-hamburger { display: flex; }
+
+  .adm-header-actions { display: none; }
+
+  .adm-nav {
+    display: none;
+    position: fixed;
+    top: var(--adm-h);
+    left: 0; right: 0;
+    background: #fff;
+    border-bottom: 1px solid var(--adm-border);
+    box-shadow: 0 4px 20px rgba(0,0,0,.1);
+    flex-direction: column;
+    align-items: stretch;
+    gap: .1rem;
+    padding: .75rem;
+    overflow-y: auto;
+    max-height: calc(100vh - var(--adm-h));
+    z-index: 999;
+  }
+  .adm-nav.is-open { display: flex; }
+
+  .adm-nav-link {
+    padding: .65rem .8rem;
+    font-size: .875rem;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   STAT CARDS – zonder icoontje (dashboard.php)
+   ════════════════════════════════════════════════════════════════ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.stat-card {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.stat-val {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1;
+  margin-bottom: .4rem;
+  font-variant-numeric: tabular-nums;
+}
+.stat-label {
+  font-size: .8rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+/* .stat-icon wordt niet langer gerenderd – class mag bestaan maar is verborgen */
+.stat-icon { display: none; }
