@@ -50,14 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
                 $errorMsg = 'Deze gebruikersnaam is al in gebruik.';
             } else {
                 $hash = password_hash($password, PASSWORD_DEFAULT);
-                try {
-                    db()->prepare('INSERT INTO admins (username, email, password) VALUES (?, ?, ?)')
-                         ->execute([$username, $email ?: null, $hash]);
-                } catch (\PDOException $e) {
-                    // Tabel heeft nog geen email-kolom
-                    db()->prepare('INSERT INTO admins (username, password) VALUES (?, ?)')
-                         ->execute([$username, $hash]);
-                }
+                db()->prepare('INSERT INTO admins (username, email, password) VALUES (?, ?, ?)')
+                     ->execute([$username, $email ?: null, $hash]);
                 $successMsg = 'Nieuw admin-account aangemaakt voor "' . h($username) . '".';
             }
         }
@@ -74,13 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
         if ($newEmail && !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
             $errorMsg = 'Ongeldig e-mailadres.';
         } elseif ($editId) {
-            try {
-                db()->prepare('UPDATE admins SET email = ? WHERE id = ?')
-                     ->execute([$newEmail ?: null, $editId]);
-                $successMsg = 'E-mailadres bijgewerkt.';
-            } catch (\PDOException $e) {
-                $errorMsg = 'Kan e-mail niet opslaan (kolom ontbreekt — voer migratie uit).';
-            }
+            db()->prepare('UPDATE admins SET email = ? WHERE id = ?')
+                 ->execute([$newEmail ?: null, $editId]);
+            $successMsg = 'E-mailadres bijgewerkt.';
         }
     }
 }
@@ -112,22 +102,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'disab
     } else {
         $editId = (int)($_POST['id'] ?? 0);
         if ($editId) {
-            try {
-                db()->prepare('UPDATE admins SET totp_secret = NULL, totp_enabled = 0 WHERE id = ?')
-                     ->execute([$editId]);
-                $successMsg = '2FA uitgeschakeld.';
-            } catch (\PDOException $e) {
-                $errorMsg = 'Kan 2FA niet uitschakelen (kolom ontbreekt — voer migratie uit).';
-            }
+            db()->prepare('UPDATE admins SET totp_secret = NULL, totp_enabled = 0 WHERE id = ?')
+                 ->execute([$editId]);
+            $successMsg = '2FA uitgeschakeld.';
         }
     }
 }
 
-try {
-    $admins = db()->query('SELECT id, username, email, totp_enabled, created_at FROM admins ORDER BY id ASC')->fetchAll();
-} catch (\PDOException $e) {
-    $admins = db()->query('SELECT id, username, created_at FROM admins ORDER BY id ASC')->fetchAll();
-}
+$admins = db()->query('SELECT id, username, email, totp_enabled, created_at FROM admins ORDER BY id ASC')->fetchAll();
+$adminUsername = $_SESSION['admin_username'] ?? 'Admin';
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -135,7 +118,7 @@ try {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Admin accounts &ndash; Admin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Epilogue:wght@800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Epilogue:wght@800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/base.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/components.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css">
@@ -185,166 +168,170 @@ try {
       background: #fef9c3; color: #854d0e; border: 1.5px solid #fef08a;
     }
     .btn-admin-warning:hover { background: #fef08a; }
-    .sql-hint {
-      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px;
-      padding: 1rem 1.25rem; margin-top: 1.5rem; font-size: .82rem; color: #475569;
-    }
-    .sql-hint code { background: #e2e8f0; padding: .1rem .35rem; border-radius: 4px; font-size: .8rem; }
   </style>
 </head>
 <body>
 <div class="admin-wrap">
+
 <nav class="admin-nav">
-  <span class="logo">Reparatie<span>Platform</span> Admin</span>
-  <a href="<?= BASE_URL ?>/admin/logout.php">Uitloggen</a>
-</nav>
-<div class="admin-layout">
-  <div class="admin-sidebar">
+  <span class="logo">Reparatie<span>Platform</span></span>
+
+  <div class="admin-nav-menu">
     <a href="<?= BASE_URL ?>/admin/dashboard.php"><span class="icon">&#128202;</span> Dashboard</a>
     <a href="<?= BASE_URL ?>/admin/aanvragen.php"><span class="icon">&#128236;</span> Inzendingen</a>
     <a href="<?= BASE_URL ?>/admin/meldingen.php"><span class="icon">&#128276;</span> Meldingen</a>
     <a href="<?= BASE_URL ?>/admin/modellen.php"><span class="icon">&#128250;</span> TV Modellen</a>
-    <a href="<?= BASE_URL ?>/admin/klachten.php"><span class="icon">&#9888;</span> Klachten</a>
-    <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;</span> Advies instellingen</a>
+    <a href="<?= BASE_URL ?>/admin/klachten.php"><span class="icon">&#9888;&#65039;</span> Klachten</a>
+    <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;&#65039;</span> Adviesregels</a>
     <a href="<?= BASE_URL ?>/admin/mailtemplates.php"><span class="icon">&#128140;</span> Mailtemplates</a>
     <a href="<?= BASE_URL ?>/admin/admins.php" class="active"><span class="icon">&#128100;</span> Admin accounts</a>
-    <a href="<?= BASE_URL ?>/" target="_blank"><span class="icon">&#127760;</span> Website bekijken</a>
   </div>
-  <div class="admin-content">
-    <h1>&#128100; Admin accounts</h1>
 
-    <?php if ($successMsg): ?>
-      <div class="alert alert-success" style="margin-bottom:1.5rem;">&#10003; <?= h($successMsg) ?></div>
-    <?php endif; ?>
-    <?php if ($errorMsg): ?>
-      <div class="alert alert-error" style="margin-bottom:1.5rem;">&#9888; <?= h($errorMsg) ?></div>
-    <?php endif; ?>
+  <div class="admin-nav-actions">
+    <a href="<?= BASE_URL ?>/admin/account-instellingen.php" title="Account instellingen">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <?= htmlspecialchars($adminUsername) ?>
+    </a>
+    <div class="admin-nav-divider"></div>
+    <a href="<?= BASE_URL ?>/" target="_blank" title="Website bekijken">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      Website
+    </a>
+    <div class="admin-nav-divider"></div>
+    <a href="<?= BASE_URL ?>/admin/logout.php" class="nav-logout">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Uitloggen
+    </a>
+  </div>
+</nav>
 
-    <!-- Bestaande accounts -->
-    <div class="admin-card" style="margin-bottom:2rem;">
-      <h2>Bestaande admin-accounts</h2>
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Gebruikersnaam</th>
-            <th>E-mailadres</th>
-            <th>2FA</th>
-            <th>Aangemaakt op</th>
-            <th>Acties</th>
-          </tr>
-        </thead>
-        <tbody>
-        <?php foreach ($admins as $a):
-          $isJij = ($a['username'] === ($_SESSION['admin_username'] ?? ''));
-          $has2fa = !empty($a['totp_enabled']);
-        ?>
+<div class="admin-content" style="padding: 2rem;">
+  <h1>&#128100; Admin accounts</h1>
+
+  <?php if ($successMsg): ?>
+    <div class="alert alert-success" style="margin-bottom:1.5rem;">&#10003; <?= h($successMsg) ?></div>
+  <?php endif; ?>
+  <?php if ($errorMsg): ?>
+    <div class="alert alert-error" style="margin-bottom:1.5rem;">&#9888; <?= h($errorMsg) ?></div>
+  <?php endif; ?>
+
+  <!-- Bestaande accounts -->
+  <div class="admin-card" style="margin-bottom:2rem;">
+    <h2>Bestaande admin-accounts</h2>
+    <table class="admin-table">
+      <thead>
         <tr>
-          <td style="color:var(--muted);font-size:.8rem;"><?= (int)$a['id'] ?></td>
-          <td>
-            <strong><?= h($a['username']) ?></strong>
-            <?php if ($isJij): ?><span class="badge-you">jij</span><?php endif; ?>
-          </td>
-          <td style="font-size:.85rem;">
-            <?php if (!empty($a['email'])): ?>
-              <?= h($a['email']) ?>
-            <?php else: ?>
-              <span style="color:var(--muted);font-style:italic;">—</span>
-            <?php endif; ?>
-          </td>
-          <td>
-            <?php if ($has2fa): ?>
-              <span class="badge-2fa-on">&#128274; Aan</span>
-            <?php else: ?>
-              <span class="badge-2fa-off">Uit</span>
-            <?php endif; ?>
-          </td>
-          <td style="font-size:.8rem;color:var(--muted);"><?= h($a['created_at'] ?? '—') ?></td>
-          <td>
-            <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-              <button type="button"
-                onclick="openEmailModal(<?= (int)$a['id'] ?>, '<?= h(addslashes($a['username'])) ?>', '<?= h(addslashes($a['email'] ?? '')) ?>')"
-                class="btn-admin-sm btn-admin-outline">
-                &#9993; E-mail
-              </button>
-              <button type="button"
-                onclick="openPwModal(<?= (int)$a['id'] ?>, '<?= h(addslashes($a['username'])) ?>')"
-                class="btn-admin-sm btn-admin-outline">
-                &#128273; Wachtwoord
-              </button>
-              <?php if ($isJij && !$has2fa): ?>
-              <a href="<?= BASE_URL ?>/admin/2fa-setup.php" class="btn-admin-sm btn-admin-warning" style="text-decoration:none;">
-                &#128272; 2FA instellen
-              </a>
-              <?php elseif ($has2fa && $isJij): ?>
-              <form method="POST" style="margin:0;" onsubmit="return confirm('2FA uitschakelen voor dit account?');">
-                <input type="hidden" name="csrf"   value="<?= csrf() ?>">
-                <input type="hidden" name="action" value="disable_2fa">
-                <input type="hidden" name="id"     value="<?= (int)$a['id'] ?>">
-                <button type="submit" class="btn-admin-sm btn-admin-warning">&#128274; 2FA uitzetten</button>
-              </form>
-              <?php endif; ?>
-              <?php if (!$isJij): ?>
-              <form method="POST" style="margin:0;"
-                    onsubmit="return confirm('Admin \"<?= h(addslashes($a['username'])) ?>\" verwijderen?');">
-                <input type="hidden" name="csrf"   value="<?= csrf() ?>">
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="id"     value="<?= (int)$a['id'] ?>">
-                <button type="submit" class="btn-admin-sm btn-admin-danger">&#128465; Verwijderen</button>
-              </form>
-              <?php endif; ?>
-            </div>
-          </td>
+          <th>#</th>
+          <th>Gebruikersnaam</th>
+          <th>E-mailadres</th>
+          <th>2FA</th>
+          <th>Aangemaakt op</th>
+          <th>Acties</th>
         </tr>
-        <?php endforeach; ?>
-        </tbody>
-      </table>
+      </thead>
+      <tbody>
+      <?php foreach ($admins as $a):
+        $isJij = ($a['username'] === ($_SESSION['admin_username'] ?? ''));
+        $has2fa = !empty($a['totp_enabled']);
+      ?>
+      <tr>
+        <td style="color:var(--muted);font-size:.8rem;"><?= (int)$a['id'] ?></td>
+        <td>
+          <strong><?= h($a['username']) ?></strong>
+          <?php if ($isJij): ?><span class="badge-you">jij</span><?php endif; ?>
+        </td>
+        <td style="font-size:.85rem;">
+          <?php if (!empty($a['email'])): ?>
+            <?= h($a['email']) ?>
+          <?php else: ?>
+            <span style="color:var(--muted);font-style:italic;">—</span>
+          <?php endif; ?>
+        </td>
+        <td>
+          <?php if ($has2fa): ?>
+            <span class="badge-2fa-on">&#128274; Aan</span>
+          <?php else: ?>
+            <span class="badge-2fa-off">Uit</span>
+          <?php endif; ?>
+        </td>
+        <td style="font-size:.8rem;color:var(--muted);"><?= h($a['created_at'] ?? '—') ?></td>
+        <td>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <button type="button"
+              onclick="openEmailModal(<?= (int)$a['id'] ?>, '<?= h(addslashes($a['username'])) ?>', '<?= h(addslashes($a['email'] ?? '')) ?>')"
+              class="btn-admin-sm btn-admin-outline">
+              &#9993; E-mail
+            </button>
+            <button type="button"
+              onclick="openPwModal(<?= (int)$a['id'] ?>, '<?= h(addslashes($a['username'])) ?>')"
+              class="btn-admin-sm btn-admin-outline">
+              &#128273; Wachtwoord
+            </button>
+            <?php if ($isJij && !$has2fa): ?>
+            <a href="<?= BASE_URL ?>/admin/2fa-setup.php" class="btn-admin-sm btn-admin-warning" style="text-decoration:none;">
+              &#128272; 2FA instellen
+            </a>
+            <?php elseif ($has2fa && $isJij): ?>
+            <form method="POST" style="margin:0;" onsubmit="return confirm('2FA uitschakelen voor dit account?');">
+              <input type="hidden" name="csrf"   value="<?= csrf() ?>">
+              <input type="hidden" name="action" value="disable_2fa">
+              <input type="hidden" name="id"     value="<?= (int)$a['id'] ?>">
+              <button type="submit" class="btn-admin-sm btn-admin-warning">&#128274; 2FA uitzetten</button>
+            </form>
+            <?php endif; ?>
+            <?php if (!$isJij): ?>
+            <form method="POST" style="margin:0;"
+                  onsubmit="return confirm('Admin \"<?= h(addslashes($a['username'])) ?>\" verwijderen?');">
+              <input type="hidden" name="csrf"   value="<?= csrf() ?>">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="id"     value="<?= (int)$a['id'] ?>">
+              <button type="submit" class="btn-admin-sm btn-admin-danger">&#128465; Verwijderen</button>
+            </form>
+            <?php endif; ?>
+          </div>
+        </td>
+      </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
 
-      <div class="sql-hint">
-        <strong>&#128268; Databasemigratie vereist</strong> &mdash; Voer de volgende SQL uit als de e-mail- of 2FA-kolommen nog ontbreken:<br>
-        <code>ALTER TABLE admins ADD COLUMN email VARCHAR(255) NULL AFTER username;</code><br>
-        <code>ALTER TABLE admins ADD COLUMN totp_secret VARCHAR(64) NULL;</code><br>
-        <code>ALTER TABLE admins ADD COLUMN totp_enabled TINYINT(1) NOT NULL DEFAULT 0;</code>
+  <!-- Nieuw account aanmaken -->
+  <div class="admin-card">
+    <h2>Nieuw admin-account aanmaken</h2>
+    <form method="POST" class="form-admin" style="max-width:460px;" id="createForm">
+      <input type="hidden" name="csrf"   value="<?= csrf() ?>">
+      <input type="hidden" name="action" value="create">
+      <div class="field">
+        <label>Gebruikersnaam *</label>
+        <input type="text" name="username" placeholder="bijv. admin2" autocomplete="off" required />
       </div>
-    </div>
-
-    <!-- Nieuw account aanmaken -->
-    <div class="admin-card">
-      <h2>Nieuw admin-account aanmaken</h2>
-      <form method="POST" class="form-admin" style="max-width:460px;" id="createForm">
-        <input type="hidden" name="csrf"   value="<?= csrf() ?>">
-        <input type="hidden" name="action" value="create">
-        <div class="field">
-          <label>Gebruikersnaam *</label>
-          <input type="text" name="username" placeholder="bijv. admin2" autocomplete="off" required />
+      <div class="field">
+        <label>E-mailadres <small style="font-weight:400;color:var(--muted);">(optioneel, voor meldingen)</small></label>
+        <input type="email" name="email" placeholder="admin@voorbeeld.nl" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Wachtwoord * <small style="font-weight:400;color:var(--muted);">(minimaal 10 tekens)</small></label>
+        <div class="pw-toggle-wrap">
+          <input type="password" name="password" id="newPw" placeholder="••••••••••••" autocomplete="new-password" required oninput="checkStrength(this,'newPwStrength')" />
+          <button type="button" class="pw-eye" onclick="togglePw('newPw',this)">&#128065;</button>
         </div>
-        <div class="field">
-          <label>E-mailadres <small style="font-weight:400;color:var(--muted);">(optioneel, voor meldingen)</small></label>
-          <input type="email" name="email" placeholder="admin@voorbeeld.nl" autocomplete="off" />
+        <div class="pw-strength" id="newPwStrength"></div>
+      </div>
+      <div class="field">
+        <label>Herhaal wachtwoord *</label>
+        <div class="pw-toggle-wrap">
+          <input type="password" name="password2" id="newPw2" placeholder="••••••••••••" autocomplete="new-password" required />
+          <button type="button" class="pw-eye" onclick="togglePw('newPw2',this)">&#128065;</button>
         </div>
-        <div class="field">
-          <label>Wachtwoord * <small style="font-weight:400;color:var(--muted);">(minimaal 10 tekens)</small></label>
-          <div class="pw-toggle-wrap">
-            <input type="password" name="password" id="newPw" placeholder="••••••••••••" autocomplete="new-password" required oninput="checkStrength(this,'newPwStrength')" />
-            <button type="button" class="pw-eye" onclick="togglePw('newPw',this)">&#128065;</button>
-          </div>
-          <div class="pw-strength" id="newPwStrength"></div>
-        </div>
-        <div class="field">
-          <label>Herhaal wachtwoord *</label>
-          <div class="pw-toggle-wrap">
-            <input type="password" name="password2" id="newPw2" placeholder="••••••••••••" autocomplete="new-password" required />
-            <button type="button" class="pw-eye" onclick="togglePw('newPw2',this)">&#128065;</button>
-          </div>
-        </div>
-        <button type="submit" class="btn-primary" style="margin-top:.5rem;">
-          &#43; Account aanmaken
-        </button>
-      </form>
-    </div>
-  </div><!-- /admin-content -->
-</div>
-</div>
+      </div>
+      <button type="submit" class="btn-primary" style="margin-top:.5rem;">
+        &#43; Account aanmaken
+      </button>
+    </form>
+  </div>
+</div><!-- /admin-content -->
+</div><!-- /admin-wrap -->
 
 <!-- Modal: e-mail wijzigen -->
 <div class="modal-overlay" id="emailModal">
