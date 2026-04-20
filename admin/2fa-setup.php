@@ -58,6 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'verif
         }
     }
 }
+
+$adminActivePage = 'admins';
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -65,7 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'verif
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>2FA instellen &ndash; Admin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Epilogue:wght@800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/base.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/components.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css">
@@ -116,103 +120,85 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'verif
       outline: none; transition: border-color .2s, box-shadow .2s;
     }
     .totp-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(40,120,100,.1); }
-    .success-block {
-      text-align: center; padding: 2rem;
-    }
+    .success-block { text-align: center; padding: 2rem; }
     .success-block .success-icon { font-size: 3rem; margin-bottom: 1rem; }
     .success-block h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: .5rem; }
     .success-block p  { font-size: .9rem; color: var(--muted); margin-bottom: 1.5rem; }
   </style>
 </head>
 <body>
-<div class="admin-wrap">
-<nav class="admin-nav">
-  <span class="logo">Reparatie<span>Platform</span> Admin</span>
-  <a href="<?= BASE_URL ?>/admin/logout.php">Uitloggen</a>
-</nav>
-<div class="admin-layout">
-  <div class="admin-sidebar">
-    <a href="<?= BASE_URL ?>/admin/dashboard.php"><span class="icon">&#128202;</span> Dashboard</a>
-    <a href="<?= BASE_URL ?>/admin/aanvragen.php"><span class="icon">&#128236;</span> Inzendingen</a>
-    <a href="<?= BASE_URL ?>/admin/meldingen.php"><span class="icon">&#128276;</span> Meldingen</a>
-    <a href="<?= BASE_URL ?>/admin/modellen.php"><span class="icon">&#128250;</span> TV Modellen</a>
-    <a href="<?= BASE_URL ?>/admin/klachten.php"><span class="icon">&#9888;</span> Klachten</a>
-    <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;</span> Advies instellingen</a>
-    <a href="<?= BASE_URL ?>/admin/mailtemplates.php"><span class="icon">&#128140;</span> Mailtemplates</a>
-    <a href="<?= BASE_URL ?>/admin/admins.php" class="active"><span class="icon">&#128100;</span> Admin accounts</a>
-    <a href="<?= BASE_URL ?>/" target="_blank"><span class="icon">&#127760;</span> Website bekijken</a>
-  </div>
-  <div class="admin-content">
-    <h1>&#128272; Tweestapsverificatie instellen</h1>
 
-    <div class="setup-card">
+<?php require_once __DIR__ . '/includes/admin-header.php'; ?>
 
-    <?php if ($fase === 'done'): ?>
-      <div class="success-block">
-        <div class="success-icon">&#128274;</div>
-        <h2>2FA ingeschakeld!</h2>
-        <p>Tweestapsverificatie is succesvol geconfigureerd voor uw account. Voortaan heeft u bij elke login uw authenticator-app nodig.</p>
-        <a href="<?= BASE_URL ?>/admin/admins.php" class="btn-primary">Terug naar accounts</a>
-      </div>
+<div class="adm-page">
+  <h1>&#128272; Tweestapsverificatie instellen</h1>
 
-    <?php else: ?>
+  <div class="setup-card">
 
-      <?php if ($errorMsg): ?>
-        <div class="alert alert-error" style="margin-bottom:1.5rem;">&#9888; <?= h($errorMsg) ?></div>
-      <?php endif; ?>
+  <?php if ($fase === 'done'): ?>
+    <div class="success-block">
+      <div class="success-icon">&#128274;</div>
+      <h2>2FA ingeschakeld!</h2>
+      <p>Tweestapsverificatie is succesvol geconfigureerd voor uw account. Voortaan heeft u bij elke login uw authenticator-app nodig.</p>
+      <a href="<?= BASE_URL ?>/admin/admins.php" class="btn-primary">Terug naar accounts</a>
+    </div>
 
-      <!-- Stap 1: App installeren -->
-      <div class="setup-step">
-        <div class="step-nr">1</div>
-        <div class="step-body">
-          <h3>Installeer een authenticator-app</h3>
-          <p>Download <strong>Google Authenticator</strong>, <strong>Authy</strong> of een andere TOTP-compatibele app op uw telefoon als u dat nog niet heeft gedaan.</p>
-        </div>
-      </div>
+  <?php else: ?>
 
-      <!-- Stap 2: QR-code scannen -->
-      <div class="setup-step">
-        <div class="step-nr">2</div>
-        <div class="step-body">
-          <h3>Scan de QR-code</h3>
-          <p>Open uw authenticator-app, kies <em>"Account toevoegen"</em> en scan onderstaande QR-code. Werkt het scannen niet? Voer de sleutel handmatig in.</p>
-          <div class="qr-wrap">
-            <img src="<?= h($qrUrl) ?>" alt="TOTP QR-code" width="200" height="200">
-            <p style="font-size:.75rem;color:var(--muted);margin:0;">Scan met uw authenticator-app</p>
-          </div>
-          <p style="margin-top:.75rem;font-size:.82rem;color:var(--muted);">Of voer deze sleutel handmatig in:</p>
-          <div class="secret-box">
-            <?= h(wordwrap($tempSecret, 4, ' ', true)) ?>
-            <button type="button" class="copy-btn" onclick="copySecret()">Kopiëren</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Stap 3: Code verifiëren -->
-      <div class="setup-step">
-        <div class="step-nr">3</div>
-        <div class="step-body">
-          <h3>Verificeer de instelling</h3>
-          <p>Voer de 6-cijferige code uit uw app in om de instelling te bevestigen.</p>
-          <form method="POST">
-            <input type="hidden" name="csrf"   value="<?= csrf() ?>">
-            <input type="hidden" name="action" value="verify_2fa">
-            <input type="text" name="totp_code" class="totp-input"
-                   placeholder="000 000" maxlength="7"
-                   autocomplete="one-time-code" inputmode="numeric"
-                   oninput="this.value=this.value.replace(/[^0-9 ]/g,'').trimStart()" autofocus>
-            <button type="submit" class="btn-primary" style="margin-top:1rem;width:100%;justify-content:center;">
-              &#128274; Activeren &rarr;
-            </button>
-          </form>
-        </div>
-      </div>
-
+    <?php if ($errorMsg): ?>
+      <div class="alert alert-error" style="margin-bottom:1.5rem;">&#9888; <?= h($errorMsg) ?></div>
     <?php endif; ?>
-    </div><!-- /.setup-card -->
-  </div>
-</div>
-</div>
+
+    <!-- Stap 1: App installeren -->
+    <div class="setup-step">
+      <div class="step-nr">1</div>
+      <div class="step-body">
+        <h3>Installeer een authenticator-app</h3>
+        <p>Download <strong>Google Authenticator</strong>, <strong>Authy</strong> of een andere TOTP-compatibele app op uw telefoon als u dat nog niet heeft gedaan.</p>
+      </div>
+    </div>
+
+    <!-- Stap 2: QR-code scannen -->
+    <div class="setup-step">
+      <div class="step-nr">2</div>
+      <div class="step-body">
+        <h3>Scan de QR-code</h3>
+        <p>Open uw authenticator-app, kies <em>"Account toevoegen"</em> en scan onderstaande QR-code. Werkt het scannen niet? Voer de sleutel handmatig in.</p>
+        <div class="qr-wrap">
+          <img src="<?= h($qrUrl) ?>" alt="TOTP QR-code" width="200" height="200">
+          <p style="font-size:.75rem;color:var(--muted);margin:0;">Scan met uw authenticator-app</p>
+        </div>
+        <p style="margin-top:.75rem;font-size:.82rem;color:var(--muted);">Of voer deze sleutel handmatig in:</p>
+        <div class="secret-box">
+          <?= h(wordwrap($tempSecret, 4, ' ', true)) ?>
+          <button type="button" class="copy-btn" onclick="copySecret()">Kopiëren</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stap 3: Code verifiëren -->
+    <div class="setup-step">
+      <div class="step-nr">3</div>
+      <div class="step-body">
+        <h3>Verificeer de instelling</h3>
+        <p>Voer de 6-cijferige code uit uw app in om de instelling te bevestigen.</p>
+        <form method="POST">
+          <input type="hidden" name="csrf"   value="<?= csrf() ?>">
+          <input type="hidden" name="action" value="verify_2fa">
+          <input type="text" name="totp_code" class="totp-input"
+                 placeholder="000 000" maxlength="7"
+                 autocomplete="one-time-code" inputmode="numeric"
+                 oninput="this.value=this.value.replace(/[^0-9 ]/g,'').trimStart()" autofocus>
+          <button type="submit" class="btn-primary" style="margin-top:1rem;width:100%;justify-content:center;">
+            &#128274; Activeren &rarr;
+          </button>
+        </form>
+      </div>
+    </div>
+
+  <?php endif; ?>
+  </div><!-- /.setup-card -->
+</div><!-- /.adm-page -->
 
 <script>
 function copySecret() {

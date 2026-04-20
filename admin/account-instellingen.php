@@ -7,10 +7,8 @@ header('Referrer-Policy: no-referrer');
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/totp.php';
-requireAdmin(); // garandeert dat $_SESSION['admin'] === true
+requireAdmin();
 
-// Admin-ID ophalen – requireAdmin() heeft al geverifieerd dat de sessie geldig is.
-// Als admin_id toch ontbreekt (oude sessie), ophalen via username.
 $adminId = (int)($_SESSION['admin_id'] ?? 0);
 if (!$adminId && !empty($_SESSION['admin_username'])) {
     $row = db()->prepare('SELECT id FROM admins WHERE username = ? LIMIT 1');
@@ -19,7 +17,6 @@ if (!$adminId && !empty($_SESSION['admin_username'])) {
     if ($adminId) $_SESSION['admin_id'] = $adminId;
 }
 if (!$adminId) {
-    // Sessie is corrupt, forceer nieuwe login
     session_destroy();
     header('Location: ' . BASE_URL . '/admin/login.php');
     exit;
@@ -143,6 +140,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'disab
         $activeTab = '2fa';
     }
 }
+
+$adminActivePage = 'account-instellingen';
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -150,14 +149,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'disab
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Account instellingen &ndash; Admin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Epilogue:wght@800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/base.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/components.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css">
   <meta name="robots" content="noindex,nofollow">
   <style>
     .settings-layout { display: grid; grid-template-columns: 210px 1fr; gap: 1.5rem; align-items: start; }
-    .settings-nav { position: sticky; top: 1.5rem; }
+    .settings-nav { position: sticky; top: 4.5rem; }
     .settings-nav-item {
       display: flex; align-items: center; gap: .6rem;
       padding: .62rem .9rem; border-radius: 9px;
@@ -229,227 +230,190 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'disab
       padding: 1.1rem 1.4rem; background: #fff5f5; margin-top: 1.5rem;
     }
     .danger-zone h4 { color: #991b1b; font-size: .855rem; font-weight: 700; margin-bottom: .7rem; }
+
+    @media (max-width: 768px) {
+      .settings-layout { grid-template-columns: 1fr; }
+      .settings-nav { position: static; }
+    }
   </style>
 </head>
 <body>
-<div class="admin-wrap">
 
-<nav class="admin-nav">
-  <span class="logo">Reparatie<span>Platform</span></span>
-  <div class="admin-nav-actions">
-    <a href="<?= BASE_URL ?>/admin/account-instellingen.php" title="Account instellingen">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-      <?= h($admin['username']) ?>
-    </a>
-    <div class="admin-nav-divider"></div>
-    <a href="<?= BASE_URL ?>/admin/logout.php" class="nav-logout">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Uitloggen
-    </a>
-  </div>
-</nav>
+<?php require_once __DIR__ . '/includes/admin-header.php'; ?>
 
-<div class="admin-layout">
-  <div class="admin-sidebar">
-    <span class="admin-sidebar-label">Beheer</span>
-    <div class="admin-sidebar-section">
-      <a href="<?= BASE_URL ?>/admin/dashboard.php"><span class="icon">&#128202;</span> Dashboard</a>
-      <a href="<?= BASE_URL ?>/admin/aanvragen.php"><span class="icon">&#128236;</span> Inzendingen</a>
-      <a href="<?= BASE_URL ?>/admin/meldingen.php"><span class="icon">&#128276;</span> Meldingen</a>
-      <a href="<?= BASE_URL ?>/admin/modellen.php"><span class="icon">&#128250;</span> TV Modellen</a>
-      <a href="<?= BASE_URL ?>/admin/klachten.php"><span class="icon">&#9888;&#65039;</span> Klachten</a>
+<div class="adm-page">
+  <h1>&#128274; Account instellingen</h1>
+  <p style="color:#6b7280;font-size:.855rem;margin-bottom:1.5rem;">
+    Ingelogd als <strong><?= h($admin['username']) ?></strong>
+  </p>
+
+  <?php if ($successMsg): ?>
+    <div class="alert alert-success" style="margin-bottom:1.25rem;">✓ <?= h($successMsg) ?></div>
+  <?php endif; ?>
+  <?php if ($errorMsg): ?>
+    <div class="alert alert-error" style="margin-bottom:1.25rem;">⚠ <?= h($errorMsg) ?></div>
+  <?php endif; ?>
+
+  <div class="settings-layout">
+
+    <!-- Zijnavigatie -->
+    <div class="settings-nav admin-card" style="padding:.75rem;">
+      <button class="settings-nav-item <?= $activeTab === 'account'    ? 'active' : '' ?>"
+              onclick="switchTab('account', this)">
+        <span class="icon">👤</span> Account
+      </button>
+      <button class="settings-nav-item <?= $activeTab === 'wachtwoord' ? 'active' : '' ?>"
+              onclick="switchTab('wachtwoord', this)">
+        <span class="icon">🔑</span> Wachtwoord
+      </button>
+      <button class="settings-nav-item <?= $activeTab === '2fa'        ? 'active' : '' ?>"
+              onclick="switchTab('2fa', this)">
+        <span class="icon">🔐</span> Tweefactorauthenticatie
+      </button>
     </div>
-    <div class="sidebar-divider"></div>
-    <span class="admin-sidebar-label">Instellingen</span>
-    <div class="admin-sidebar-section">
-      <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;&#65039;</span> Adviesregels</a>
-      <a href="<?= BASE_URL ?>/admin/mailtemplates.php"><span class="icon">&#128140;</span> Mailtemplates</a>
-      <a href="<?= BASE_URL ?>/admin/admins.php"><span class="icon">&#128100;</span> Admin accounts</a>
-      <a href="<?= BASE_URL ?>/admin/account-instellingen.php" class="active"><span class="icon">&#128274;</span> Mijn account</a>
-    </div>
-    <div class="sidebar-divider"></div>
-    <div class="admin-sidebar-section">
-      <a href="<?= BASE_URL ?>/" target="_blank"><span class="icon">&#127760;</span> Website bekijken</a>
-    </div>
-  </div>
 
-  <div class="admin-content">
-    <h1>&#128274; Account instellingen</h1>
-    <p style="color:#6b7280;font-size:.855rem;margin-bottom:1.5rem;">
-      Ingelogd als <strong><?= h($admin['username']) ?></strong>
-    </p>
+    <!-- Tabinhoud -->
+    <div class="settings-content">
 
-    <?php if ($successMsg): ?>
-      <div class="alert alert-success" style="margin-bottom:1.25rem;">✓ <?= h($successMsg) ?></div>
-    <?php endif; ?>
-    <?php if ($errorMsg): ?>
-      <div class="alert alert-error" style="margin-bottom:1.25rem;">⚠ <?= h($errorMsg) ?></div>
-    <?php endif; ?>
-
-    <div class="settings-layout">
-
-      <!-- Zijnavigatie -->
-      <div class="settings-nav admin-card" style="padding:.75rem;">
-        <button class="settings-nav-item <?= $activeTab === 'account'    ? 'active' : '' ?>"
-                onclick="switchTab('account', this)">
-          <span class="icon">👤</span> Account
-        </button>
-        <button class="settings-nav-item <?= $activeTab === 'wachtwoord' ? 'active' : '' ?>"
-                onclick="switchTab('wachtwoord', this)">
-          <span class="icon">🔑</span> Wachtwoord
-        </button>
-        <button class="settings-nav-item <?= $activeTab === '2fa'        ? 'active' : '' ?>"
-                onclick="switchTab('2fa', this)">
-          <span class="icon">🔐</span> Tweefactorauthenticatie
-        </button>
+      <!-- ── TAB: Account ──────────────────────────────────────── -->
+      <div id="tab-account" class="tab-pane <?= $activeTab === 'account' ? 'active' : '' ?>">
+        <div class="admin-card">
+          <h2>Accountgegevens</h2>
+          <form method="POST" class="form-admin">
+            <input type="hidden" name="action" value="update_email">
+            <input type="hidden" name="csrf"   value="<?= csrf() ?>">
+            <div class="field">
+              <label for="username">Gebruikersnaam</label>
+              <input type="text" id="username" value="<?= h($admin['username']) ?>" disabled
+                     style="background:#f5f4f1;color:#9ca3af;cursor:not-allowed;">
+            </div>
+            <div class="field">
+              <label for="email">E-mailadres</label>
+              <input type="email" id="email" name="email"
+                     value="<?= h($admin['email'] ?? '') ?>"
+                     placeholder="admin@jouwdomein.nl">
+            </div>
+            <button type="submit" class="btn btn-primary">Opslaan</button>
+          </form>
+        </div>
       </div>
 
-      <!-- Tabinhoud -->
-      <div class="settings-content">
-
-        <!-- ── TAB: Account ──────────────────────────────────────── -->
-        <div id="tab-account" class="tab-pane <?= $activeTab === 'account' ? 'active' : '' ?>">
-          <div class="admin-card">
-            <h2>Accountgegevens</h2>
-            <form method="POST" class="form-admin">
-              <input type="hidden" name="action" value="update_email">
-              <input type="hidden" name="csrf"   value="<?= csrf() ?>">
-              <div class="field">
-                <label for="username">Gebruikersnaam</label>
-                <input type="text" id="username" value="<?= h($admin['username']) ?>" disabled
-                       style="background:#f5f4f1;color:#9ca3af;cursor:not-allowed;">
-              </div>
-              <div class="field">
-                <label for="email">E-mailadres</label>
-                <input type="email" id="email" name="email"
-                       value="<?= h($admin['email'] ?? '') ?>"
-                       placeholder="admin@jouwdomein.nl">
-              </div>
-              <button type="submit" class="btn btn-primary">Opslaan</button>
-            </form>
-          </div>
-        </div>
-
-        <!-- ── TAB: Wachtwoord ───────────────────────────────────── -->
-        <div id="tab-wachtwoord" class="tab-pane <?= $activeTab === 'wachtwoord' ? 'active' : '' ?>">
-          <div class="admin-card">
-            <h2>Wachtwoord wijzigen</h2>
-            <form method="POST" class="form-admin" autocomplete="off">
-              <input type="hidden" name="action" value="change_password">
-              <input type="hidden" name="csrf"   value="<?= csrf() ?>">
-              <div class="field">
-                <label for="current_password">Huidig wachtwoord</label>
-                <input type="password" id="current_password" name="current_password"
-                       autocomplete="current-password" required>
-              </div>
-              <div class="field">
-                <label for="new_password">Nieuw wachtwoord <span style="color:#9ca3af;font-weight:400;">(minimaal 10 tekens)</span></label>
-                <input type="password" id="new_password" name="new_password"
-                       autocomplete="new-password" minlength="10" required>
-              </div>
-              <div class="field">
-                <label for="confirm_password">Nieuw wachtwoord bevestigen</label>
-                <input type="password" id="confirm_password" name="confirm_password"
-                       autocomplete="new-password" minlength="10" required>
-              </div>
-              <button type="submit" class="btn btn-primary">Wachtwoord wijzigen</button>
-            </form>
-          </div>
-        </div>
-
-        <!-- ── TAB: 2FA ──────────────────────────────────────────── -->
-        <div id="tab-2fa" class="tab-pane <?= $activeTab === '2fa' ? 'active' : '' ?>">
-          <div class="admin-card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
-              <h2 style="margin:0;">Tweefactorauthenticatie</h2>
-              <?php if ($admin['totp_enabled']): ?>
-                <span class="fa-status-badge on">✓ Ingeschakeld</span>
-              <?php else: ?>
-                <span class="fa-status-badge off">✕ Uitgeschakeld</span>
-              <?php endif; ?>
+      <!-- ── TAB: Wachtwoord ───────────────────────────────────── -->
+      <div id="tab-wachtwoord" class="tab-pane <?= $activeTab === 'wachtwoord' ? 'active' : '' ?>">
+        <div class="admin-card">
+          <h2>Wachtwoord wijzigen</h2>
+          <form method="POST" class="form-admin" autocomplete="off">
+            <input type="hidden" name="action" value="change_password">
+            <input type="hidden" name="csrf"   value="<?= csrf() ?>">
+            <div class="field">
+              <label for="current_password">Huidig wachtwoord</label>
+              <input type="password" id="current_password" name="current_password"
+                     autocomplete="current-password" required>
             </div>
+            <div class="field">
+              <label for="new_password">Nieuw wachtwoord <span style="color:#9ca3af;font-weight:400;">(minimaal 10 tekens)</span></label>
+              <input type="password" id="new_password" name="new_password"
+                     autocomplete="new-password" minlength="10" required>
+            </div>
+            <div class="field">
+              <label for="confirm_password">Nieuw wachtwoord bevestigen</label>
+              <input type="password" id="confirm_password" name="confirm_password"
+                     autocomplete="new-password" minlength="10" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Wachtwoord wijzigen</button>
+          </form>
+        </div>
+      </div>
 
-            <?php if (!$admin['totp_enabled']): ?>
-              <!-- 2FA instellen -->
-              <div class="setup-step">
-                <div class="step-nr">1</div>
-                <div class="step-body">
-                  <h3>Installeer een authenticator-app</h3>
-                  <p>Download <strong>Google Authenticator</strong>, <strong>Aegis</strong> of <strong>Authy</strong> op uw telefoon.</p>
-                </div>
-              </div>
-              <div class="setup-step">
-                <div class="step-nr">2</div>
-                <div class="step-body">
-                  <h3>Scan de QR-code of voer de sleutel in</h3>
-                  <p>Scan onderstaande QR-code met uw authenticator-app, of voer de handmatige sleutel in.</p>
-                  <?php if ($qrUrl): ?>
-                    <div class="qr-wrap">
-                      <img src="<?= h($qrUrl) ?>" width="200" height="200" alt="2FA QR-code" loading="lazy">
-                    </div>
-                    <div style="margin-top:1rem;">
-                      <p style="font-size:.8rem;color:#6b7280;margin-bottom:.4rem;">Handmatige sleutel:</p>
-                      <div class="secret-box">
-                        <span id="totp-secret"><?= h(chunk_split($tempSecret, 4, ' ')) ?></span>
-                        <button type="button" class="copy-btn"
-                                onclick="navigator.clipboard.writeText('<?= h($tempSecret) ?>').then(()=>{this.textContent='Gekopieerd!';setTimeout(()=>{this.textContent='Kopieer'},2000)})">
-                          Kopieer
-                        </button>
-                      </div>
-                    </div>
-                  <?php endif; ?>
-                </div>
-              </div>
-              <div class="setup-step">
-                <div class="step-nr">3</div>
-                <div class="step-body">
-                  <h3>Verificeer en activeer</h3>
-                  <p>Voer de 6-cijferige code in die uw app toont om 2FA te activeren.</p>
-                  <form method="POST" class="form-admin" style="max-width:320px;">
-                    <input type="hidden" name="action" value="verify_2fa">
-                    <input type="hidden" name="csrf"   value="<?= csrf() ?>">
-                    <div class="field">
-                      <input type="text" name="totp_code" class="totp-input"
-                             placeholder="000 000" maxlength="7"
-                             autocomplete="one-time-code" inputmode="numeric" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary" style="width:100%;">
-                      2FA activeren
-                    </button>
-                  </form>
-                </div>
-              </div>
-
+      <!-- ── TAB: 2FA ──────────────────────────────────────────── -->
+      <div id="tab-2fa" class="tab-pane <?= $activeTab === '2fa' ? 'active' : '' ?>">
+        <div class="admin-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+            <h2 style="margin:0;">Tweefactorauthenticatie</h2>
+            <?php if ($admin['totp_enabled']): ?>
+              <span class="fa-status-badge on">✓ Ingeschakeld</span>
             <?php else: ?>
-              <!-- 2FA uitschakelen -->
-              <p style="font-size:.875rem;color:#6b7280;margin-bottom:1.5rem;">
-                Uw account is beveiligd met tweefactorauthenticatie. Om 2FA uit te schakelen heeft u uw huidige verificatiecode nodig.
-              </p>
-              <div class="danger-zone">
-                <h4>⚠ 2FA uitschakelen</h4>
+              <span class="fa-status-badge off">✕ Uitgeschakeld</span>
+            <?php endif; ?>
+          </div>
+
+          <?php if (!$admin['totp_enabled']): ?>
+            <div class="setup-step">
+              <div class="step-nr">1</div>
+              <div class="step-body">
+                <h3>Installeer een authenticator-app</h3>
+                <p>Download <strong>Google Authenticator</strong>, <strong>Aegis</strong> of <strong>Authy</strong> op uw telefoon.</p>
+              </div>
+            </div>
+            <div class="setup-step">
+              <div class="step-nr">2</div>
+              <div class="step-body">
+                <h3>Scan de QR-code of voer de sleutel in</h3>
+                <p>Scan onderstaande QR-code met uw authenticator-app, of voer de handmatige sleutel in.</p>
+                <?php if ($qrUrl): ?>
+                  <div class="qr-wrap">
+                    <img src="<?= h($qrUrl) ?>" width="200" height="200" alt="2FA QR-code" loading="lazy">
+                  </div>
+                  <div style="margin-top:1rem;">
+                    <p style="font-size:.8rem;color:#6b7280;margin-bottom:.4rem;">Handmatige sleutel:</p>
+                    <div class="secret-box">
+                      <span id="totp-secret"><?= h(chunk_split($tempSecret, 4, ' ')) ?></span>
+                      <button type="button" class="copy-btn"
+                              onclick="navigator.clipboard.writeText('<?= h($tempSecret) ?>').then(()=>{this.textContent='Gekopieerd!';setTimeout(()=>{this.textContent='Kopieer'},2000)})">
+                        Kopieer
+                      </button>
+                    </div>
+                  </div>
+                <?php endif; ?>
+              </div>
+            </div>
+            <div class="setup-step">
+              <div class="step-nr">3</div>
+              <div class="step-body">
+                <h3>Verificeer en activeer</h3>
+                <p>Voer de 6-cijferige code in die uw app toont om 2FA te activeren.</p>
                 <form method="POST" class="form-admin" style="max-width:320px;">
-                  <input type="hidden" name="action" value="disable_2fa">
+                  <input type="hidden" name="action" value="verify_2fa">
                   <input type="hidden" name="csrf"   value="<?= csrf() ?>">
                   <div class="field">
-                    <label for="totp_code_disable">Verificatiecode</label>
-                    <input type="text" id="totp_code_disable" name="totp_code_disable"
-                           class="totp-input" placeholder="000 000" maxlength="7"
+                    <input type="text" name="totp_code" class="totp-input"
+                           placeholder="000 000" maxlength="7"
                            autocomplete="one-time-code" inputmode="numeric" required>
                   </div>
-                  <button type="submit" class="btn btn-danger" style="margin-top:.5rem;">
-                    2FA uitschakelen
+                  <button type="submit" class="btn btn-primary" style="width:100%;">
+                    2FA activeren
                   </button>
                 </form>
               </div>
-            <?php endif; ?>
-          </div>
-        </div>
+            </div>
 
-      </div><!-- /.settings-content -->
-    </div><!-- /.settings-layout -->
-  </div><!-- /.admin-content -->
-</div><!-- /.admin-layout -->
-</div><!-- /.admin-wrap -->
+          <?php else: ?>
+            <p style="font-size:.875rem;color:#6b7280;margin-bottom:1.5rem;">
+              Uw account is beveiligd met tweefactorauthenticatie. Om 2FA uit te schakelen heeft u uw huidige verificatiecode nodig.
+            </p>
+            <div class="danger-zone">
+              <h4>⚠ 2FA uitschakelen</h4>
+              <form method="POST" class="form-admin" style="max-width:320px;">
+                <input type="hidden" name="action" value="disable_2fa">
+                <input type="hidden" name="csrf"   value="<?= csrf() ?>">
+                <div class="field">
+                  <label for="totp_code_disable">Verificatiecode</label>
+                  <input type="text" id="totp_code_disable" name="totp_code_disable"
+                         class="totp-input" placeholder="000 000" maxlength="7"
+                         autocomplete="one-time-code" inputmode="numeric" required>
+                </div>
+                <button type="submit" class="btn btn-danger" style="margin-top:.5rem;">
+                  2FA uitschakelen
+                </button>
+              </form>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+
+    </div><!-- /.settings-content -->
+  </div><!-- /.settings-layout -->
+</div><!-- /.adm-page -->
 
 <script>
 function switchTab(name, btn) {
@@ -460,7 +424,6 @@ function switchTab(name, btn) {
   if (btn)  btn.classList.add('active');
 }
 
-// TOTP-invoer: automatisch spatie na 3 cijfers
 document.querySelectorAll('.totp-input').forEach(function(el) {
   el.addEventListener('input', function() {
     let v = this.value.replace(/\D/g, '').substring(0, 6);
