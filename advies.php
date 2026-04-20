@@ -25,19 +25,41 @@ include __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<!-- Zo werkt het – Stap-wizard component -->
-<div style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 5rem 0;">
+<!-- Zo werkt het – nieuwe donkere kaartstijl -->
+<div class="zowerkhet-section">
   <div class="section" style="padding-top:0;padding-bottom:0;">
-    <div style="text-align:center;margin-bottom:3rem;">
-      <div style="display:inline-flex;align-items:center;gap:.5rem;background:var(--accent-light);border:1px solid #b2ddd4;border-radius:999px;padding:.3rem 1rem;font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:1rem;">
+    <div style="text-align:center;margin-bottom:0;">
+      <div style="display:inline-flex;align-items:center;gap:.45rem;background:rgba(40,120,100,.15);border:1px solid rgba(40,120,100,.3);border-radius:999px;padding:.3rem 1rem;font-size:.75rem;font-weight:700;color:#4ecb9e;margin-bottom:1.1rem;letter-spacing:.04em;">
         &#128274; Gratis &amp; vrijblijvend
       </div>
-      <h2 class="section-title" style="margin-bottom:.75rem;">Zo werkt het</h2>
-      <p style="font-size:1rem;color:var(--muted);max-width:48ch;margin:0 auto;line-height:1.75;">
+      <h2 class="section-title">Zo werkt het</h2>
+      <p class="section-lead" style="max-width:48ch;margin:.6rem auto 0;">
         Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.
       </p>
     </div>
-    <?php include __DIR__ . '/includes/stap-wizard.php'; ?>
+    <div class="zowerkhet-steps">
+      <div class="zowerkhet-step">
+        <span class="zowerkhet-step-num">Stap 01</span>
+        <div class="zowerkhet-step-icon">&#128221;</div>
+        <h3>Formulier invullen</h3>
+        <p>Vul merk, modelnummer en een korte omschrijving in. Duurt minder dan twee minuten &mdash; geen technische kennis vereist.</p>
+        <span class="zowerkhet-step-badge">&#10003; Gratis</span>
+      </div>
+      <div class="zowerkhet-step">
+        <span class="zowerkhet-step-num">Stap 02</span>
+        <div class="zowerkhet-step-icon">&#128269;</div>
+        <h3>Wij analyseren uw situatie</h3>
+        <p>Een specialist beoordeelt uw aanvraag op garantie, coulance, reparatiemogelijkheden en waarde van het toestel.</p>
+        <span class="zowerkhet-step-badge">&#10003; Persoonlijk advies</span>
+      </div>
+      <div class="zowerkhet-step">
+        <span class="zowerkhet-step-num">Stap 03</span>
+        <div class="zowerkhet-step-icon">&#128233;</div>
+        <h3>Advies binnen 24 uur</h3>
+        <p>U ontvangt een helder advies per e-mail met concrete vervolgstappen &mdash; garantie, coulance, reparatie of taxatie.</p>
+        <span class="zowerkhet-step-badge">&#10003; Binnen 1 werkdag</span>
+      </div>
+    </div>
     <div style="text-align:center;margin-top:3rem;">
       <a href="#advies" class="btn-primary">
         Gratis advies aanvragen
@@ -46,6 +68,84 @@ include __DIR__ . '/includes/header.php';
     </div>
   </div>
 </div>
+
+<style>
+.zowerkhet-section {
+  background: #0d1117;
+  padding: 5rem 0;
+}
+.zowerkhet-section .section-title { color: #fff; }
+.zowerkhet-section .section-lead  { color: rgba(255,255,255,.55); }
+.zowerkhet-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+.zowerkhet-step {
+  background: #161b22;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: border-color .2s ease, transform .2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.zowerkhet-step::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top left, rgba(40,120,100,.12) 0%, transparent 65%);
+  pointer-events: none;
+}
+.zowerkhet-step:hover {
+  border-color: rgba(40,120,100,.5);
+  transform: translateY(-3px);
+}
+.zowerkhet-step-num {
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  color: var(--accent, #287864);
+  text-transform: uppercase;
+}
+.zowerkhet-step-icon { font-size: 1.75rem; line-height: 1; }
+.zowerkhet-step h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.02em;
+  margin: 0;
+}
+.zowerkhet-step p {
+  font-size: .875rem;
+  color: rgba(255,255,255,.5);
+  line-height: 1.7;
+  margin: 0;
+  max-width: 36ch;
+}
+.zowerkhet-step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  background: rgba(40,120,100,.15);
+  border: 1px solid rgba(40,120,100,.35);
+  border-radius: 999px;
+  padding: .25rem .75rem;
+  font-size: .72rem;
+  font-weight: 700;
+  color: #4ecb9e;
+  margin-top: auto;
+  width: fit-content;
+}
+@media (max-width: 640px) {
+  .zowerkhet-steps { grid-template-columns: 1fr; }
+  .zowerkhet-step  { padding: 1.5rem 1.25rem; }
+}
+</style>
 
 <!-- Klantenomgeving banner -->
 <div class="status-check-wrap">
@@ -134,7 +234,7 @@ include __DIR__ . '/includes/header.php';
         .stap-step.actief:not(.huidig) .stap-dot-check { display: block; }
         </style>
 
-        <form action="<?= BASE_URL ?>/api/send-advies.php" method="POST" id="advies-form">
+        <form action="<?= BASE_URL ?>/api/send-advies.php" method="POST" id="advies-form" data-recaptcha="advies_aanvragen">
           <input type="hidden" name="csrf_token"         value="<?= csrf() ?>" />
           <input type="hidden" name="geadviseerde_route" id="geadviseerde_route" value="" />
           <input type="hidden" name="coulance_kans"      id="coulance_kans"    value="" />
@@ -447,7 +547,6 @@ function berekenRoute() {
       }
     }
   }
-
   else if (situatie === 'storing' && leeftijd !== null) {
     const isGUitsluit = gUitsluit.includes(klacht);
     const isCUitsluit = cUitsluit.includes(klacht);
@@ -513,56 +612,4 @@ function berekenRoute() {
     else if (!route && klacht === 'gebarsten_scherm') {
       if (kanRep) {
         route = 'reparatie'; badge = '&#128295; Schermvervanging';
-        toel  = 'Een gebarsten scherm valt nooit onder garantie. Wij kijken of schermvervanging economisch zinvol is.';
-      } else {
-        route = 'recycling'; badge = '&#9851; Recycling';
-        toel  = 'Dit model is niet repareerbaar. Verantwoorde recycling is de beste route.';
-      }
-    }
-  }
-
-  document.getElementById('geadviseerde_route').value = route;
-  document.getElementById('coulance_kans').value      = kans;
-
-  const ind     = document.getElementById('routing-indicator');
-  const badgeEl = document.getElementById('routing-badge');
-  const toelEl  = document.getElementById('routing-toelichting');
-  if (route && ind) {
-    ind.style.display   = 'block';
-    badgeEl.innerHTML   = badge;
-    badgeEl.className   = 'routing-badge route-' + route.replace(/[^a-z]/g, '');
-    toelEl.innerHTML    = toel;
-  } else if (ind) {
-    ind.style.display = 'none';
-  }
-
-  const fb = document.getElementById('garantie-feedback');
-  if (fb && route) {
-    fb.style.display = 'block';
-    fb.innerHTML  = '<strong>Voorlopige route:</strong> ' + badge + '<br><small>' + toel + '</small>';
-    fb.className  = 'garantie-feedback feedback-' + route.replace(/[^a-z]/g, '');
-  } else if (fb) {
-    fb.style.display = 'none';
-  }
-}
-
-function vulSamenvatting() {
-  const merk      = document.getElementById('merk')?.value || '—';
-  const model     = document.getElementById('modelnummer')?.value || '—';
-  const jaar      = document.getElementById('aanschafjaar')?.value || '—';
-  const klachtEl  = document.getElementById('klacht_type');
-  const klachtTxt = klachtEl?.options[klachtEl.selectedIndex]?.text || '—';
-  const badge     = document.getElementById('routing-badge')?.innerHTML || '';
-  const el = document.getElementById('route-samenvatting');
-  if (!el) return;
-  el.innerHTML = `
-    <div class="samenvatting-titel">&#128203; Uw aanvraag in één oogopslag</div>
-    <div class="samenvatting-rij"><span>Televisie</span><strong>${merk} ${model}</strong></div>
-    <div class="samenvatting-rij"><span>Aanschafjaar</span><strong>${jaar}</strong></div>
-    <div class="samenvatting-rij"><span>Klacht</span><strong>${klachtTxt}</strong></div>
-    <div class="samenvatting-rij"><span>Geadviseerde route</span><strong>${badge}</strong></div>
-  `;
-}
-</script>
-
-<?php include __DIR__ . '/includes/footer.php'; ?>
+        toel  = 'Een gebarsten scherm valt nooit onder

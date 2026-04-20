@@ -1,4 +1,15 @@
 <?php $cur = basename($_SERVER['PHP_SELF'], '.php'); ?>
+<?php
+// reCAPTCHA v3 instelling ophalen (veilig, leeg als tabel niet bestaat)
+$recaptcha_site_key = '';
+$recaptcha_enabled  = false;
+try {
+    $rcRow = db()->query("SELECT setting_value FROM site_settings WHERE setting_key = 'recaptcha_site_key' LIMIT 1")->fetch();
+    $rcOn  = db()->query("SELECT setting_value FROM site_settings WHERE setting_key = 'recaptcha_enabled' LIMIT 1")->fetch();
+    if ($rcRow && !empty($rcRow['setting_value'])) $recaptcha_site_key = $rcRow['setting_value'];
+    if ($rcOn  && $rcOn['setting_value'] === '1') $recaptcha_enabled = true;
+} catch (Exception $e) { /* tabel bestaat nog niet */ }
+?>
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -30,6 +41,35 @@
       .nav-logo img { height: 44px; }
     }
   </style>
+  <?php if ($recaptcha_enabled && $recaptcha_site_key): ?>
+  <!-- reCAPTCHA v3 -->
+  <script src="https://www.google.com/recaptcha/api.js?render=<?= h($recaptcha_site_key) ?>"></script>
+  <script>
+  // Globale helper: voeg reCAPTCHA token toe aan elk formulier met data-recaptcha
+  document.addEventListener('DOMContentLoaded', function () {
+    var forms = document.querySelectorAll('form[data-recaptcha]');
+    forms.forEach(function (form) {
+      var action = form.getAttribute('data-recaptcha') || 'submit';
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        grecaptcha.ready(function () {
+          grecaptcha.execute('<?= h($recaptcha_site_key) ?>', { action: action }).then(function (token) {
+            var input = form.querySelector('input[name="recaptcha_token"]');
+            if (!input) {
+              input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'recaptcha_token';
+              form.appendChild(input);
+            }
+            input.value = token;
+            form.submit();
+          });
+        });
+      });
+    });
+  });
+  </script>
+  <?php endif; ?>
 </head>
 <body>
 <nav>

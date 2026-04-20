@@ -20,158 +20,135 @@ include __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<!-- Stap voor stap -->
-<div style="background:white; padding:5rem 0;">
+<!-- In drie stappen geholpen – nieuwe stijl -->
+<div class="zowerkhet-section" id="stappen">
   <div class="section" style="padding-top:0;padding-bottom:0;">
-    <h2 class="section-title">In drie stappen geholpen</h2>
-    <p class="section-lead">Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.</p>
-
-    <div class="htw-stappen">
-
-      <div class="htw-stap">
-        <div class="htw-stap-badge">
-          <span class="htw-stap-emoji">&#128221;</span>
-          <span class="htw-stap-nr">01</span>
-        </div>
-        <div class="htw-stap-lijn" aria-hidden="true"></div>
-        <div class="htw-stap-body">
-          <h3>Formulier invullen</h3>
-          <p>Vul het korte adviesformulier in met het merk, het modelnummer en een omschrijving van het probleem. Dit kost minder dan twee minuten — geen technische kennis vereist.</p>
-          <ul class="htw-checklist">
-            <li><span class="htw-vink">&#10003;</span> Merk en modelnummer (staat achter op de tv)</li>
-            <li><span class="htw-vink">&#10003;</span> Korte omschrijving van het defect</li>
-            <li><span class="htw-vink">&#10003;</span> Uw e-mailadres voor het advies</li>
-          </ul>
-        </div>
+    <div style="text-align:center;margin-bottom:0;">
+      <div style="display:inline-flex;align-items:center;gap:.45rem;background:rgba(40,120,100,.15);border:1px solid rgba(40,120,100,.3);border-radius:999px;padding:.3rem 1rem;font-size:.75rem;font-weight:700;color:#4ecb9e;margin-bottom:1.1rem;letter-spacing:.04em;">
+        &#9881; Eenvoudig proces
       </div>
-
-      <div class="htw-stap">
-        <div class="htw-stap-badge">
-          <span class="htw-stap-emoji">&#128269;</span>
-          <span class="htw-stap-nr">02</span>
-        </div>
-        <div class="htw-stap-lijn" aria-hidden="true"></div>
-        <div class="htw-stap-body">
-          <h3>Wij analyseren uw situatie</h3>
-          <p>Een specialist bekijkt uw aanvraag en toetst aan de garantie- en coulanceregelingen van de fabrikant, de reparatiemogelijkheden en de waarde van het toestel. Advies op maat, niet van een script.</p>
-          <ul class="htw-checklist">
-            <li><span class="htw-vink">&#10003;</span> Garantie- en coulancecheck</li>
-            <li><span class="htw-vink">&#10003;</span> Reparatiemogelijkheden in kaart</li>
-            <li><span class="htw-vink">&#10003;</span> Eerlijk advies — ook als reparatie niet loont</li>
-          </ul>
-        </div>
+      <h2 class="section-title">In drie stappen geholpen</h2>
+      <p class="section-lead" style="max-width:48ch;margin:.6rem auto 0;">
+        Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.
+      </p>
+    </div>
+    <div class="zowerkhet-steps">
+      <div class="zowerkhet-step">
+        <span class="zowerkhet-step-num">Stap 01</span>
+        <div class="zowerkhet-step-icon">&#128221;</div>
+        <h3>Formulier invullen</h3>
+        <p>Vul het korte adviesformulier in met merk, modelnummer en een omschrijving van het probleem. Kost minder dan twee minuten — geen technische kennis vereist.</p>
+        <ul style="list-style:none;padding:0;margin:.5rem 0 0;display:flex;flex-direction:column;gap:.35rem;">
+          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Merk en modelnummer (staat achter op de tv)</li>
+          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Korte omschrijving van het defect</li>
+          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Uw e-mailadres voor het advies</li>
+        </ul>
+        <span class="zowerkhet-step-badge">&#10003; Gratis</span>
       </div>
-
-      <div class="htw-stap htw-stap-last">
-        <div class="htw-stap-badge">
-          <span class="htw-stap-emoji">&#128233;</span>
-          <span class="htw-stap-nr">03</span>
-        </div>
-        <div class="htw-stap-body">
-          <h3>Persoonlijk advies binnen 24 uur</h3>
-          <p>U ontvangt een helder persoonlijk advies per e-mail met concrete vervolgstappen — garantie, coulance, reparatie of taxatie. Wij wijzen u de beste weg.</p>
-          <ul class="htw-checklist">
-            <li><span class="htw-vink">&#10003;</span> Reactie binnen één werkdag</li>
-            <li><span class="htw-vink">&#10003;</span> Duidelijke vervolgstappen</li>
-            <li><span class="htw-vink">&#10003;</span> Volledig gratis en vrijblijvend</li>
-          </ul>
-        </div>
+      <div class="zowerkhet-step">
+        <span class="zowerkhet-step-num">Stap 02</span>
+        <div class="zowerkhet-step-icon">&#128269;</div>
+        <h3>Wij analyseren uw situatie</h3>
+        <p>Een specialist bekijkt uw aanvraag en toetst aan garantie- en coulanceregelingen, reparatiemogelijkheden en de waarde van het toestel. Advies op maat, niet van een script.</p>
+        <ul style="list-style:none;padding:0;margin:.5rem 0 0;display:flex;flex-direction:column;gap:.35rem;">
+          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Garantie- en coulancecheck</li>
+          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Reparatiemogelijkheden in kaart</li>
+          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Eerlijk advies — ook als reparatie niet loont</li>
+        </ul>
+        <span class="zowerkhet-step-badge">&#10003; Persoonlijk advies</span>
       </div>
-
+      <div class="zowerkhet-step">
+        <span class="zowerkhet-step-num">Stap 03</span>
+        <div class="zowerkhet-step-icon">&#128233;</div>
+        <h3>Persoonlijk advies binnen 24 uur</h3>
+        <p>U ontvangt een helder persoonlijk advies per e-mail met concrete vervolgstappen — garantie, coulance, reparatie of taxatie. Wij wijzen u de beste weg.</p>
+        <ul style="list-style:none;padding:0;margin:.5rem 0 0;display:flex;flex-direction:column;gap:.35rem;">
+          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Reactie binnen één werkdag</li>
+          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Duidelijke vervolgstappen</li>
+          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Volledig gratis en vrijblijvend</li>
+        </ul>
+        <span class="zowerkhet-step-badge">&#10003; Binnen 1 werkdag</span>
+      </div>
     </div>
   </div>
 </div>
 
 <style>
-/* ── In drie stappen geholpen ─────────────────────────────────── */
-.htw-stappen {
+/* ── Zo werkt het / In drie stappen – gedeelde stijl ───────── */
+.zowerkhet-section {
+  background: #0d1117;
+  padding: 5rem 0;
+}
+.zowerkhet-section .section-title { color: #fff; }
+.zowerkhet-section .section-lead  { color: rgba(255,255,255,.55); }
+.zowerkhet-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+.zowerkhet-step {
+  background: #161b22;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 2rem 1.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0;
-  max-width: 780px;
-}
-.htw-stap {
-  display: grid;
-  grid-template-columns: 72px 2px 1fr;
-  gap: 0 2rem;
-  padding-bottom: 2.75rem;
-}
-.htw-stap-last {
-  padding-bottom: 0;
-  grid-template-columns: 72px 1fr;
-}
-.htw-stap-badge {
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  background: var(--accent-light, #e8f4f1);
-  border: 2px solid #b2ddd4;
-  display: flex; align-items: center; justify-content: center;
+  gap: 1rem;
+  transition: border-color .2s ease, transform .2s ease;
   position: relative;
-  flex-shrink: 0;
-  transition: transform .25s ease, box-shadow .25s ease;
+  overflow: hidden;
 }
-.htw-stap:hover .htw-stap-badge {
-  transform: scale(1.06);
-  box-shadow: 0 8px 24px rgba(40,120,100,.15);
-}
-.htw-stap-emoji {
-  font-size: 1.55rem; line-height: 1;
-}
-.htw-stap-nr {
+.zowerkhet-step::before {
+  content: '';
   position: absolute;
-  top: -6px; right: -6px;
-  width: 24px; height: 24px;
-  border-radius: 50%;
-  background: var(--accent, #287864);
-  color: #fff;
-  font-size: .62rem; font-weight: 800;
-  display: flex; align-items: center; justify-content: center;
-  border: 2px solid #fff;
-  letter-spacing: -.01em;
+  inset: 0;
+  background: radial-gradient(ellipse at top left, rgba(40,120,100,.12) 0%, transparent 65%);
+  pointer-events: none;
 }
-.htw-stap-lijn {
-  width: 2px;
-  background: linear-gradient(to bottom, var(--accent, #287864) 0%, var(--border, #e5e4e0) 100%);
-  border-radius: 2px;
-  margin: 0 auto;
-  opacity: .4;
+.zowerkhet-step:hover {
+  border-color: rgba(40,120,100,.5);
+  transform: translateY(-3px);
 }
-.htw-stap-body {
-  padding-top: .75rem;
-}
-.htw-stap-body h3 {
-  font-size: 1.15rem; font-weight: 800;
-  color: var(--ink, #0d0f14);
-  margin-bottom: .5rem;
-  letter-spacing: -.02em;
-}
-.htw-stap-body > p {
-  font-size: .9rem; color: var(--muted, #6b7280);
-  line-height: 1.7; margin: 0 0 1rem;
-  max-width: 56ch;
-}
-.htw-checklist {
-  list-style: none; padding: 0; margin: 0;
-  display: flex; flex-direction: column; gap: .45rem;
-}
-.htw-checklist li {
-  display: flex; align-items: flex-start; gap: .6rem;
-  font-size: .875rem; color: var(--ink, #0d0f14); font-weight: 500;
-}
-.htw-vink {
-  display: flex; align-items: center; justify-content: center;
-  width: 20px; height: 20px; border-radius: 50%;
-  background: var(--accent-light, #e8f4f1);
+.zowerkhet-step-num {
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .12em;
   color: var(--accent, #287864);
-  font-size: .7rem; font-weight: 700;
-  flex-shrink: 0; margin-top: .05rem;
+  text-transform: uppercase;
 }
-@media (max-width: 600px) {
-  .htw-stap { grid-template-columns: 56px 2px 1fr; gap: 0 1.25rem; }
-  .htw-stap-last { grid-template-columns: 56px 1fr; }
-  .htw-stap-badge { width: 52px; height: 52px; }
-  .htw-stap-emoji { font-size: 1.3rem; }
-  .htw-stap-body h3 { font-size: 1rem; }
+.zowerkhet-step-icon { font-size: 1.75rem; line-height: 1; }
+.zowerkhet-step h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.02em;
+  margin: 0;
+}
+.zowerkhet-step p {
+  font-size: .875rem;
+  color: rgba(255,255,255,.5);
+  line-height: 1.7;
+  margin: 0;
+  max-width: 36ch;
+}
+.zowerkhet-step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  background: rgba(40,120,100,.15);
+  border: 1px solid rgba(40,120,100,.35);
+  border-radius: 999px;
+  padding: .25rem .75rem;
+  font-size: .72rem;
+  font-weight: 700;
+  color: #4ecb9e;
+  margin-top: auto;
+  width: fit-content;
+}
+@media (max-width: 640px) {
+  .zowerkhet-steps { grid-template-columns: 1fr; }
+  .zowerkhet-step  { padding: 1.5rem 1.25rem; }
 }
 </style>
 

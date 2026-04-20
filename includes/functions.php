@@ -67,3 +67,79 @@ function isAdmin(): bool {
 function requireAdmin(): void {
     if (!isAdmin()) redirect(BASE_URL . '/admin/login.php');
 }
+
+/**
+ * Haal een waarde op uit de site_settings tabel.
+ * Cached na eerste aanroep binnen dezelfde request.
+ */
+function getSetting(string $key, string $default = ''): string {
+    static $cache = null;
+    if ($cache === null) {
+        $cache = [];
+        try {
+            foreach (db()->query("SELECT setting_key, setting_value FROM site_settings") as $row) {
+                $cache[$row['setting_key']] = $row['setting_value'];
+            }
+        } catch (\Throwable $e) {
+            // Tabel bestaat nog niet — geeft gewoon default terug
+        }
+    }
+    return $cache[$key] ?? $default;
+}
+
+/**
+ * Valideer een reCAPTCHA v3 token server-side.
+ *
+ * Gebruik in API-bestanden:
+ *   if (!verifyRecaptcha($_POST['recaptcha_token'] ?? '')) {
+ *       http_response_code(429);
+ *       exit(json_encode(['error' => 'Spam gedetecteerd.']));
+ *   }
+ *
+ * @param  string $token   Het token uit $_POST['recaptcha_token']
+ * @param  string $action  Optioneel: verwachte actienaam voor extra verificatie
+ * @return bool            true = mens/doorlaten, false = bot/blokkeren
+ */
+function verifyRecaptcha(string $token, string $action = ''): bool {
+    try {
+        $enabled   = getSetting('recaptcha_enabled')    === '1';
+        $secretKey = getSetting('recaptcha_secret_key');
+        $threshold = (float) getSetting('recaptcha_threshold', '0.5');
+    } catch (\Throwable $e) {
+        return true; // Instellingen niet bereikbaar — niet blokkeren
+    }
+
+    // Uitgeschakeld of geen sleutel/token ingesteld → doorlaten
+    if (!$enabled || empty($secretKey) || empty($token)) {
+        return true;
+    }
+
+    $response = @file_get_contents(
+        'https://www.google.com/recaptcha/api/siteverify?' .
+        http_build_query(['secret' => $secretKey, 'response' => $token])
+    );
+
+    // Google niet bereikbaar → fail open (niet blokkeren)
+    if ($response === false) {
+        return true;
+    }
+
+    $data = json_decode($response, true);
+
+    // Token ongeldig
+    if (empty($data['success'])) {
+        return false;
+    }
+
+    // Score te laag (bot-waarschijnlijkheid te hoog)
+    if (isset($data['score']) && $data['score'] < $threshold) {
+        return false;
+    }
+
+    // Optioneel: actienaam controleren
+    if ($action !== '' && isset($data['action']) && $data['action'] !== $action) {
+        return false;
+    }
+
+    return true;
+}
