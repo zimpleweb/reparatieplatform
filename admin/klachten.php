@@ -9,11 +9,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf($_POST['csrf'] ?? '');
     $action = $_POST['action'] ?? '';
     if ($action === 'add') {
-        $tv_model_id = (int)($_POST['tv_model_id'] ?? 0);
-        $titel       = trim($_POST['titel'] ?? '');
-        $omschrijving= trim($_POST['omschrijving'] ?? '');
-        $frequentie  = $_POST['frequentie'] ?? 'middel';
-        $type_icon   = trim($_POST['type_icon'] ?? '🔧');
+        $tv_model_id  = (int)($_POST['tv_model_id'] ?? 0);
+        $titel        = trim($_POST['titel'] ?? '');
+        $omschrijving = trim($_POST['omschrijving'] ?? '');
+        $frequentie   = $_POST['frequentie'] ?? 'middel';
+        $type_icon    = trim($_POST['type_icon'] ?? '🔧');
         if ($tv_model_id && $titel && $omschrijving) {
             db()->prepare('INSERT INTO klachten (tv_model_id,titel,omschrijving,frequentie,type_icon) VALUES (?,?,?,?,?)')
                ->execute([$tv_model_id,$titel,$omschrijving,$frequentie,$type_icon]);
@@ -26,10 +26,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $model_id = (int)($_GET['model'] ?? 0);
-$klachten = $model_id
-    ? db()->prepare('SELECT k.*,m.merk,m.modelnummer FROM klachten k JOIN tv_modellen m ON m.id=k.tv_model_id WHERE k.tv_model_id=? ORDER BY k.frequentie DESC,k.id DESC')->execute([$model_id]) || true
-    : [];
-
 if ($model_id) {
     $st = db()->prepare('SELECT k.*,m.merk,m.modelnummer FROM klachten k JOIN tv_modellen m ON m.id=k.tv_model_id WHERE k.tv_model_id=? ORDER BY k.frequentie DESC,k.id DESC');
     $st->execute([$model_id]);
@@ -38,9 +34,7 @@ if ($model_id) {
     $st = db()->query('SELECT k.*,m.merk,m.modelnummer FROM klachten k JOIN tv_modellen m ON m.id=k.tv_model_id ORDER BY k.frequentie DESC,k.id DESC');
     $klachten = $st->fetchAll();
 }
-
 $modellen = db()->query('SELECT id,merk,modelnummer FROM tv_modellen WHERE actief=1 ORDER BY merk,modelnummer')->fetchAll();
-
 $adminActivePage = 'klachten';
 ?>
 <!DOCTYPE html>
@@ -49,16 +43,19 @@ $adminActivePage = 'klachten';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Klachten &ndash; Admin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Epilogue:wght@800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/base.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/components.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css">
   <meta name="robots" content="noindex,nofollow">
 </head>
 <body>
-<div class="admin-wrap">
+
 <?php require_once __DIR__ . '/includes/admin-header.php'; ?>
-<div class="admin-content">
+
+<div class="adm-page">
   <h1>Klachten beheren</h1>
   <?php if ($msg): ?><div class="alert alert-success"><?= h($msg) ?></div><?php endif; ?>
 
@@ -73,9 +70,7 @@ $adminActivePage = 'klachten';
           <select name="tv_model_id" required>
             <option value="">Selecteer model</option>
             <?php foreach ($modellen as $m): ?>
-            <option value="<?= $m['id'] ?>" <?= $m['id']===$model_id?'selected':'' ?>>
-              <?= h($m['merk'].' '.$m['modelnummer']) ?>
-            </option>
+            <option value="<?= $m['id'] ?>" <?= $m['id']===$model_id?'selected':'' ?>><?= h($m['merk'].' '.$m['modelnummer']) ?></option>
             <?php endforeach; ?>
           </select>
         </div>
@@ -93,7 +88,7 @@ $adminActivePage = 'klachten';
         <div class="field"><label>Icoon (emoji)</label><input type="text" name="type_icon" value="🔧" maxlength="5"></div>
       </div>
       <div class="field"><label>Omschrijving *</label><textarea name="omschrijving" placeholder="Uitgebreide uitleg van de klacht en mogelijke oplossing..." required style="min-height:100px;"></textarea></div>
-      <button type="submit" class="btn btn-primary-sm">&#43; Klacht toevoegen</button>
+      <button type="submit" class="btn btn-primary-sm">+ Klacht toevoegen</button>
     </form>
   </div>
 
@@ -102,7 +97,7 @@ $adminActivePage = 'klachten';
       <?php if ($model_id):
         $mn = db()->prepare('SELECT merk,modelnummer FROM tv_modellen WHERE id=?');
         $mn->execute([$model_id]); $mn=$mn->fetch();
-        echo 'Klachten voor '.h($mn['merk'].' '.$mn['modelnummer']).' &mdash; <a href="'.BASE_URL.'/admin/klachten.php" style="font-size:.9rem;font-weight:500;color:var(--adm-accent)">Alle klachten tonen</a>';
+        echo 'Klachten voor '.h($mn['merk'].' '.$mn['modelnummer']).' &mdash; <a href="'.BASE_URL.'/admin/klachten.php" style="font-size:.9rem;font-weight:500;color:#4f98a3">Alle klachten tonen</a>';
       else: echo count($klachten).' klachten in database'; endif; ?>
     </h2>
     <table class="admin-table">
@@ -130,7 +125,6 @@ $adminActivePage = 'klachten';
       </tbody>
     </table>
   </div>
-</div><!-- /.admin-content -->
-</div><!-- /.admin-wrap -->
+</div><!-- /.adm-page -->
 </body>
 </html>

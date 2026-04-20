@@ -22,14 +22,6 @@ $recentAanvragen = db()->query(
 )->fetchAll();
 
 $adminActivePage = 'dashboard';
-
-$_adminHeaderPath = __DIR__ . '/includes/admin-header.php';
-if (!file_exists($_adminHeaderPath)) {
-    die('<p style="font:16px sans-serif;padding:2rem;color:red;">
-        ⚠️ <strong>admin/includes/admin-header.php</strong> niet gevonden.<br>
-        Maak de map <code>admin/includes/</code> aan en upload het header-component daarin.
-    </p>');
-}
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -37,6 +29,8 @@ if (!file_exists($_adminHeaderPath)) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Dashboard &ndash; Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/base.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/components.css">
@@ -44,11 +38,10 @@ if (!file_exists($_adminHeaderPath)) {
   <meta name="robots" content="noindex,nofollow">
 </head>
 <body>
-<div class="admin-wrap">
 
-<?php require_once $_adminHeaderPath; ?>
+<?php require_once __DIR__ . '/includes/admin-header.php'; ?>
 
-<div class="admin-content">
+<div class="adm-page">
   <h1>Dashboard</h1>
 
   <div class="stat-grid">
@@ -95,7 +88,6 @@ if (!file_exists($_adminHeaderPath)) {
     </table>
   </div>
 
-</div><!-- /.admin-content -->
-</div><!-- /.admin-wrap -->
+</div><!-- /.adm-page -->
 </body>
 </html>
