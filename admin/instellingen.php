@@ -27,10 +27,10 @@ db()->exec("
 
 // ── Standaardwaarden inserten als ze nog niet bestaan ─────────────────────
 $defaults = [
-    'recaptcha_enabled'   => '0',
-    'recaptcha_site_key'  => '',
-    'recaptcha_secret_key'=> '',
-    'recaptcha_threshold' => '0.5',
+    'recaptcha_enabled'    => '0',
+    'recaptcha_site_key'   => '',
+    'recaptcha_secret_key' => '',
+    'recaptcha_threshold'  => '0.5',
 ];
 $insertStmt = db()->prepare("
     INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES (?, ?)
@@ -44,7 +44,6 @@ $success = false;
 $error   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_settings') {
-    // CSRF
     if (!verifyCsrf($_POST['csrf_token'] ?? '')) {
         $error = 'Beveiligingstoken ongeldig. Probeer opnieuw.';
     } else {
@@ -71,22 +70,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             'recaptcha_threshold'
         ]);
 
+        // Reset de static cache in getSetting() zodat nieuwe waarden direct zichtbaar zijn
+        // door de pagina te herladen na opslaan
         $success = true;
     }
 }
 
-// ── Huidige waarden ophalen ───────────────────────────────────────────────
-function getSetting(string $key, string $default = ''): string {
-    static $cache = null;
-    if ($cache === null) {
-        $cache = [];
-        foreach (db()->query("SELECT setting_key, setting_value FROM site_settings") as $row) {
-            $cache[$row['setting_key']] = $row['setting_value'];
-        }
-    }
-    return $cache[$key] ?? $default;
-}
-
+// ── Huidige waarden ophalen via getSetting() uit functions.php ────────────
 $rcEnabled   = getSetting('recaptcha_enabled')    === '1';
 $rcSiteKey   = getSetting('recaptcha_site_key');
 $rcSecretKey = getSetting('recaptcha_secret_key');
@@ -96,7 +86,6 @@ require_once __DIR__ . '/includes/admin-header.php';
 ?>
 
 <style>
-/* ── Pagina-stijl ──────────────────────────────────────────────────────── */
 body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: #e2e8f0; margin: 0; }
 
 .adm-page { padding: 2rem 2.25rem; max-width: 900px; }
@@ -114,7 +103,6 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
   margin: 0 0 2.5rem;
 }
 
-/* ── Sectie kaarten ─────────────────────────────────────────────────────── */
 .settings-card {
   background: #161b2e;
   border: 1px solid rgba(255,255,255,.07);
@@ -157,7 +145,6 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
   line-height: 1.6;
 }
 
-/* ── Formuliervelden ────────────────────────────────────────────────────── */
 .s-field { margin-bottom: 1.25rem; }
 .s-field label {
   display: block;
@@ -192,13 +179,9 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
   margin-top: .35rem;
   line-height: 1.5;
 }
-.s-field .hint a {
-  color: #4ecb9e;
-  text-decoration: none;
-}
+.s-field .hint a { color: #4ecb9e; text-decoration: none; }
 .s-field .hint a:hover { text-decoration: underline; }
 
-/* Toggle schakelaar */
 .toggle-row {
   display: flex;
   align-items: center;
@@ -234,7 +217,6 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
 .toggle-switch input:checked + .toggle-slider { background: #4f98a3; }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
 
-/* ── Threshold slider ───────────────────────────────────────────────────── */
 .threshold-row {
   display: flex;
   align-items: center;
@@ -254,7 +236,6 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
   text-align: right;
 }
 
-/* ── Alert / feedback ────────────────────────────────────────────────────── */
 .alert {
   padding: .85rem 1.1rem;
   border-radius: 8px;
@@ -276,7 +257,6 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
   color: #fc8181;
 }
 
-/* ── Info box ────────────────────────────────────────────────────────────── */
 .info-box {
   background: rgba(79,152,163,.08);
   border: 1px solid rgba(79,152,163,.2);
@@ -297,7 +277,6 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
   color: #a5d8ff;
 }
 
-/* ── Opslaan-knop ────────────────────────────────────────────────────────── */
 .btn-save {
   display: inline-flex;
   align-items: center;
@@ -315,6 +294,8 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
 }
 .btn-save:hover { background: #3a7d88; }
 .btn-save:active { transform: scale(.98); }
+
+body { padding-bottom: 3rem; }
 </style>
 
 <div class="adm-page">
@@ -332,7 +313,6 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
     <input type="hidden" name="action"     value="save_settings" />
     <input type="hidden" name="csrf_token" value="<?= csrf() ?>" />
 
-    <!-- ── reCAPTCHA v3 ── -->
     <div class="settings-card">
       <div class="settings-card-header">
         <div class="settings-card-icon">&#128274;</div>
@@ -340,7 +320,8 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
           <div class="settings-card-title">Google reCAPTCHA v3</div>
           <p class="settings-card-desc">
             Beschermt formulieren automatisch op de achtergrond — zonder extra handelingen voor bezoekers.
-            Vereist een gratis Google-account op <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener" style="color:#4ecb9e;">google.com/recaptcha</a>.
+            Vereist een gratis Google-account op
+            <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener" style="color:#4ecb9e;">google.com/recaptcha</a>.
           </p>
         </div>
       </div>
@@ -360,9 +341,9 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
       <div class="info-box">
         <strong>Hoe werkt het?</strong><br>
         Wanneer reCAPTCHA is ingeschakeld, laadt <code>includes/header.php</code> automatisch het Google-script.
-        Elk formulier op de site met het attribuut <code>data-recaptcha="actienaam"</code> wordt beschermd:
-        bij verzenden wordt een onzichtbaar token meegestuurd, dat jouw server valideert via <code>verifyRecaptcha($token)</code>
-        in <code>includes/functions.php</code>.<br><br>
+        Elk formulier met het attribuut <code>data-recaptcha="actienaam"</code> wordt beschermd:
+        bij verzenden wordt een onzichtbaar token meegestuurd dat jouw server valideert via
+        <code>verifyRecaptcha($token)</code> in <code>includes/functions.php</code>.<br><br>
         <strong>Sleutels aanmaken:</strong> ga naar
         <a href="https://www.google.com/recaptcha/admin/create" target="_blank" rel="noopener">google.com/recaptcha/admin/create</a>,
         kies <em>reCAPTCHA v3</em>, voeg je domein toe en kopieer de twee sleutels hieronder.
@@ -383,14 +364,12 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
         <input type="text" id="rc_secret_key" name="recaptcha_secret_key"
                value="<?= h($rcSecretKey) ?>"
                placeholder="6Lc…" autocomplete="off" spellcheck="false" />
-        <p class="hint">
-          Wordt alleen server-side gebruikt. Bewaar deze sleutel veilig en deel hem niet.
-        </p>
+        <p class="hint">Wordt alleen server-side gebruikt. Bewaar veilig en deel niet.</p>
       </div>
 
       <!-- Drempelwaarde -->
       <div class="s-field">
-        <label for="rc_threshold">Score-drempel (0.0 = alles toestaan, 1.0 = alleen zekere mensen)</label>
+        <label for="rc_threshold">Score-drempel (0.0 = alles toestaan &mdash; 1.0 = alleen zekere mensen)</label>
         <div class="threshold-row">
           <input type="range" id="rc_threshold" name="recaptcha_threshold"
                  min="0" max="1" step="0.05"
@@ -399,24 +378,22 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
           <span class="threshold-val" id="rc_threshold_val"><?= h($rcThreshold) ?></span>
         </div>
         <p class="hint">
-          Google adviseert <strong>0.5</strong> als standaard. Verhoog naar 0.7–0.8 bij veel spam, verlaag bij klachten van echte gebruikers.
-          Aanvragen onder deze score worden geblokkeerd.
+          Google adviseert <strong>0.5</strong> als standaard. Verhoog naar 0.7&ndash;0.8 bij veel spam,
+          verlaag bij klachten van echte gebruikers. Aanvragen onder deze score worden geblokkeerd.
         </p>
       </div>
 
     </div><!-- /settings-card -->
 
     <button type="submit" class="btn-save">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+        <polyline points="17,21 17,13 7,13 7,21"/>
+        <polyline points="7,3 7,8 15,8"/>
+      </svg>
       Instellingen opslaan
     </button>
 
   </form>
 </div>
-
-<?php
-// ── Admin footer (minimaal) ────────────────────────────────────────────────
-?>
-<style>
-  body { padding-bottom: 3rem; }
-</style>
