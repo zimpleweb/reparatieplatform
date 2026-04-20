@@ -1,20 +1,10 @@
 <?php
 /**
  * Admin Header Component – admin/includes/admin-header.php
- *
- * Gebruik in elke admin-pagina:
- *   $adminActivePage = 'dashboard';  // nav-item markeren als actief
- *   require_once __DIR__ . '/includes/admin-header.php';  (vanuit admin/)
- *   OF
- *   require_once __DIR__ . '/../admin/includes/admin-header.php';
- *
- * Geldige waarden voor $adminActivePage:
- *   dashboard | aanvragen | meldingen | modellen | klachten
- *   advies-instellingen | mailtemplates | admins | account-instellingen
+ * ...
  */
 
 if (!defined('BASE_URL')) {
-    // fallback – mag nooit voorkomen want db.php laadt de constante
     define('BASE_URL', '');
 }
 
@@ -30,15 +20,21 @@ try {
 } catch (\Exception $e) {}
 
 $_adminNav = [
-    ['id' => 'dashboard',            'label' => 'Dashboard',          'icon' => '&#128202;', 'href' => BASE_URL . '/admin/dashboard.php'],
-    ['id' => 'aanvragen',            'label' => 'Inzendingen',        'icon' => '&#128236;', 'href' => BASE_URL . '/admin/aanvragen.php'],
-    ['id' => 'meldingen',            'label' => 'Meldingen',          'icon' => '&#128276;', 'href' => BASE_URL . '/admin/meldingen.php', 'badge' => $_adminOngelezen],
-    ['id' => 'modellen',             'label' => 'TV-modellen',        'icon' => '&#128250;', 'href' => BASE_URL . '/admin/modellen.php'],
-    ['id' => 'klachten',             'label' => 'Klachten',           'icon' => '&#9888;',   'href' => BASE_URL . '/admin/klachten.php'],
-    ['id' => 'advies-instellingen',  'label' => 'Adviesregels',       'icon' => '&#9881;',   'href' => BASE_URL . '/admin/advies-instellingen.php'],
-    ['id' => 'mailtemplates',        'label' => 'Mailtemplates',      'icon' => '&#128140;', 'href' => BASE_URL . '/admin/mailtemplates.php'],
-    ['id' => 'admins',               'label' => 'Admin accounts',     'icon' => '&#128100;', 'href' => BASE_URL . '/admin/admins.php'],
+    ['id' => 'dashboard',           'label' => 'Dashboard',       'icon' => '&#128202;', 'href' => BASE_URL . '/admin/dashboard.php'],
+    ['id' => 'aanvragen',           'label' => 'Inzendingen',     'icon' => '&#128236;', 'href' => BASE_URL . '/admin/aanvragen.php'],
+    ['id' => 'meldingen',           'label' => 'Meldingen',       'icon' => '&#128276;', 'href' => BASE_URL . '/admin/meldingen.php', 'badge' => $_adminOngelezen],
+    ['id' => 'modellen',            'label' => 'TV-modellen',     'icon' => '&#128250;', 'href' => BASE_URL . '/admin/modellen.php'],
+    ['id' => 'klachten',            'label' => 'Klachten',        'icon' => '&#9888;',   'href' => BASE_URL . '/admin/klachten.php'],
+    ['id' => 'advies-instellingen', 'label' => 'Adviesregels',    'icon' => '&#9881;',   'href' => BASE_URL . '/admin/advies-instellingen.php'],
+    ['id' => 'mailtemplates',       'label' => 'Mailtemplates',   'icon' => '&#128140;', 'href' => BASE_URL . '/admin/mailtemplates.php'],
+    ['id' => 'admins',              'label' => 'Admin accounts',  'icon' => '&#128100;', 'href' => BASE_URL . '/admin/admins.php'],
 ];
+
+// Vlag: zorg dat admin CSS maar één keer wordt ingespoten,
+// ook als de pagina zelf de <head> al heeft afgerond.
+if (!defined('ADMIN_CSS_LOADED')) {
+    define('ADMIN_CSS_LOADED', true);
+}
 ?>
 <header class="adm-header">
   <div class="adm-header-inner">

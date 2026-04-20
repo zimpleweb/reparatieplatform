@@ -1,140 +1,250 @@
 /* ================================================================
    admin.css – Reparatieplatform Admin UI
-   Strak, modern, in lijn met de website stijl (Inter + Epilogue,
-   --accent #287864, --surface warm-beige, --border subtiel)
+   Inter + Epilogue, accent #01696f, warm-beige achtergrond
    ================================================================ */
 
-/* ── Wrap & achtergrond ─────────────────────────────────────────── */
-.admin-wrap { min-height: 100vh; background: #f5f4f1; display: flex; flex-direction: column; }
+/* ─────────────────────────────────────────────────────────────────
+   CSS VARIABELEN – Admin header tokens
+   ───────────────────────────────────────────────────────────────── */
+:root {
+  --adm-h:          58px;
+  --adm-bg:         #ffffff;
+  --adm-border:     rgba(0, 0, 0, .08);
+  --adm-text:       #374151;
+  --adm-muted:      #6b7280;
+  --adm-accent:     #01696f;
+  --adm-accent-bg:  #eef7f6;
+  --adm-active-txt: #01696f;
+  --adm-hover-bg:   #f3f4f6;
+  --adm-badge-bg:   #ef4444;
+  --adm-badge-txt:  #ffffff;
+  --adm-radius:     8px;
+  --adm-shadow:     0 1px 3px rgba(0, 0, 0, .06), 0 1px 0 rgba(0, 0, 0, .04);
+}
 
-/* ── Topbalk ────────────────────────────────────────────────────── */
-.admin-nav {
-  background: #0d0f14;
-  padding: 0 1.75rem;
-  height: 58px;
+/* ─────────────────────────────────────────────────────────────────
+   ADMIN HEADER – Horizontale sticky topbalk
+   ───────────────────────────────────────────────────────────────── */
+.adm-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  height: var(--adm-h);
+  background: var(--adm-bg);
+  border-bottom: 1px solid var(--adm-border);
+  box-shadow: var(--adm-shadow);
+}
+
+.adm-header-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  border-bottom: 1px solid rgba(255,255,255,.06);
+  height: 100%;
+  padding: 0 1.5rem;
+  gap: .5rem;
+  max-width: 1600px;
+  margin: 0 auto;
 }
-.admin-nav .logo {
-  color: white;
-  font-family: 'Epilogue', sans-serif;
-  font-weight: 800;
-  font-size: .95rem;
-  letter-spacing: -.01em;
-}
-.admin-nav .logo span { color: #4dbfa8; }
 
-.admin-nav-actions {
+/* Spacer zodat content niet achter de header verdwijnt */
+.adm-header-spacer {
+  height: var(--adm-h);
+}
+
+/* ── Logo ───────────────────────────────────────────────────────── */
+.adm-logo {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  text-decoration: none;
+  flex-shrink: 0;
+  margin-right: .75rem;
+}
+.adm-logo-icon {
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.adm-logo-text {
+  font-family: 'Epilogue', sans-serif;
+  font-size: .9rem;
+  font-weight: 600;
+  color: #1f2937;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+}
+.adm-logo-text strong {
+  font-weight: 800;
+  color: var(--adm-accent);
+}
+
+/* ── Navigatie ──────────────────────────────────────────────────── */
+.adm-nav {
+  display: flex;
+  align-items: center;
+  gap: .15rem;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.adm-nav::-webkit-scrollbar { display: none; }
+
+.adm-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .42rem .7rem;
+  border-radius: var(--adm-radius);
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--adm-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.adm-nav-link:hover {
+  background: var(--adm-hover-bg);
+  color: #111827;
+}
+.adm-nav-link.is-active {
+  background: var(--adm-accent-bg);
+  color: var(--adm-active-txt);
+  font-weight: 600;
+}
+.adm-nav-icon {
+  font-size: .85rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Badge op nav-link (bijv. ongelezen meldingen) */
+.adm-nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: var(--adm-badge-bg);
+  color: var(--adm-badge-txt);
+  font-size: .62rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: .15rem;
+}
+
+/* ── Rechts: acties + account ───────────────────────────────────── */
+.adm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: .2rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.adm-action-link,
+.adm-logout-link {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .4rem .65rem;
+  border-radius: var(--adm-radius);
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--adm-muted);
+  text-decoration: none;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+.adm-action-link:hover { background: var(--adm-hover-bg); color: #111827; }
+.adm-logout-link:hover { background: #fef2f2; color: #dc2626; }
+
+.adm-header-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--adm-border);
+  margin: 0 .2rem;
+  flex-shrink: 0;
+}
+
+/* Account avatar + naam */
+.adm-account-link {
   display: flex;
   align-items: center;
   gap: .5rem;
-}
-.admin-nav-actions a {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  color: rgba(255,255,255,.55);
+  padding: .3rem .65rem .3rem .4rem;
+  border-radius: var(--adm-radius);
+  text-decoration: none;
   font-size: .8rem;
   font-weight: 500;
-  padding: .38rem .8rem;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: background .18s, color .18s;
-  white-space: nowrap;
+  color: var(--adm-text);
+  transition: background .15s;
 }
-.admin-nav-actions a:hover {
-  background: rgba(255,255,255,.08);
-  color: white;
+.adm-account-link:hover { background: var(--adm-hover-bg); }
+.adm-account-link.is-active {
+  background: var(--adm-accent-bg);
+  color: var(--adm-active-txt);
 }
-.admin-nav-actions a.nav-logout {
-  color: rgba(255,120,100,.7);
-}
-.admin-nav-actions a.nav-logout:hover {
-  background: rgba(255,80,60,.1);
-  color: #ff8070;
-}
-.admin-nav-divider {
-  width: 1px;
-  height: 18px;
-  background: rgba(255,255,255,.12);
-  margin: 0 .15rem;
-}
-
-/* ── Hoofd-layout (sidebar + content) ──────────────────────────── */
-.admin-layout {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  flex: 1;
-  min-height: calc(100vh - 58px);
-}
-
-/* ── Sidebar ────────────────────────────────────────────────────── */
-.admin-sidebar {
-  background: white;
-  border-right: 1px solid #e5e4e0;
-  padding: 1.25rem 0;
-  position: sticky;
-  top: 58px;
-  height: calc(100vh - 58px);
-  overflow-y: auto;
-}
-.admin-sidebar-section {
-  padding: 0 .75rem;
-  margin-bottom: .25rem;
-}
-.admin-sidebar-label {
-  font-size: .65rem;
+.adm-account-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--adm-accent);
+  color: #fff;
+  font-size: .7rem;
   font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: #9ca3af;
-  padding: .9rem .75rem .3rem;
-  display: block;
-}
-.admin-sidebar a {
   display: flex;
   align-items: center;
-  gap: .65rem;
-  padding: .55rem .85rem;
-  font-size: .835rem;
-  font-weight: 500;
-  color: #4b5563;
-  border-radius: 9px;
-  transition: background .15s, color .15s;
-  text-decoration: none;
-  margin-bottom: .1rem;
-}
-.admin-sidebar a:hover {
-  background: #f0f9f6;
-  color: #287864;
-}
-.admin-sidebar a.active {
-  background: #e8f4f1;
-  color: #287864;
-  font-weight: 600;
-}
-.admin-sidebar a .icon {
-  font-size: 1rem;
+  justify-content: center;
   flex-shrink: 0;
-  opacity: .8;
 }
-.admin-sidebar a.active .icon { opacity: 1; }
-
-.sidebar-divider {
-  height: 1px;
-  background: #f3f2ef;
-  margin: .6rem .75rem;
+.adm-account-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ── Content area ───────────────────────────────────────────────── */
+/* ── Hamburger (mobiel) ─────────────────────────────────────────── */
+.adm-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 36px;
+  height: 36px;
+  padding: 0 7px;
+  background: none;
+  border: 1px solid var(--adm-border);
+  border-radius: 7px;
+  cursor: pointer;
+  margin-left: auto;
+  order: 10;
+  flex-shrink: 0;
+}
+.adm-hamburger span {
+  display: block;
+  height: 2px;
+  background: var(--adm-text);
+  border-radius: 2px;
+  transition: transform .2s, opacity .2s;
+}
+.adm-hamburger.is-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.adm-hamburger.is-open span:nth-child(2) { opacity: 0; }
+.adm-hamburger.is-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ─────────────────────────────────────────────────────────────────
+   PAGINA WRAP & CONTENT
+   ───────────────────────────────────────────────────────────────── */
+.admin-wrap {
+  min-height: 100vh;
+  background: #f5f4f1;
+}
+
 .admin-content {
-  padding: 2rem 2.25rem;
-  min-width: 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
 }
 .admin-content h1 {
   font-size: 1.35rem;
@@ -143,14 +253,16 @@
   color: #0d0f14;
 }
 
-/* ── Kaarten ────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────
+   KAARTEN
+   ───────────────────────────────────────────────────────────────── */
 .admin-card {
-  background: white;
+  background: #ffffff;
   border: 1px solid #e5e4e0;
   border-radius: 14px;
   padding: 1.5rem;
   margin-bottom: 1.25rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .04);
 }
 .admin-card h2 {
   font-size: .95rem;
@@ -159,8 +271,13 @@
   color: #0d0f14;
 }
 
-/* ── Tabel ──────────────────────────────────────────────────────── */
-.admin-table { width: 100%; border-collapse: collapse; }
+/* ─────────────────────────────────────────────────────────────────
+   TABEL
+   ───────────────────────────────────────────────────────────────── */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
 .admin-table th {
   padding: .55rem 1rem;
   text-align: left;
@@ -181,7 +298,9 @@
 .admin-table tr:last-child td { border-bottom: none; }
 .admin-table tr:hover td { background: #fafaf8; }
 
-/* ── Formuliervelden ────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────
+   FORMULIERVELDEN
+   ───────────────────────────────────────────────────────────────── */
 .form-admin .field { margin-bottom: 1rem; }
 .form-admin label {
   display: block;
@@ -209,367 +328,34 @@
 .form-admin select:focus,
 .form-admin textarea:focus {
   outline: none;
-  border-color: #287864;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(40,120,100,.08);
+  border-color: #01696f;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(1, 105, 111, .08);
 }
 .form-admin textarea { min-height: 80px; resize: vertical; }
 .form-admin input[type="checkbox"] {
   width: 1rem; height: 1rem; padding: 0;
   border: 1.5px solid #e5e4e0; border-radius: 3px;
-  background: white; accent-color: #287864; cursor: pointer;
+  background: white; accent-color: #01696f; cursor: pointer;
 }
 .form-check label {
   display: flex; align-items: flex-start; gap: .6rem;
   cursor: pointer; font-size: .875rem; font-weight: 500;
   color: #0d0f14; margin-bottom: 0; text-transform: none; letter-spacing: 0;
 }
-.form-check .field-hint { font-size: .75rem; color: #6b7280; font-weight: 400; margin-top: .15rem; }
+.form-check .field-hint {
+  font-size: .75rem; color: #6b7280; font-weight: 400; margin-top: .15rem;
+}
 
-/* ── Grid hulp ──────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────
+   GRID HULPKLASSEN
+   ───────────────────────────────────────────────────────────────── */
 .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
 
-/* ── Stat-kaarten (dashboard) ───────────────────────────────────── */
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 1rem; margin-bottom: 1.75rem; }
-.stat-card {
-  background: white;
-  border: 1px solid #e5e4e0;
-  border-radius: 12px;
-  padding: 1.1rem 1.4rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,.04);
-}
-.stat-card .stat-val {
-  font-family: 'Epilogue', sans-serif;
-  font-size: 2rem;
-  font-weight: 800;
-  color: #0d0f14;
-  line-height: 1;
-}
-.stat-card .stat-label { font-size: .78rem; color: #6b7280; margin-top: .3rem; }
-.stat-card .stat-icon  { font-size: 1.3rem; margin-bottom: .5rem; opacity: .6; }
-
-/* ── Buttons ────────────────────────────────────────────────────── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: .45rem;
-  padding: .52rem 1.1rem;
-  border-radius: 9px;
-  font-size: .845rem;
-  font-weight: 600;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  border: 1.5px solid transparent;
-  transition: all .18s;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.btn-primary   { background: #287864; color: white; }
-.btn-primary:hover { background: #1e6353; }
-.btn-secondary { background: white; color: #0d0f14; border-color: #e5e4e0; }
-.btn-secondary:hover { background: #f5f4f1; border-color: #ccc; }
-.btn-danger    { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
-.btn-danger:hover { background: #fee2e2; }
-.btn-sm { padding: .35rem .75rem; font-size: .78rem; border-radius: 7px; }
-
-/* ── Alerts ─────────────────────────────────────────────────────── */
-.alert {
-  padding: .8rem 1.1rem;
-  border-radius: 10px;
-  font-size: .875rem;
-  font-weight: 500;
-  display: flex;
-  align-items: flex-start;
-  gap: .6rem;
-}
-.alert-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-.alert-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-.alert-info    { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
-
-/* ── Spec ja/nee ────────────────────────────────────────────────── */
-.spec-ja  { color: #287864; font-weight: 700; }
-.spec-nee { color: #d1d5db; font-weight: 700; }
-
-/* ── Badge / chip ───────────────────────────────────────────────── */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: .3rem;
-  font-size: .7rem;
-  font-weight: 700;
-  padding: .18rem .55rem;
-  border-radius: 99px;
-}
-.badge-green  { background: #dcfce7; color: #166534; }
-.badge-blue   { background: #dbeafe; color: #1e40af; }
-.badge-yellow { background: #fef9c3; color: #854d0e; }
-.badge-gray   { background: #f1f5f9; color: #64748b; }
-.badge-red    { background: #fef2f2; color: #991b1b; }
-/* ═══════════════════════════════════════════════════════════════════
-   ADMIN HEADER – Horizontaal, modern, component-gebaseerd
-   Klassen beginnen met adm- (geen conflict met bestaande .admin-*)
-   ═══════════════════════════════════════════════════════════════════ */
-
-:root {
-  --adm-h:          58px;
-  --adm-bg:         #ffffff;
-  --adm-border:     rgba(0,0,0,.07);
-  --adm-text:       #374151;
-  --adm-muted:      #6b7280;
-  --adm-accent:     #01696f;
-  --adm-accent-bg:  #eef7f6;
-  --adm-active-txt: #01696f;
-  --adm-hover-bg:   #f3f4f6;
-  --adm-badge-bg:   #ef4444;
-  --adm-badge-txt:  #fff;
-  --adm-radius:     8px;
-  --adm-shadow:     0 1px 3px rgba(0,0,0,.06), 0 1px 0 rgba(0,0,0,.04);
-}
-
-/* ── Sticky header bar ─────────────────────────────────────────── */
-.adm-header {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 1000;
-  height: var(--adm-h);
-  background: var(--adm-bg);
-  border-bottom: 1px solid var(--adm-border);
-  box-shadow: var(--adm-shadow);
-}
-
-.adm-header-inner {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  padding: 0 1.25rem;
-  gap: .5rem;
-  max-width: 1600px;
-  margin: 0 auto;
-}
-
-/* ── Spacer zodat content niet achter header verdwijnt ─────────── */
-.adm-header-spacer { height: var(--adm-h); }
-
-/* ── Logo ──────────────────────────────────────────────────────── */
-.adm-logo {
-  display: flex;
-  align-items: center;
-  gap: .55rem;
-  text-decoration: none;
-  flex-shrink: 0;
-  margin-right: .5rem;
-}
-.adm-logo-icon { border-radius: 7px; flex-shrink: 0; }
-.adm-logo-text {
-  font-size: .92rem;
-  color: #111827;
-  white-space: nowrap;
-  letter-spacing: -.01em;
-}
-.adm-logo-text strong {
-  font-weight: 700;
-  color: var(--adm-accent);
-}
-
-/* ── Navigatie ─────────────────────────────────────────────────── */
-.adm-nav {
-  display: flex;
-  align-items: center;
-  gap: .15rem;
-  flex: 1;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.adm-nav::-webkit-scrollbar { display: none; }
-
-.adm-nav-link {
-  display: flex;
-  align-items: center;
-  gap: .35rem;
-  padding: .4rem .65rem;
-  border-radius: var(--adm-radius);
-  font-size: .8rem;
-  font-weight: 500;
-  color: var(--adm-text);
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background .15s, color .15s;
-  position: relative;
-}
-.adm-nav-link:hover {
-  background: var(--adm-hover-bg);
-  color: #111827;
-}
-.adm-nav-link.is-active {
-  background: var(--adm-accent-bg);
-  color: var(--adm-active-txt);
-  font-weight: 600;
-}
-.adm-nav-icon {
-  font-size: .85rem;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-/* Badge op nav-link */
-.adm-nav-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 17px;
-  height: 17px;
-  padding: 0 4px;
-  border-radius: 99px;
-  background: var(--adm-badge-bg);
-  color: var(--adm-badge-txt);
-  font-size: .65rem;
-  font-weight: 700;
-  line-height: 1;
-  margin-left: .1rem;
-}
-
-/* ── Rechts: acties + account ──────────────────────────────────── */
-.adm-header-actions {
-  display: flex;
-  align-items: center;
-  gap: .25rem;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
-.adm-action-link,
-.adm-logout-link {
-  display: flex;
-  align-items: center;
-  gap: .35rem;
-  padding: .4rem .6rem;
-  border-radius: var(--adm-radius);
-  font-size: .8rem;
-  font-weight: 500;
-  color: var(--adm-muted);
-  text-decoration: none;
-  transition: background .15s, color .15s;
-  white-space: nowrap;
-}
-.adm-action-link:hover  { background: var(--adm-hover-bg); color: #111827; }
-.adm-logout-link:hover  { background: #fef2f2; color: #dc2626; }
-
-.adm-header-divider {
-  width: 1px;
-  height: 20px;
-  background: var(--adm-border);
-  margin: 0 .25rem;
-  flex-shrink: 0;
-}
-
-/* Account avatar + naam */
-.adm-account-link {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  padding: .3rem .6rem .3rem .35rem;
-  border-radius: var(--adm-radius);
-  text-decoration: none;
-  font-size: .8rem;
-  font-weight: 500;
-  color: var(--adm-text);
-  transition: background .15s;
-}
-.adm-account-link:hover  { background: var(--adm-hover-bg); }
-.adm-account-link.is-active { background: var(--adm-accent-bg); color: var(--adm-active-txt); }
-.adm-account-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--adm-accent);
-  color: #fff;
-  font-size: .72rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.adm-account-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
-
-/* ── Hamburger (mobiel) ────────────────────────────────────────── */
-.adm-hamburger {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  width: 36px;
-  height: 36px;
-  padding: 0 7px;
-  background: none;
-  border: 1px solid var(--adm-border);
-  border-radius: 7px;
-  cursor: pointer;
-  margin-left: auto;
-  order: 10;
-  flex-shrink: 0;
-}
-.adm-hamburger span {
-  display: block;
-  height: 2px;
-  background: var(--adm-text);
-  border-radius: 2px;
-  transition: transform .2s, opacity .2s;
-}
-.adm-hamburger.is-open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
-.adm-hamburger.is-open span:nth-child(2) { opacity: 0; }
-.adm-hamburger.is-open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
-
-/* ── Admin wrap (geen sidebar meer, alleen content) ────────────── */
-.admin-wrap { min-height: 100vh; background: #f8fafc; }
-
-/* Pagina-content: geen admin-layout / sidebar nodig */
-.admin-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-}
-
-/* ── Responsive: mobiel ────────────────────────────────────────── */
-@media (max-width: 900px) {
-  .adm-header-actions .adm-action-label { display: none; }
-  .adm-account-name { display: none; }
-}
-
-@media (max-width: 768px) {
-  .adm-hamburger { display: flex; }
-
-  .adm-header-actions { display: none; }
-
-  .adm-nav {
-    display: none;
-    position: fixed;
-    top: var(--adm-h);
-    left: 0; right: 0;
-    background: #fff;
-    border-bottom: 1px solid var(--adm-border);
-    box-shadow: 0 4px 20px rgba(0,0,0,.1);
-    flex-direction: column;
-    align-items: stretch;
-    gap: .1rem;
-    padding: .75rem;
-    overflow-y: auto;
-    max-height: calc(100vh - var(--adm-h));
-    z-index: 999;
-  }
-  .adm-nav.is-open { display: flex; }
-
-  .adm-nav-link {
-    padding: .65rem .8rem;
-    font-size: .875rem;
-  }
-}
-
-/* ════════════════════════════════════════════════════════════════
-   STAT CARDS – zonder icoontje (dashboard.php)
-   ════════════════════════════════════════════════════════════════ */
+/* ─────────────────────────────────────────────────────────────────
+   STAT CARDS (dashboard)
+   ───────────────────────────────────────────────────────────────── */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -577,11 +363,11 @@
   margin-bottom: 2rem;
 }
 .stat-card {
-  background: #fff;
-  border: 1px solid rgba(0,0,0,.06);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, .06);
   border-radius: 12px;
   padding: 1.5rem 1.75rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
 }
 .stat-val {
   font-size: 2rem;
@@ -598,5 +384,116 @@
   text-transform: uppercase;
   letter-spacing: .04em;
 }
-/* .stat-icon wordt niet langer gerenderd – class mag bestaan maar is verborgen */
 .stat-icon { display: none; }
+
+/* ─────────────────────────────────────────────────────────────────
+   BUTTONS
+   ───────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .52rem 1.1rem;
+  border-radius: 9px;
+  font-size: .845rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background .18s, border-color .18s, color .18s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn-primary        { background: #01696f; color: #ffffff; }
+.btn-primary:hover  { background: #015b61; }
+.btn-secondary      { background: #ffffff; color: #0d0f14; border-color: #e5e4e0; }
+.btn-secondary:hover{ background: #f5f4f1; border-color: #ccc; }
+.btn-danger         { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+.btn-danger:hover   { background: #fee2e2; }
+.btn-sm             { padding: .35rem .75rem; font-size: .78rem; border-radius: 7px; }
+.btn-primary-sm     { background: #01696f; color: #ffffff; padding: .38rem .85rem; font-size: .8rem; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; }
+.btn-primary-sm:hover { background: #015b61; }
+
+/* ─────────────────────────────────────────────────────────────────
+   ALERTS
+   ───────────────────────────────────────────────────────────────── */
+.alert {
+  padding: .8rem 1.1rem;
+  border-radius: 10px;
+  font-size: .875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  margin-bottom: 1rem;
+}
+.alert-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.alert-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.alert-info    { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+
+/* ─────────────────────────────────────────────────────────────────
+   BADGE / CHIP
+   ───────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .7rem;
+  font-weight: 700;
+  padding: .18rem .55rem;
+  border-radius: 99px;
+}
+.badge-green  { background: #dcfce7; color: #166534; }
+.badge-blue   { background: #dbeafe; color: #1e40af; }
+.badge-yellow { background: #fef9c3; color: #854d0e; }
+.badge-gray   { background: #f1f5f9; color: #64748b; }
+.badge-red    { background: #fef2f2; color: #991b1b; }
+
+/* ─────────────────────────────────────────────────────────────────
+   SPEC JA/NEE
+   ───────────────────────────────────────────────────────────────── */
+.spec-ja  { color: #01696f; font-weight: 700; }
+.spec-nee { color: #d1d5db; font-weight: 700; }
+
+/* ─────────────────────────────────────────────────────────────────
+   RESPONSIVE – MOBIEL
+   ───────────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .adm-header-actions .adm-action-label { display: none; }
+  .adm-account-name { display: none; }
+  .form-row-2,
+  .form-row-3 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .adm-hamburger { display: flex; }
+  .adm-header-actions { display: none; }
+  .adm-header-inner { padding: 0 1rem; }
+
+  .adm-nav {
+    display: none;
+    position: fixed;
+    top: var(--adm-h);
+    left: 0; right: 0;
+    background: #ffffff;
+    border-bottom: 1px solid var(--adm-border);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .1);
+    flex-direction: column;
+    align-items: stretch;
+    gap: .1rem;
+    padding: .75rem;
+    overflow-y: auto;
+    max-height: calc(100vh - var(--adm-h));
+    z-index: 999;
+  }
+  .adm-nav.is-open { display: flex; }
+
+  .adm-nav-link {
+    padding: .65rem .85rem;
+    font-size: .875rem;
+  }
+
+  .admin-content {
+    padding: 1.25rem 1rem;
+  }
+}
