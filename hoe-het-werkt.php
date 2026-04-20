@@ -26,54 +26,54 @@ include __DIR__ . '/includes/header.php';
     <h2 class="section-title">In drie stappen geholpen</h2>
     <p class="section-lead">Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.</p>
 
-    <div class="htw-steps">
+    <div class="htw-stappen">
 
-      <div class="htw-step">
-        <div class="htw-step-left">
-          <div class="htw-step-nr">01</div>
-          <div class="htw-step-line"></div>
+      <div class="htw-stap">
+        <div class="htw-stap-badge">
+          <span class="htw-stap-emoji">&#128221;</span>
+          <span class="htw-stap-nr">01</span>
         </div>
-        <div class="htw-step-right">
-          <div class="htw-step-icon">&#128221;</div>
+        <div class="htw-stap-lijn" aria-hidden="true"></div>
+        <div class="htw-stap-body">
           <h3>Formulier invullen</h3>
-          <p>Vul het korte adviesformulier in met het merk, het modelnummer en een omschrijving van het probleem. Dit kost minder dan twee minuten. U hoeft geen technische kennis te hebben — een simpele beschrijving volstaat.</p>
-          <ul class="htw-list">
-            <li>&#10003; Merk en modelnummer (staat achter op de tv)</li>
-            <li>&#10003; Korte omschrijving van het defect</li>
-            <li>&#10003; Uw e-mailadres voor het advies</li>
+          <p>Vul het korte adviesformulier in met het merk, het modelnummer en een omschrijving van het probleem. Dit kost minder dan twee minuten — geen technische kennis vereist.</p>
+          <ul class="htw-checklist">
+            <li><span class="htw-vink">&#10003;</span> Merk en modelnummer (staat achter op de tv)</li>
+            <li><span class="htw-vink">&#10003;</span> Korte omschrijving van het defect</li>
+            <li><span class="htw-vink">&#10003;</span> Uw e-mailadres voor het advies</li>
           </ul>
         </div>
       </div>
 
-      <div class="htw-step">
-        <div class="htw-step-left">
-          <div class="htw-step-nr">02</div>
-          <div class="htw-step-line"></div>
+      <div class="htw-stap">
+        <div class="htw-stap-badge">
+          <span class="htw-stap-emoji">&#128269;</span>
+          <span class="htw-stap-nr">02</span>
         </div>
-        <div class="htw-step-right">
-          <div class="htw-step-icon">&#128269;</div>
+        <div class="htw-stap-lijn" aria-hidden="true"></div>
+        <div class="htw-stap-body">
           <h3>Wij analyseren uw situatie</h3>
-          <p>Een specialist bekijkt uw aanvraag en toetst deze aan de garantie- en coulanceregelingen van de fabrikant, de huidige reparatiemogelijkheden en de waarde van het toestel. Zo krijgt u een advies dat past bij uw specifieke situatie.</p>
-          <ul class="htw-list">
-            <li>&#10003; Garantie- en coulancecheck</li>
-            <li>&#10003; Reparatiemogelijkheden in kaart</li>
-            <li>&#10003; Eerlijk advies — ook als reparatie niet loont</li>
+          <p>Een specialist bekijkt uw aanvraag en toetst aan de garantie- en coulanceregelingen van de fabrikant, de reparatiemogelijkheden en de waarde van het toestel. Advies op maat, niet van een script.</p>
+          <ul class="htw-checklist">
+            <li><span class="htw-vink">&#10003;</span> Garantie- en coulancecheck</li>
+            <li><span class="htw-vink">&#10003;</span> Reparatiemogelijkheden in kaart</li>
+            <li><span class="htw-vink">&#10003;</span> Eerlijk advies — ook als reparatie niet loont</li>
           </ul>
         </div>
       </div>
 
-      <div class="htw-step htw-step-last">
-        <div class="htw-step-left">
-          <div class="htw-step-nr">03</div>
+      <div class="htw-stap htw-stap-last">
+        <div class="htw-stap-badge">
+          <span class="htw-stap-emoji">&#128233;</span>
+          <span class="htw-stap-nr">03</span>
         </div>
-        <div class="htw-step-right">
-          <div class="htw-step-icon">&#128233;</div>
+        <div class="htw-stap-body">
           <h3>Persoonlijk advies binnen 24 uur</h3>
-          <p>U ontvangt een helder en persoonlijk advies per e-mail met concrete vervolgstappen. Of dat nu garantie aanspreken, een coulanceregeling, reparatie aan huis of een taxatierapport is — wij wijzen u de beste weg.</p>
-          <ul class="htw-list">
-            <li>&#10003; Reactie binnen één werkdag</li>
-            <li>&#10003; Duidelijke vervolgstappen</li>
-            <li>&#10003; Volledig gratis en vrijblijvend</li>
+          <p>U ontvangt een helder persoonlijk advies per e-mail met concrete vervolgstappen — garantie, coulance, reparatie of taxatie. Wij wijzen u de beste weg.</p>
+          <ul class="htw-checklist">
+            <li><span class="htw-vink">&#10003;</span> Reactie binnen één werkdag</li>
+            <li><span class="htw-vink">&#10003;</span> Duidelijke vervolgstappen</li>
+            <li><span class="htw-vink">&#10003;</span> Volledig gratis en vrijblijvend</li>
           </ul>
         </div>
       </div>
@@ -81,6 +81,99 @@ include __DIR__ . '/includes/header.php';
     </div>
   </div>
 </div>
+
+<style>
+/* ── In drie stappen geholpen ─────────────────────────────────── */
+.htw-stappen {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 780px;
+}
+.htw-stap {
+  display: grid;
+  grid-template-columns: 72px 2px 1fr;
+  gap: 0 2rem;
+  padding-bottom: 2.75rem;
+}
+.htw-stap-last {
+  padding-bottom: 0;
+  grid-template-columns: 72px 1fr;
+}
+.htw-stap-badge {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: var(--accent-light, #e8f4f1);
+  border: 2px solid #b2ddd4;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.htw-stap:hover .htw-stap-badge {
+  transform: scale(1.06);
+  box-shadow: 0 8px 24px rgba(40,120,100,.15);
+}
+.htw-stap-emoji {
+  font-size: 1.55rem; line-height: 1;
+}
+.htw-stap-nr {
+  position: absolute;
+  top: -6px; right: -6px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--accent, #287864);
+  color: #fff;
+  font-size: .62rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff;
+  letter-spacing: -.01em;
+}
+.htw-stap-lijn {
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent, #287864) 0%, var(--border, #e5e4e0) 100%);
+  border-radius: 2px;
+  margin: 0 auto;
+  opacity: .4;
+}
+.htw-stap-body {
+  padding-top: .75rem;
+}
+.htw-stap-body h3 {
+  font-size: 1.15rem; font-weight: 800;
+  color: var(--ink, #0d0f14);
+  margin-bottom: .5rem;
+  letter-spacing: -.02em;
+}
+.htw-stap-body > p {
+  font-size: .9rem; color: var(--muted, #6b7280);
+  line-height: 1.7; margin: 0 0 1rem;
+  max-width: 56ch;
+}
+.htw-checklist {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: .45rem;
+}
+.htw-checklist li {
+  display: flex; align-items: flex-start; gap: .6rem;
+  font-size: .875rem; color: var(--ink, #0d0f14); font-weight: 500;
+}
+.htw-vink {
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent-light, #e8f4f1);
+  color: var(--accent, #287864);
+  font-size: .7rem; font-weight: 700;
+  flex-shrink: 0; margin-top: .05rem;
+}
+@media (max-width: 600px) {
+  .htw-stap { grid-template-columns: 56px 2px 1fr; gap: 0 1.25rem; }
+  .htw-stap-last { grid-template-columns: 56px 1fr; }
+  .htw-stap-badge { width: 52px; height: 52px; }
+  .htw-stap-emoji { font-size: 1.3rem; }
+  .htw-stap-body h3 { font-size: 1rem; }
+}
+</style>
 
 <!-- Welke opties zijn er -->
 <div class="section-light">

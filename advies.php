@@ -26,17 +26,23 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <!-- Zo werkt het – Stap-wizard component -->
-<div class="wizard-section">
-  <div class="section" style="padding-top:4.5rem;padding-bottom:4.5rem;">
-    <div style="text-align:center;margin-bottom:2.75rem;">
-      <h2 class="section-title">Zo werkt het</h2>
-      <p class="section-lead" style="max-width:52ch;margin:.5rem auto 0;">
+<div style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 5rem 0;">
+  <div class="section" style="padding-top:0;padding-bottom:0;">
+    <div style="text-align:center;margin-bottom:3rem;">
+      <div style="display:inline-flex;align-items:center;gap:.5rem;background:var(--accent-light);border:1px solid #b2ddd4;border-radius:999px;padding:.3rem 1rem;font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:1rem;">
+        &#128274; Gratis &amp; vrijblijvend
+      </div>
+      <h2 class="section-title" style="margin-bottom:.75rem;">Zo werkt het</h2>
+      <p style="font-size:1rem;color:var(--muted);max-width:48ch;margin:0 auto;line-height:1.75;">
         Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.
       </p>
     </div>
     <?php include __DIR__ . '/includes/stap-wizard.php'; ?>
-    <div style="text-align:center;margin-top:2.5rem;">
-      <a href="#advies" class="btn-primary">Advies aanvragen &rarr;</a>
+    <div style="text-align:center;margin-top:3rem;">
+      <a href="#advies" class="btn-primary">
+        Gratis advies aanvragen
+        <span class="btn-primary-arrow">&darr;</span>
+      </a>
     </div>
   </div>
 </div>
@@ -87,27 +93,46 @@ include __DIR__ . '/includes/header.php';
         <?php endif; ?>
 
         <!-- Voortgangsbalk -->
-        <div class="stap-progress">
+        <div class="stap-progress" role="progressbar" aria-label="Stappenplan">
           <div class="stap-step actief huidig" data-stap="1">
-            <div class="stap-dot">1</div>
+            <div class="stap-dot">
+              <span class="stap-dot-nr">1</span>
+              <svg class="stap-dot-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 6,11 12,3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
             <div class="stap-step-label">Situatie</div>
           </div>
           <div class="stap-lijn actief"></div>
           <div class="stap-step" data-stap="2">
-            <div class="stap-dot">2</div>
+            <div class="stap-dot">
+              <span class="stap-dot-nr">2</span>
+              <svg class="stap-dot-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 6,11 12,3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
             <div class="stap-step-label">TV&nbsp;gegevens</div>
           </div>
           <div class="stap-lijn"></div>
           <div class="stap-step" data-stap="3">
-            <div class="stap-dot">3</div>
+            <div class="stap-dot">
+              <span class="stap-dot-nr">3</span>
+              <svg class="stap-dot-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 6,11 12,3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
             <div class="stap-step-label">Defect</div>
           </div>
           <div class="stap-lijn"></div>
           <div class="stap-step" data-stap="4">
-            <div class="stap-dot">4</div>
+            <div class="stap-dot">
+              <span class="stap-dot-nr">4</span>
+              <svg class="stap-dot-check" viewBox="0 0 14 14" fill="none"><polyline points="2,7 6,11 12,3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
             <div class="stap-step-label">Contact</div>
           </div>
         </div>
+        <style>
+        .stap-dot { position: relative; }
+        .stap-dot-nr  { display: block; }
+        .stap-dot-check { display: none; width: 14px; height: 14px; }
+        .stap-step.actief:not(.huidig) .stap-dot-nr  { display: none; }
+        .stap-step.actief:not(.huidig) .stap-dot-check { display: block; }
+        </style>
 
         <form action="<?= BASE_URL ?>/api/send-advies.php" method="POST" id="advies-form">
           <input type="hidden" name="csrf_token"         value="<?= csrf() ?>" />

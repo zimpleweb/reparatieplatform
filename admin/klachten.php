@@ -13,9 +13,14 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='add') {
     $msg = 'Klacht toegevoegd.';
     $model_id = (int)$_POST['tv_model_id'];
 }
-if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
-    db()->prepare('DELETE FROM klachten WHERE id=?')->execute([$_GET['delete']]);
-    $msg = 'Klacht verwijderd.';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
+    if (verifyCsrf($_POST['csrf'] ?? '')) {
+        $deleteId = (int)($_POST['id'] ?? 0);
+        if ($deleteId) {
+            db()->prepare('DELETE FROM klachten WHERE id=?')->execute([$deleteId]);
+            $msg = 'Klacht verwijderd.';
+        }
+    }
 }
 
 $modellen = db()->query('SELECT id,merk,modelnummer FROM tv_modellen WHERE actief=1 ORDER BY merk,modelnummer')->fetchAll();
@@ -48,6 +53,9 @@ $klachten = $klachten->fetchAll();
     <a href="<?= BASE_URL ?>/admin/meldingen.php"><span class="icon">&#128276;</span> Meldingen</a>
     <a href="<?= BASE_URL ?>/admin/modellen.php"><span class="icon">&#128250;</span> TV Modellen</a>
     <a href="<?= BASE_URL ?>/admin/klachten.php" class="active"><span class="icon">&#9888;</span> Klachten</a>
+    <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;</span> Advies instellingen</a>
+    <a href="<?= BASE_URL ?>/admin/mailtemplates.php"><span class="icon">&#128140;</span> Mailtemplates</a>
+    <a href="<?= BASE_URL ?>/admin/admins.php"><span class="icon">&#128100;</span> Admin accounts</a>
     <a href="<?= BASE_URL ?>/" target="_blank"><span class="icon">&#127760;</span> Website bekijken</a>
   </div>
   <div class="admin-content">
@@ -109,9 +117,12 @@ $klachten = $klachten->fetchAll();
             </span>
           </td>
           <td>
-            <a href="?delete=<?= $k['id'] ?>&model_id=<?= $k['tv_model_id'] ?>"
-               class="btn btn-sm btn-danger"
-               onclick="return confirm('Klacht verwijderen?')">Verwijder</a>
+            <form method="POST" style="margin:0;" onsubmit="return confirm('Klacht verwijderen?')">
+              <input type="hidden" name="csrf"   value="<?= csrf() ?>">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="id"     value="<?= (int)$k['id'] ?>">
+              <button type="submit" class="btn btn-sm btn-danger">Verwijder</button>
+            </form>
           </td>
         </tr>
         <?php endforeach; ?>
