@@ -1,12 +1,19 @@
 <?php
 session_start();
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 requireAdmin();
 
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    verifyCsrf($_POST['csrf'] ?? '');
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        http_response_code(403);
+        exit('Ongeldig beveiligingstoken.');
+    }
     $action = $_POST['action'] ?? '';
     if ($action === 'add') {
         $tv_model_id  = (int)($_POST['tv_model_id'] ?? 0);
