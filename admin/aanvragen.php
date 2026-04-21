@@ -16,16 +16,40 @@ $filterRoute  = trim($_GET['route']  ?? '');
 $filterZoek   = trim($_GET['zoek']   ?? '');
 
 $statusLabels = [
-    'inzending'    => ['tekst' => 'Ontvangen',          'badge' => 'badge-blue'],
-    'doorgestuurd' => ['tekst' => 'Aanvulling nodig',   'badge' => 'badge-orange'],
-    'aanvraag'     => ['tekst' => 'Aanvraag ontvangen', 'badge' => 'badge-green'],
-    'coulance'     => ['tekst' => 'Coulance',           'badge' => 'badge-yellow'],
-    'recycling'    => ['tekst' => 'Recycling',          'badge' => 'badge-purple'],
-    'behandeld'    => ['tekst' => 'Behandeld',          'badge' => 'badge-green'],
-    'archief'      => ['tekst' => 'Archief',            'badge' => 'badge-gray'],
+    // ── Initieel ──────────────────────────────────────────────────────────
+    'inzending'            => ['tekst' => 'Ontvangen',             'badge' => 'badge-blue'],
+    // ── Reparatie ─────────────────────────────────────────────────────────
+    'reparatie_afwachting' => ['tekst' => 'Reparatie afwachting',  'badge' => 'badge-yellow'],
+    'reparatie_ingevuld'   => ['tekst' => 'Reparatie ingevuld',    'badge' => 'badge-green'],
+    // ── Taxatie ───────────────────────────────────────────────────────────
+    'taxatie_afwachting'   => ['tekst' => 'Taxatie afwachting',    'badge' => 'badge-yellow'],
+    'taxatie_ingevuld'     => ['tekst' => 'Taxatie ingevuld',      'badge' => 'badge-blue'],
+    // ── Garantie ──────────────────────────────────────────────────────────
+    'garantie_afwachting'  => ['tekst' => 'Garantie afwachting',   'badge' => 'badge-yellow'],
+    'garantie_ingevuld'    => ['tekst' => 'Garantie ingevuld',     'badge' => 'badge-purple'],
+    // ── Coulance ──────────────────────────────────────────────────────────
+    'coulance_afwachting'  => ['tekst' => 'Coulance afwachting',   'badge' => 'badge-yellow'],
+    'coulance_ingevuld'    => ['tekst' => 'Coulance ingevuld',     'badge' => 'badge-orange'],
+    // ── Recycling ─────────────────────────────────────────────────────────
+    'recycling_afwachting' => ['tekst' => 'Recycling afwachting',  'badge' => 'badge-yellow'],
+    'recycling_ingevuld'   => ['tekst' => 'Recycling ingevuld',    'badge' => 'badge-gray'],
+    // ── Eindstatus ────────────────────────────────────────────────────────
+    'afgewezen'            => ['tekst' => 'Afgewezen',             'badge' => 'badge-red'],
+    // ── Legacy (backwards-compatibel) ─────────────────────────────────────
+    'doorgestuurd'         => ['tekst' => 'Aanvulling nodig',      'badge' => 'badge-orange'],
+    'aanvraag'             => ['tekst' => 'Aanvraag ontvangen',    'badge' => 'badge-green'],
+    'coulance'             => ['tekst' => 'Coulance',              'badge' => 'badge-yellow'],
+    'recycling'            => ['tekst' => 'Recycling',             'badge' => 'badge-purple'],
+    'behandeld'            => ['tekst' => 'Behandeld',             'badge' => 'badge-green'],
+    'archief'              => ['tekst' => 'Archief',               'badge' => 'badge-gray'],
 ];
 
-$statusDefinitief = ['doorgestuurd', 'coulance', 'recycling', 'behandeld', 'archief'];
+$statusDefinitief = [
+    'afgewezen',
+    'reparatie_ingevuld', 'taxatie_ingevuld', 'garantie_ingevuld',
+    'coulance_ingevuld',  'recycling_ingevuld',
+    'behandeld', 'archief',
+];
 
 $aanvraagTypes = [
     'reparatie' => ['label' => 'Reparatie',  'kleur' => '#16a34a', 'tekst' => '#fff'],
