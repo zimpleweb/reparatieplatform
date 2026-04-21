@@ -835,6 +835,103 @@
 }
 .bericht-verstuur-btn:active { transform: scale(.93); }
 
+/* ── Zijbalk: aanvraagdetails + activiteiten ─────────────────── */
+.portal-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.portal-detail-card,
+.portal-log-card {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.portal-detail-card h4,
+.portal-log-card h4 {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #287864;
+  margin: 0;
+  padding: .9rem 1.25rem .75rem;
+  border-bottom: 1.5px solid #e8f4f1;
+  background: #fafdf9;
+}
+
+/* Definition list binnen detail-card */
+.portal-dl {
+  margin: 0;
+  padding: .25rem 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  row-gap: 0;
+}
+.portal-dl dt {
+  font-size: .78rem;
+  color: var(--muted);
+  padding: .55rem 1.25rem .55rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.portal-dl dd {
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  padding: .55rem 1.25rem .55rem .75rem;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: right;
+  word-break: break-word;
+}
+.portal-dl dt:last-of-type,
+.portal-dl dd:last-of-type {
+  border-bottom: none;
+}
+
+/* Activiteitenlijst */
+.portal-log-list {
+  margin: 0;
+  padding: .35rem 0;
+  list-style: none;
+}
+.portal-log-item {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  padding: .65rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  position: relative;
+}
+.portal-log-item:last-child { border-bottom: none; }
+.portal-log-item::before {
+  content: "";
+  position: absolute;
+  left: .55rem;
+  top: .95rem;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #287864;
+  opacity: .5;
+}
+.portal-log-item { padding-left: 1.6rem; }
+.portal-log-date {
+  font-size: .7rem;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+.portal-log-msg {
+  font-size: .835rem;
+  color: #374151;
+  line-height: 1.45;
+}
+
 /* ── Responsief ──────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .portal-login-card        { padding: 2rem 1.25rem; }
