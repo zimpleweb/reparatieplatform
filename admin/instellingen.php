@@ -4,14 +4,15 @@
  * Sitebrede instellingen — reCAPTCHA v3, SMTP (Brevo) en overige opties.
  */
 session_start();
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 // Toegangscontrole
-if (empty($_SESSION['admin_id'])) {
-    header('Location: ' . BASE_URL . '/admin/login.php');
-    exit;
-}
+requireAdmin();
 
 $adminActivePage = 'instellingen';
 

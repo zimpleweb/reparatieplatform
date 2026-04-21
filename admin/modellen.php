@@ -1,5 +1,9 @@
 <?php
 session_start();
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/advies_regels.php';
@@ -74,21 +78,27 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='edit') {
     $msg = 'Model &ldquo;'.h($_POST['modelnummer'] ?? '').'&rdquo; bijgewerkt.';
 }
 
-// ── Verwijderen ──────────────────────────────────────────
-if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
-    db()->prepare('UPDATE tv_modellen SET actief=0 WHERE id=?')->execute([$_GET['delete']]);
+// ── Verwijderen (POST + CSRF vereist) ────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        http_response_code(403); exit('Ongeldig beveiligingstoken.');
+    }
+    db()->prepare('UPDATE tv_modellen SET actief=0 WHERE id=?')->execute([(int)($_POST['id'] ?? 0)]);
     $msg = 'Model verwijderd.';
 }
 
-// ── Snel toggle repareerbaar/taxatie ──────────────────────
-if (isset($_GET['toggle']) && is_numeric($_GET['toggle']) && isset($_GET['veld'])) {
-    $veld = in_array($_GET['veld'], ['repareerbaar','taxatie']) ? $_GET['veld'] : null;
+// ── Snel toggle repareerbaar/taxatie (POST + CSRF vereist) ──
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggle') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        http_response_code(403); exit('Ongeldig beveiligingstoken.');
+    }
+    $veld = in_array($_POST['veld'] ?? '', ['repareerbaar','taxatie']) ? $_POST['veld'] : null;
     if ($veld) {
         $row = db()->prepare('SELECT '.$veld.' FROM tv_modellen WHERE id=? AND actief=1');
-        $row->execute([(int)$_GET['toggle']]);
+        $row->execute([(int)($_POST['id'] ?? 0)]);
         $huidig = (int)$row->fetchColumn();
         db()->prepare('UPDATE tv_modellen SET '.$veld.'=? WHERE id=?')
-            ->execute([$huidig ? 0 : 1, (int)$_GET['toggle']]);
+            ->execute([$huidig ? 0 : 1, (int)($_POST['id'] ?? 0)]);
     }
     header('Location: '.$_SERVER['PHP_SELF'].'?updated=1');
     exit;
@@ -514,14 +524,15 @@ require_once __DIR__ . '/includes/admin-header.php';
 
 <!-- ── Alle modellen als JSON voor de lazy loader ── -->
 <script id="modellen-data" type="application/json">
-<?= json_encode(array_values($modellenAll), JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>
+<?= json_encode(array_values($modellenAll), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>
 </script>
 
 <script>
 // ── Merk-defaults ──────────────────────────────────────
-const repMerken = <?= json_encode(array_map('mb_strtolower', $repareerbareMerken)) ?>;
-const taxMerken = <?= json_encode(array_map('mb_strtolower', $taxatieMerken)) ?>;
-const BASE_URL  = '<?= BASE_URL ?>';
+const repMerken = <?= json_encode(array_map('mb_strtolower', $repareerbareMerken), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+const taxMerken = <?= json_encode(array_map('mb_strtolower', $taxatieMerken), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+const BASE_URL   = <?= json_encode(BASE_URL, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+const CSRF_TOKEN = <?= json_encode(csrf(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
 const PAGE_SIZE = <?= $PAGE_SIZE ?>;
 
 function merkDefault(lijst, merk) {
@@ -579,26 +590,38 @@ function laadBatch() {
         ${m.serie ? `<br><span style="font-size:.78rem;color:#9ca3af;">${escHtml(m.serie)}</span>` : ''}
       </td>
       <td>
-        <a href="?toggle=${m.id}&veld=repareerbaar"
-           class="toggle-pill ${repOn ? 'toggle-on' : 'toggle-off'}"
-           title="Klik om te wisselen">
-          ${repOn ? '&#10003; Ja' : '&#10007; Nee'}
-        </a>
+        <form method="POST" style="display:inline;">
+          <input type="hidden" name="action" value="toggle">
+          <input type="hidden" name="csrf"   value="${escHtml(CSRF_TOKEN)}">
+          <input type="hidden" name="id"     value="${escHtml(String(m.id))}">
+          <input type="hidden" name="veld"   value="repareerbaar">
+          <button type="submit" class="toggle-pill ${repOn ? 'toggle-on' : 'toggle-off'}" title="Klik om te wisselen">
+            ${repOn ? '&#10003; Ja' : '&#10007; Nee'}
+          </button>
+        </form>
         ${uitzBadge('reparatie', repUitz)}
       </td>
       <td>
-        <a href="?toggle=${m.id}&veld=taxatie"
-           class="toggle-pill ${taxOn ? 'toggle-on' : 'toggle-off'}"
-           title="Klik om te wisselen">
-          ${taxOn ? '&#10003; Ja' : '&#10007; Nee'}
-        </a>
+        <form method="POST" style="display:inline;">
+          <input type="hidden" name="action" value="toggle">
+          <input type="hidden" name="csrf"   value="${escHtml(CSRF_TOKEN)}">
+          <input type="hidden" name="id"     value="${escHtml(String(m.id))}">
+          <input type="hidden" name="veld"   value="taxatie">
+          <button type="submit" class="toggle-pill ${taxOn ? 'toggle-on' : 'toggle-off'}" title="Klik om te wisselen">
+            ${taxOn ? '&#10003; Ja' : '&#10007; Nee'}
+          </button>
+        </form>
         ${uitzBadge('taxatie', taxUitz)}
       </td>
       <td style="display:flex;gap:.4rem;flex-wrap:wrap;">
-        <a href="?edit=${m.id}" class="btn btn-sm btn-secondary">&#9998;</a>
+        <a href="?edit=${escHtml(String(m.id))}" class="btn btn-sm btn-secondary">&#9998;</a>
         <a href="${BASE_URL}/tv/${escHtml(m.slug)}" target="_blank" class="btn btn-sm btn-secondary">&#128269;</a>
-        <a href="?delete=${m.id}" class="btn btn-sm btn-danger"
-           onclick="return confirm('Model ${escHtml(m.modelnummer)} verwijderen?')">&#128465;</a>
+        <form method="POST" style="display:inline;" onsubmit="return confirm('Model ${escHtml(m.modelnummer)} verwijderen?')">
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="csrf"   value="${escHtml(CSRF_TOKEN)}">
+          <input type="hidden" name="id"     value="${escHtml(String(m.id))}">
+          <button type="submit" class="btn btn-sm btn-danger">&#128465;</button>
+        </form>
       </td>
     `;
     tbody.appendChild(tr);
