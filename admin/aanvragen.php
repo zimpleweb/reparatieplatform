@@ -376,6 +376,24 @@ $adminActivePage = 'aanvragen';
     .type-select-wrap button  { margin-left:.4rem;padding:.45rem .85rem;background:var(--adm-ink);color:#fff;border:none;border-radius:7px;font-size:.82rem;font-weight:700;cursor:pointer; }
     .type-select-wrap button:hover { background:var(--adm-accent); }
 
+    /* ── Nieuw: advies-voorstel blok ── */
+    .advies-voorstel-blok { display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap;background:var(--adm-surface-2);border:1.5px solid var(--adm-border);border-radius:10px;padding:1rem 1.25rem; }
+    .advies-voorstel-type { font-size:.95rem;font-weight:800;color:var(--adm-ink);margin-bottom:.2rem; }
+    .advies-voorstel-info { font-size:.83rem;color:var(--adm-muted);line-height:1.55; }
+
+    /* ── Nieuw: keuze-knoppen (inzending route-selectie) ── */
+    .keuze-knoppen      { display:flex;gap:.5rem;flex-wrap:wrap; }
+    .btn-keuze          { padding:.55rem 1.1rem;border:1.5px solid transparent;border-radius:8px;font-size:.83rem;font-weight:700;cursor:pointer;transition:opacity .15s,transform .1s;white-space:nowrap; }
+    .btn-keuze:hover    { opacity:.85; }
+    .btn-keuze:active   { transform:scale(.97); }
+    .btn-keuze-doorgaan { background:#16a34a;color:#fff;padding:.6rem 1.4rem;font-size:.88rem; }
+    .btn-keuze-afwijzen { background:#dc2626;color:#fff; }
+    .btn-keuze-alt      { background:var(--adm-surface);color:var(--adm-text); }
+
+    /* ── Nieuw: tandwiel/instellingen knop in header ── */
+    .tandwiel-btn       { display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;border:1.5px solid var(--adm-border);background:var(--adm-surface);cursor:pointer;font-size:1rem;color:var(--adm-muted);transition:background .15s,border-color .15s; }
+    .tandwiel-btn:hover { background:var(--adm-bg);border-color:var(--adm-muted); }
+
     /* Casenummer kolom */
     .casenr-col a { font-size:.78rem;font-weight:700;color:#1d4ed8;letter-spacing:.03em;text-decoration:none; }
     .casenr-col a:hover { text-decoration:underline; }
@@ -414,18 +432,30 @@ $adminActivePage = 'aanvragen';
 
   <?php if ($detail): ?>
   <?php
-    $sl = $statusLabels[$detail['status']] ?? ['tekst' => $detail['status'], 'badge' => 'badge-gray'];
+    $sl           = $statusLabels[$detail['status']] ?? ['tekst' => $detail['status'], 'badge' => 'badge-gray'];
     $isDefinitief = in_array($detail['status'], $statusDefinitief);
-    $huidigType = $detail['aanvraag_type'] ?? $detail['advies_type'] ?? '';
+    $huidigType   = $detail['gekozen_advies'] ?? $detail['aanvraag_type'] ?? $detail['advies_type'] ?? '';
+    $routeAdvies  = $detail['geadviseerde_route'] ?? '';
+    $isInzending  = ($detail['status'] === 'inzending');
+    $backQs       = http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek]));
+    $routeLabels  = [
+      'reparatie' => 'Op basis van merk, model en klacht is reparatie aan huis de meest geschikte route.',
+      'taxatie'   => 'Er is sprake van externe schade; een taxatierapport is de aangewezen route voor de verzekeraar (€49).',
+      'garantie'  => 'De televisie valt waarschijnlijk nog binnen de wettelijke garantietermijn.',
+      'coulance'  => 'De garantie is verlopen, maar er is kans op een coulanceregeling bij de fabrikant of verkoper.',
+      'recycling' => 'Dit model staat als niet-repareerbaar in de database; verantwoorde recycling is de aangewezen route.',
+    ];
   ?>
 
   <div class="admin-card detail-card">
+
+    <!-- ── Header (altijd zichtbaar) ─────────────────────────────────────── -->
     <div class="detail-header">
       <div>
         <h2>Aanvraag #<?= (int)$detail['id'] ?></h2>
         <?php if (!empty($detail['casenummer'])): ?>
           <span class="detail-casenr">
-            <a href="?id=<?= (int)$detail['id'] ?>&<?= h(http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek]))) ?>">
+            <a href="?id=<?= (int)$detail['id'] ?><?= $backQs ? '&'.$backQs : '' ?>">
               <?= h($detail['casenummer']) ?>
             </a>
           </span>
@@ -433,10 +463,150 @@ $adminActivePage = 'aanvragen';
       </div>
       <div class="detail-header-right">
         <span class="badge <?= $sl['badge'] ?>"><?= h($sl['tekst']) ?></span>
-        <a href="?<?= h(http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek]))) ?>"
-           class="btn btn-sm btn-secondary">&larr; Terug naar lijst</a>
+        <!-- Tandwiel: handmatige advies-override (altijd beschikbaar) -->
+        <div class="optiemenu-wrap">
+          <button type="button" class="tandwiel-btn" onclick="toggleOptiemenu(this)" title="Instellingen" aria-label="Instellingen">&#9881;</button>
+          <div class="optiemenu-dropdown">
+            <div class="optiemenu-header">Advies handmatig wijzigen</div>
+            <?php foreach ($aanvraagTypes as $ts => $ti): ?>
+            <form method="POST" style="margin:0;">
+              <input type="hidden" name="csrf"          value="<?= csrf() ?>">
+              <input type="hidden" name="action"        value="set_type">
+              <input type="hidden" name="aanvraag_id"   value="<?= (int)$detail['id'] ?>">
+              <input type="hidden" name="aanvraag_type" value="<?= h($ts) ?>">
+              <button type="submit" class="optiemenu-item<?= $huidigType === $ts ? ' active-type' : '' ?>">
+                <span class="optiemenu-type-dot" style="background:<?= h($ti['kleur']) ?>;"></span>
+                <?= h($ti['label']) ?><?= $huidigType === $ts ? ' ✓' : '' ?>
+              </button>
+            </form>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <a href="?<?= h($backQs) ?>" class="btn btn-sm btn-secondary">&larr; Terug naar lijst</a>
       </div>
     </div>
+
+    <?php if ($isInzending): ?>
+
+    <!-- ══ INZENDING-WEERGAVE ══════════════════════════════════════════════ -->
+
+    <!-- Geadviseerd advies -->
+    <div class="detail-section">
+      <h4>Geadviseerd advies</h4>
+      <?php $rtInfo = $aanvraagTypes[$routeAdvies] ?? null; ?>
+      <?php if ($rtInfo): ?>
+      <div class="advies-voorstel-blok">
+        <span style="display:inline-flex;align-items:center;background:<?= h($rtInfo['kleur']) ?>;color:#fff;padding:.35rem .9rem;border-radius:8px;font-size:.83rem;font-weight:800;white-space:nowrap;flex-shrink:0;">
+          <?= h($rtInfo['label']) ?>
+        </span>
+        <div>
+          <div class="advies-voorstel-type"><?= h($rtInfo['label']) ?></div>
+          <div class="advies-voorstel-info"><?= h($routeLabels[$routeAdvies] ?? '') ?></div>
+        </div>
+      </div>
+      <?php else: ?>
+      <p style="font-size:.85rem;color:var(--adm-faint);">Geen advies bepaald via het stappenplan.</p>
+      <?php endif; ?>
+    </div>
+
+    <!-- Klantgegevens -->
+    <div class="detail-section">
+      <h4>Klantgegevens</h4>
+      <div class="specs-grid">
+        <span class="lbl">E-mail</span>            <span class="val"><?= h($detail['email']    ?? '—') ?></span>
+        <span class="lbl">Naam</span>              <span class="val"><?= h($detail['naam']     ?? '—') ?></span>
+        <span class="lbl">Telefoon</span>          <span class="val"><?= h($detail['telefoon'] ?? '—') ?></span>
+        <span class="lbl">Adres</span>             <span class="val"><?= h($detail['adres']    ?? '—') ?></span>
+        <span class="lbl">Postcode / Plaats</span> <span class="val"><?= h(trim(($detail['postcode']??'').' '.($detail['plaats']??$detail['woonplaats']??''))) ?: '—' ?></span>
+      </div>
+    </div>
+
+    <!-- TV-gegevens -->
+    <div class="detail-section">
+      <h4>TV-gegevens</h4>
+      <div class="specs-grid">
+        <span class="lbl">Merk</span>              <span class="val"><?= h($detail['merk']          ?? '—') ?></span>
+        <span class="lbl">Modelnummer</span>        <span class="val"><?= h($detail['modelnummer']   ?? '—') ?></span>
+        <span class="lbl">Serienummer</span>        <span class="val"><?= h($detail['serienummer']   ?? '—') ?></span>
+        <span class="lbl">Aankoopjaar</span>        <span class="val"><?= h($detail['aanschafjaar']  ?? $detail['aankoopjaar'] ?? '—') ?></span>
+        <span class="lbl">Aanschafwaarde</span>     <span class="val"><?= h($detail['aanschafwaarde'] ?? '—') ?></span>
+        <span class="lbl">Situatie</span>           <span class="val"><?= h($detail['situatie']      ?? '—') ?></span>
+        <span class="lbl">Klacht</span>             <span class="val"><?= h($detail['klacht_type']   ?? '—') ?></span>
+        <span class="lbl">Omschrijving</span>       <span class="val"><?= h($detail['omschrijving']  ?? '—') ?></span>
+        <span class="lbl">Geadviseerde route</span> <span class="val">
+          <?= h($detail['geadviseerde_route'] ?? '—') ?>
+          <?= $detail['coulance_kans'] ? ' <span style="color:var(--adm-muted);font-size:.8rem;">(' . (int)$detail['coulance_kans'] . '% kans)</span>' : '' ?>
+        </span>
+      </div>
+    </div>
+
+    <!-- Foto's -->
+    <?php if (!empty($detail['foto_defect']) || !empty($detail['foto_label']) || !empty($detail['foto_bon'])): ?>
+    <div class="detail-section">
+      <h4>Foto's</h4>
+      <div class="fotos-wrap">
+        <?php foreach (['foto_defect' => 'Defect', 'foto_label' => 'Label', 'foto_bon' => 'Aankoopbon'] as $fk => $fl): ?>
+          <?php if (!empty($detail[$fk])): ?>
+          <div class="foto-item">
+            <a href="<?= BASE_URL ?>/<?= h($detail[$fk]) ?>" target="_blank">
+              <img src="<?= BASE_URL ?>/<?= h($detail[$fk]) ?>" alt="<?= $fl ?>" class="foto-img" loading="lazy">
+            </a>
+            <div class="foto-lbl"><?= $fl ?></div>
+          </div>
+          <?php endif; ?>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Keuze-knoppen -->
+    <div class="detail-section">
+      <h4>Kies een route</h4>
+      <p style="font-size:.85rem;color:var(--adm-muted);margin-bottom:.75rem;">
+        Ga door met het voorgestelde advies of kies een andere route. De inzender ziet daarna het bijbehorende formulier.
+      </p>
+      <div class="keuze-knoppen">
+
+        <?php if ($routeAdvies && isset($aanvraagTypes[$routeAdvies])): ?>
+        <form method="POST" style="margin:0;">
+          <input type="hidden" name="csrf"           value="<?= csrf() ?>">
+          <input type="hidden" name="action"         value="kies_advies">
+          <input type="hidden" name="aanvraag_id"    value="<?= (int)$detail['id'] ?>">
+          <input type="hidden" name="gekozen_advies" value="<?= h($routeAdvies) ?>">
+          <button type="submit" class="btn-keuze btn-keuze-doorgaan">
+            &#10003; Doorgaan met <?= h($aanvraagTypes[$routeAdvies]['label']) ?>
+          </button>
+        </form>
+        <?php endif; ?>
+
+        <?php foreach ($aanvraagTypes as $typeSlug => $typeInfo): ?>
+          <?php if ($typeSlug === $routeAdvies) continue; ?>
+          <form method="POST" style="margin:0;">
+            <input type="hidden" name="csrf"           value="<?= csrf() ?>">
+            <input type="hidden" name="action"         value="kies_advies">
+            <input type="hidden" name="aanvraag_id"    value="<?= (int)$detail['id'] ?>">
+            <input type="hidden" name="gekozen_advies" value="<?= h($typeSlug) ?>">
+            <button type="submit" class="btn-keuze btn-keuze-alt"
+                    style="border-color:<?= h($typeInfo['kleur']) ?>;color:<?= h($typeInfo['kleur']) ?>;">
+              <?= h($typeInfo['label']) ?>
+            </button>
+          </form>
+        <?php endforeach; ?>
+
+        <form method="POST" style="margin:0;">
+          <input type="hidden" name="csrf"           value="<?= csrf() ?>">
+          <input type="hidden" name="action"         value="kies_advies">
+          <input type="hidden" name="aanvraag_id"    value="<?= (int)$detail['id'] ?>">
+          <input type="hidden" name="gekozen_advies" value="afwijzen">
+          <button type="submit" class="btn-keuze btn-keuze-afwijzen">&#10007; Afwijzen</button>
+        </form>
+
+      </div>
+    </div>
+
+    <?php else: ?>
+
+    <!-- ══ OVERIGE STATUSSEN: bestaande layout ════════════════════════════ -->
 
     <!-- Klantgegevens -->
     <div class="detail-section">
@@ -523,57 +693,10 @@ $adminActivePage = 'aanvragen';
             </div>
           </form>
 
-          <!-- Aanvraagtype toekennen (gekleurde buttons) -->
-          <div class="actie-separator"><span>Aanvraagtype</span></div>
-          <p class="actie-info">
-            Huidig type: <strong><?= $huidigType ? h($aanvraagTypes[$huidigType]['label'] ?? $huidigType) : '— niet ingesteld —' ?></strong>
-          </p>
-          <div class="aanvraagtype-buttons">
-            <?php foreach ($aanvraagTypes as $typeSlug => $typeInfo): ?>
-            <form method="POST" style="margin:0;">
-              <input type="hidden" name="csrf"          value="<?= csrf() ?>">
-              <input type="hidden" name="action"        value="set_type">
-              <input type="hidden" name="aanvraag_id"   value="<?= (int)$detail['id'] ?>">
-              <input type="hidden" name="aanvraag_type" value="<?= h($typeSlug) ?>">
-              <button type="submit"
-                class="btn-type btn-type-<?= h($typeSlug) ?><?= ($huidigType === $typeSlug) ? ' active-type' : '' ?>">
-                <?= h($typeInfo['label']) ?>
-              </button>
-            </form>
-            <?php endforeach; ?>
-          </div>
-
-          <?php if ($huidigType): ?>
-          <!-- Type wijzigen via selectmenu (detail) -->
-          <div class="actie-separator"><span>Type wijzigen via menu</span></div>
-          <form method="POST" style="display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;">
-            <input type="hidden" name="csrf"        value="<?= csrf() ?>">
-            <input type="hidden" name="action"      value="set_type">
-            <input type="hidden" name="aanvraag_id" value="<?= (int)$detail['id'] ?>">
-            <div class="type-select-wrap" style="display:contents;">
-              <select name="aanvraag_type">
-                <?php foreach ($aanvraagTypes as $ts => $ti): ?>
-                  <option value="<?= h($ts) ?>" <?= $huidigType === $ts ? 'selected' : '' ?>>
-                    <?= h($ti['label']) ?>
-                  </option>
-                <?php endforeach; ?>
-              </select>
-              <button type="submit">Wijzigen</button>
-            </div>
-          </form>
-          <?php endif; ?>
-
           <!-- Status wijzigen -->
           <div class="actie-separator"><span>Status wijzigen</span></div>
           <p class="actie-info">Huidige status: <strong><?= h($sl['tekst']) ?></strong></p>
           <div class="actie-knoppen">
-            <form method="POST" style="margin:0;">
-              <input type="hidden" name="csrf"         value="<?= csrf() ?>">
-              <input type="hidden" name="action"       value="status">
-              <input type="hidden" name="aanvraag_id"  value="<?= (int)$detail['id'] ?>">
-              <input type="hidden" name="nieuw_status" value="doorgestuurd">
-              <button type="submit" class="btn-actie btn-coulance">Aanvulling nodig</button>
-            </form>
             <form method="POST" style="margin:0;">
               <input type="hidden" name="csrf"         value="<?= csrf() ?>">
               <input type="hidden" name="action"       value="status">
@@ -593,6 +716,8 @@ $adminActivePage = 'aanvragen';
         </div><!-- /.bericht-sturen -->
       </div><!-- /.berichten-kolommen -->
     </div><!-- /.berichten-sectie -->
+
+    <?php endif; // einde $isInzending ?>
 
   </div><!-- /.detail-card -->
 
