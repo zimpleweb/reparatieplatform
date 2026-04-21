@@ -394,6 +394,21 @@ $adminActivePage = 'aanvragen';
     .tandwiel-btn       { display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;border:1.5px solid var(--adm-border);background:var(--adm-surface);cursor:pointer;font-size:1rem;color:var(--adm-muted);transition:background .15s,border-color .15s; }
     .tandwiel-btn:hover { background:var(--adm-bg);border-color:var(--adm-muted); }
 
+    /* ── Nieuw: formulier-placeholder (afwachting) ── */
+    .formulier-placeholder      { display:flex;align-items:flex-start;gap:1rem;background:#fefce8;border:1.5px solid #fde047;border-radius:10px;padding:1rem 1.25rem; }
+    .formulier-placeholder-icon { font-size:1.5rem;line-height:1;flex-shrink:0;margin-top:.1rem; }
+    .formulier-placeholder strong { display:block;font-size:.9rem;color:var(--adm-ink);margin-bottom:.25rem; }
+    .formulier-placeholder p    { font-size:.83rem;color:var(--adm-muted);margin:0;line-height:1.55; }
+
+    /* ── Nieuw: beoordeling 3-knoppen (ingevuld) ── */
+    .actie-3knoppen             { display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-start; }
+    .btn-beoordeling            { padding:.55rem 1.1rem;border:none;border-radius:8px;font-size:.83rem;font-weight:700;cursor:pointer;transition:opacity .15s;white-space:nowrap; }
+    .btn-beoordeling:hover      { opacity:.85; }
+    .btn-beoordeling-groen      { background:#16a34a;color:#fff; }
+    .btn-beoordeling-oranje     { background:#d97706;color:#fff; }
+    .btn-beoordeling-rood       { background:#dc2626;color:#fff; }
+    .wijzig-dropdown            { position:absolute;top:calc(100% + 6px);left:0;z-index:100;background:var(--adm-surface);border:1.5px solid var(--adm-border);border-radius:10px;box-shadow:var(--adm-shadow-md);padding:.75rem;min-width:220px; }
+
     /* Casenummer kolom */
     .casenr-col a { font-size:.78rem;font-weight:700;color:#1d4ed8;letter-spacing:.03em;text-decoration:none; }
     .casenr-col a:hover { text-decoration:underline; }
@@ -606,8 +621,146 @@ $adminActivePage = 'aanvragen';
 
     <?php else: ?>
 
-    <!-- ══ OVERIGE STATUSSEN: bestaande layout ════════════════════════════ -->
+    <!-- ══ OVERIGE STATUSSEN ═════════════════════════════════════════════════ -->
+    <?php
+      $afwachtingTypes = ['reparatie_afwachting','taxatie_afwachting','garantie_afwachting',
+                          'coulance_afwachting','recycling_afwachting'];
+      $ingevuldTypes   = ['reparatie_ingevuld','taxatie_ingevuld','garantie_ingevuld',
+                          'coulance_ingevuld','recycling_ingevuld'];
+      $isAfwachting = in_array($detail['status'], $afwachtingTypes);
+      $isIngevuld   = in_array($detail['status'], $ingevuldTypes);
+      $statusType   = $huidigType ?: str_replace(['_afwachting','_ingevuld'], '', $detail['status']);
+      $stInfo       = $aanvraagTypes[$statusType] ?? null;
+    ?>
 
+    <?php if ($isAfwachting || $isIngevuld): ?>
+
+    <!-- Gekozen route (stap 5 + 6) -->
+    <div class="detail-section">
+      <h4>Gekozen route</h4>
+      <?php if ($stInfo): ?>
+      <div class="advies-voorstel-blok">
+        <span style="display:inline-flex;align-items:center;background:<?= h($stInfo['kleur']) ?>;color:#fff;padding:.35rem .9rem;border-radius:8px;font-size:.83rem;font-weight:800;white-space:nowrap;flex-shrink:0;">
+          <?= h($stInfo['label']) ?>
+        </span>
+        <div>
+          <div class="advies-voorstel-type"><?= h($stInfo['label']) ?></div>
+          <div class="advies-voorstel-info"><?= h($routeLabels[$statusType] ?? '') ?></div>
+        </div>
+      </div>
+      <?php endif; ?>
+    </div>
+
+    <!-- Klantgegevens -->
+    <div class="detail-section">
+      <h4>Klantgegevens</h4>
+      <div class="specs-grid">
+        <span class="lbl">E-mail</span>            <span class="val"><?= h($detail['email']    ?? '—') ?></span>
+        <span class="lbl">Naam</span>              <span class="val"><?= h($detail['naam']     ?? '—') ?></span>
+        <span class="lbl">Telefoon</span>          <span class="val"><?= h($detail['telefoon'] ?? '—') ?></span>
+        <span class="lbl">Adres</span>             <span class="val"><?= h($detail['adres']    ?? '—') ?></span>
+        <span class="lbl">Postcode / Plaats</span> <span class="val"><?= h(trim(($detail['postcode']??'').' '.($detail['plaats']??$detail['woonplaats']??''))) ?: '—' ?></span>
+      </div>
+    </div>
+
+    <!-- TV-gegevens -->
+    <div class="detail-section">
+      <h4>TV-gegevens</h4>
+      <div class="specs-grid">
+        <span class="lbl">Merk</span>        <span class="val"><?= h($detail['merk']        ?? '—') ?></span>
+        <span class="lbl">Modelnummer</span>  <span class="val"><?= h($detail['modelnummer'] ?? '—') ?></span>
+        <span class="lbl">Serienummer</span>  <span class="val"><?= h($detail['serienummer'] ?? '—') ?></span>
+        <span class="lbl">Aankoopjaar</span>  <span class="val"><?= h($detail['aanschafjaar'] ?? $detail['aankoopjaar'] ?? '—') ?></span>
+        <span class="lbl">Klacht</span>       <span class="val"><?= h($detail['klacht_type'] ?? '—') ?></span>
+        <span class="lbl">Omschrijving</span> <span class="val"><?= h($detail['omschrijving'] ?? '—') ?></span>
+      </div>
+    </div>
+
+    <?php if ($isAfwachting): ?>
+    <!-- ── STAP 5: Wacht op formulier van klant ────────────────────────── -->
+    <div class="detail-section">
+      <div class="formulier-placeholder">
+        <div class="formulier-placeholder-icon">&#8987;</div>
+        <div>
+          <strong>Wacht op formulier van klant</strong>
+          <p>De inzender heeft het <?= $stInfo ? h($stInfo['label']) : 'vereiste' ?>-formulier nog niet ingevuld. Zodra de klant dit doet, wijzigt de status automatisch naar &ldquo;<?= $stInfo ? h($stInfo['label']) : '' ?> ingevuld&rdquo;.</p>
+        </div>
+      </div>
+    </div>
+
+    <?php elseif ($isIngevuld): ?>
+    <!-- ── STAP 6: Ingevuld formulier + beoordeling ─────────────────────── -->
+    <div class="detail-section">
+      <h4>Ingevuld formulier</h4>
+      <div class="specs-grid">
+        <?php if (!empty($detail['reden_schade'])): ?>
+        <span class="lbl">Reden schade</span>  <span class="val"><?= h($detail['reden_schade']) ?></span>
+        <?php endif; ?>
+        <?php if (!empty($detail['aankoopbedrag'])): ?>
+        <span class="lbl">Aankoopbedrag</span> <span class="val"><?= h($detail['aankoopbedrag']) ?></span>
+        <?php endif; ?>
+        <?php if (!empty($detail['aankoopdatum'])): ?>
+        <span class="lbl">Aankoopdatum</span>  <span class="val"><?= h($detail['aankoopdatum']) ?></span>
+        <?php endif; ?>
+        <?php if (isset($detail['heeft_bon']) && $detail['heeft_bon'] !== null): ?>
+        <span class="lbl">Aankoopbon</span>    <span class="val"><?= $detail['heeft_bon'] ? 'Ja' : 'Nee' ?></span>
+        <?php endif; ?>
+        <?php if (!empty($detail['naam_verzekeraar'])): ?>
+        <span class="lbl">Verzekeraar</span>   <span class="val"><?= h($detail['naam_verzekeraar']) ?></span>
+        <?php endif; ?>
+        <?php if (!empty($detail['polisnummer'])): ?>
+        <span class="lbl">Polisnummer</span>   <span class="val"><?= h($detail['polisnummer']) ?></span>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h4>Beoordeling</h4>
+      <div class="actie-3knoppen">
+        <form method="POST" style="margin:0;">
+          <input type="hidden" name="csrf"         value="<?= csrf() ?>">
+          <input type="hidden" name="action"       value="status">
+          <input type="hidden" name="aanvraag_id"  value="<?= (int)$detail['id'] ?>">
+          <input type="hidden" name="nieuw_status" value="behandeld">
+          <button type="submit" class="btn-beoordeling btn-beoordeling-groen">&#10003; Doorgaan</button>
+        </form>
+        <div style="position:relative;">
+          <button type="button" class="btn-beoordeling btn-beoordeling-oranje"
+                  onclick="var d=this.nextElementSibling;d.style.display=d.style.display==='block'?'none':'block'">
+            &#9998; Wijzigen
+          </button>
+          <div class="wijzig-dropdown" style="display:none;">
+            <form method="POST">
+              <input type="hidden" name="csrf"        value="<?= csrf() ?>">
+              <input type="hidden" name="action"      value="status">
+              <input type="hidden" name="aanvraag_id" value="<?= (int)$detail['id'] ?>">
+              <select name="nieuw_status" style="padding:.4rem .6rem;border:1.5px solid var(--adm-border);border-radius:7px;font-size:.83rem;margin-bottom:.4rem;width:100%;">
+                <?php
+                  $skipWijzig = array_merge($afwachtingTypes, ['inzending']);
+                  foreach ($statusLabels as $sv => $si):
+                    if (in_array($sv, $skipWijzig)) continue;
+                ?>
+                <option value="<?= h($sv) ?>" <?= $detail['status'] === $sv ? 'selected' : '' ?>><?= h($si['tekst']) ?></option>
+                <?php endforeach; ?>
+              </select>
+              <button type="submit" class="btn btn-primary btn-sm" style="width:100%;">Opslaan</button>
+            </form>
+          </div>
+        </div>
+        <form method="POST" style="margin:0;">
+          <input type="hidden" name="csrf"           value="<?= csrf() ?>">
+          <input type="hidden" name="action"         value="kies_advies">
+          <input type="hidden" name="aanvraag_id"    value="<?= (int)$detail['id'] ?>">
+          <input type="hidden" name="gekozen_advies" value="afwijzen">
+          <button type="submit" class="btn-beoordeling btn-beoordeling-rood">&#10007; Afwijzen</button>
+        </form>
+      </div>
+    </div>
+
+    <?php endif; // afwachting vs ingevuld ?>
+
+    <?php else: ?>
+    <!-- ── Legacy/eindstatussen (behandeld, archief, afgewezen, …) ────────── -->
     <!-- Klantgegevens -->
     <div class="detail-section">
       <h4>Klantgegevens</h4>
@@ -615,11 +768,10 @@ $adminActivePage = 'aanvragen';
         <span class="lbl">E-mail</span><span class="val"><?= h($detail['email'] ?? '—') ?></span>
         <span class="lbl">Naam</span><span class="val"><?= h($detail['naam'] ?? '—') ?></span>
         <span class="lbl">Telefoon</span><span class="val"><?= h($detail['telefoon'] ?? '—') ?></span>
-        <span class="lbl">Adres</span><span class="val"><?= h(trim(($detail['straat']??'').' '.($detail['huisnummer']??''))) ?: '—' ?></span>
+        <span class="lbl">Adres</span><span class="val"><?= h($detail['adres'] ?? '—') ?></span>
         <span class="lbl">Postcode / Plaats</span><span class="val"><?= h(trim(($detail['postcode']??'').' '.($detail['woonplaats']??''))) ?: '—' ?></span>
       </div>
     </div>
-
     <!-- TV-gegevens -->
     <div class="detail-section">
       <h4>TV-gegevens</h4>
@@ -628,35 +780,34 @@ $adminActivePage = 'aanvragen';
         <span class="lbl">Modelnummer</span><span class="val"><?= h($detail['modelnummer'] ?? '—') ?></span>
         <span class="lbl">Serienummer</span><span class="val"><?= h($detail['serienummer'] ?? '—') ?></span>
         <span class="lbl">Aankoopjaar</span><span class="val"><?= h($detail['aankoopjaar'] ?? '—') ?></span>
-        <span class="lbl">Defect</span><span class="val"><?= h($detail['defect_omschrijving'] ?? '—') ?></span>
         <span class="lbl">Route</span><span class="val"><?= h($detail['geadviseerde_route'] ?? $detail['advies_type'] ?? '—') ?></span>
       </div>
     </div>
-
-    <!-- Foto's -->
-    <?php if (!empty($detail['foto_defect']) || !empty($detail['foto_label']) || !empty($detail['foto_bon'])): ?>
+    <!-- Status wijzigen -->
     <div class="detail-section">
-      <h4>Foto's</h4>
-      <div class="fotos-wrap">
-        <?php foreach (['foto_defect' => "Defect", 'foto_label' => "Label", 'foto_bon' => "Aankoopbon"] as $fk => $fl): ?>
-          <?php if (!empty($detail[$fk])): ?>
-          <div class="foto-item">
-            <a href="<?= BASE_URL ?>/<?= h($detail[$fk]) ?>" target="_blank">
-              <img src="<?= BASE_URL ?>/<?= h($detail[$fk]) ?>" alt="<?= $fl ?>" class="foto-img" loading="lazy">
-            </a>
-            <div class="foto-lbl"><?= $fl ?></div>
-          </div>
-          <?php endif; ?>
-        <?php endforeach; ?>
+      <div class="actie-knoppen">
+        <form method="POST" style="margin:0;">
+          <input type="hidden" name="csrf"         value="<?= csrf() ?>">
+          <input type="hidden" name="action"       value="status">
+          <input type="hidden" name="aanvraag_id"  value="<?= (int)$detail['id'] ?>">
+          <input type="hidden" name="nieuw_status" value="behandeld">
+          <button type="submit" class="btn-actie btn-behandeld">Behandeld</button>
+        </form>
+        <form method="POST" style="margin:0;">
+          <input type="hidden" name="csrf"         value="<?= csrf() ?>">
+          <input type="hidden" name="action"       value="status">
+          <input type="hidden" name="aanvraag_id"  value="<?= (int)$detail['id'] ?>">
+          <input type="hidden" name="nieuw_status" value="archief">
+          <button type="submit" class="btn-actie btn-archief">Archiveren</button>
+        </form>
       </div>
     </div>
-    <?php endif; ?>
 
-    <!-- Berichten & acties -->
+    <?php endif; // afwachting/ingevuld/legacy ?>
+
+    <!-- ── STAP 7: Chat — alleen zichtbaar als status ≠ inzending ───────── -->
     <div class="detail-section" style="padding:0;border:none;">
       <div class="berichten-kolommen">
-
-        <!-- Links: activiteitenlog -->
         <div class="berichten-overzicht">
           <h4>Activiteitenlog</h4>
           <?php if (empty($detail['log'])): ?>
@@ -677,11 +828,7 @@ $adminActivePage = 'aanvragen';
           </div>
           <?php endif; ?>
         </div>
-
-        <!-- Rechts: acties -->
         <div class="bericht-sturen">
-
-          <!-- Bericht sturen -->
           <h4>Bericht sturen aan klant</h4>
           <form method="POST">
             <input type="hidden" name="csrf"        value="<?= csrf() ?>">
@@ -692,32 +839,11 @@ $adminActivePage = 'aanvragen';
               <button type="submit" class="btn btn-primary btn-sm">Verzenden</button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
 
-          <!-- Status wijzigen -->
-          <div class="actie-separator"><span>Status wijzigen</span></div>
-          <p class="actie-info">Huidige status: <strong><?= h($sl['tekst']) ?></strong></p>
-          <div class="actie-knoppen">
-            <form method="POST" style="margin:0;">
-              <input type="hidden" name="csrf"         value="<?= csrf() ?>">
-              <input type="hidden" name="action"       value="status">
-              <input type="hidden" name="aanvraag_id"  value="<?= (int)$detail['id'] ?>">
-              <input type="hidden" name="nieuw_status" value="behandeld">
-              <button type="submit" class="btn-actie btn-behandeld">Behandeld</button>
-            </form>
-            <form method="POST" style="margin:0;">
-              <input type="hidden" name="csrf"         value="<?= csrf() ?>">
-              <input type="hidden" name="action"       value="status">
-              <input type="hidden" name="aanvraag_id"  value="<?= (int)$detail['id'] ?>">
-              <input type="hidden" name="nieuw_status" value="archief">
-              <button type="submit" class="btn-actie btn-archief">Archiveren</button>
-            </form>
-          </div>
-
-        </div><!-- /.bericht-sturen -->
-      </div><!-- /.berichten-kolommen -->
-    </div><!-- /.berichten-sectie -->
-
-    <?php endif; // einde $isInzending ?>
+    <?php endif; // einde $isInzending (stap 7: chat alleen voor niet-inzending) ?>
 
   </div><!-- /.detail-card -->
 
