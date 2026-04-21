@@ -125,6 +125,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'statu
     }
 }
 
+// ── POST: advies kiezen (primaire flow: inzending → [type]_afwachting) ───────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'kies_advies') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        $fout = 'Ongeldig beveiligingstoken.';
+    } else {
+        $aanvraagId   = (int)($_POST['aanvraag_id'] ?? 0);
+        $gekozenAdvies = trim($_POST['gekozen_advies'] ?? '');
+        $toegestaan   = array_keys($aanvraagTypes);
+        $isAfwijzen   = ($gekozenAdvies === 'afwijzen');
+
+        if ($aanvraagId && ($isAfwijzen || in_array($gekozenAdvies, $toegestaan, true))) {
+            $nieuweStatus = $isAfwijzen ? 'afgewezen' : $gekozenAdvies . '_afwachting';
+            $logTekst     = $isAfwijzen
+                ? 'Inzending afgewezen'
+                : 'Advies gekozen: ' . ($aanvraagTypes[$gekozenAdvies]['label'] ?? $gekozenAdvies)
+                  . ' → status ' . ($statusLabels[$nieuweStatus]['tekst'] ?? $nieuweStatus);
+
+            $pdo = db();
+            $pdo->prepare(
+                'UPDATE aanvragen SET gekozen_advies=?, status=? WHERE id=?'
+            )->execute([$isAfwijzen ? null : $gekozenAdvies, $nieuweStatus, $aanvraagId]);
+
+            try {
+                $pdo->prepare(
+                    'INSERT INTO aanvragen_log (aanvraag_id, actie, aangemaakt)
+                     VALUES (?, ?, NOW())'
+                )->execute([$aanvraagId, $logTekst]);
+            } catch (\PDOException $e) {}
+
+            $qs = http_build_query(array_filter([
+                'id'     => $aanvraagId,
+                'status' => $filterStatus,
+                'route'  => $filterRoute,
+                'zoek'   => $filterZoek,
+                'saved'  => '1',
+            ]));
+            header('Location: ?' . $qs);
+            exit;
+        } else {
+            $fout = 'Ongeldig advies gekozen.';
+        }
+    }
+}
+
 // ── POST: aanvraag-type toekennen / wijzigen ──────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_type') {
     if (!verifyCsrf($_POST['csrf'] ?? '')) {
