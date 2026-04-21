@@ -80,58 +80,22 @@ require_once __DIR__ . '/includes/admin-header.php';
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Instellingen &ndash; Admin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Epilogue:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/base.css">
+  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/components.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css">
   <meta name="robots" content="noindex,nofollow">
-  <style>
-    .adm-page { padding: 2rem 2.25rem; max-width: 900px; }
-    .page-title { font-size: 1.4rem; font-weight: 800; color: #fff; margin: 0 0 .35rem; letter-spacing: -.025em; }
-    .page-subtitle { font-size: .875rem; color: rgba(255,255,255,.45); margin: 0 0 2.5rem; }
-    .settings-card { background: #161b2e; border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; }
-    .settings-card-header { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.75rem; padding-bottom: 1.25rem; border-bottom: 1px solid rgba(255,255,255,.06); }
-    .settings-card-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(79,152,163,.18); border: 1px solid rgba(79,152,163,.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #4ecb9e; font-size: 1.1rem; }
-    .settings-card-title { font-size: 1rem; font-weight: 700; color: #fff; margin: 0 0 .2rem; letter-spacing: -.02em; }
-    .settings-card-desc { font-size: .8rem; color: rgba(255,255,255,.4); margin: 0; line-height: 1.6; }
-    .s-field { margin-bottom: 1.25rem; }
-    .s-field label { display: block; font-size: .8rem; font-weight: 600; color: rgba(255,255,255,.7); margin-bottom: .45rem; letter-spacing: .01em; }
-    .s-field input[type="text"], .s-field input[type="number"], .s-field input[type="email"] { width: 100%; background: #0d1117; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: .6rem .85rem; font-size: .875rem; color: #e2e8f0; font-family: 'Inter', monospace; transition: border-color .15s; box-sizing: border-box; }
-    .s-field input:focus { outline: none; border-color: #4f98a3; box-shadow: 0 0 0 3px rgba(79,152,163,.15); }
-    .s-field .hint { font-size: .75rem; color: rgba(255,255,255,.3); margin-top: .35rem; line-height: 1.5; }
-    .s-field .hint a { color: #4ecb9e; text-decoration: none; }
-    .s-field .hint a:hover { text-decoration: underline; }
-    .s-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    @media (max-width: 600px) { .s-row-2 { grid-template-columns: 1fr; } }
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem 1rem; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06); border-radius: 8px; margin-bottom: 1.5rem; }
-    .toggle-row-label { font-size: .875rem; font-weight: 600; color: rgba(255,255,255,.8); }
-    .toggle-row-desc  { font-size: .75rem; color: rgba(255,255,255,.35); margin-top: .15rem; }
-    .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
-    .toggle-switch input { opacity: 0; width: 0; height: 0; }
-    .toggle-slider { position: absolute; inset: 0; background: rgba(255,255,255,.12); border-radius: 999px; cursor: pointer; transition: background .2s; }
-    .toggle-slider::before { content: ''; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform .2s; }
-    .toggle-switch input:checked + .toggle-slider { background: #4f98a3; }
-    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
-    .threshold-row { display: flex; align-items: center; gap: 1rem; margin-top: .5rem; }
-    .threshold-row input[type="range"] { flex: 1; accent-color: #4f98a3; cursor: pointer; }
-    .threshold-val { font-size: .875rem; font-weight: 700; color: #4ecb9e; min-width: 36px; text-align: right; }
-    .alert { padding: .85rem 1.1rem; border-radius: 8px; font-size: .875rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: .6rem; }
-    .alert-success { background: rgba(78,203,158,.12); border: 1px solid rgba(78,203,158,.3); color: #4ecb9e; }
-    .alert-error   { background: rgba(231,76,60,.12);  border: 1px solid rgba(231,76,60,.3);  color: #fc8181; }
-    .info-box { background: rgba(79,152,163,.08); border: 1px solid rgba(79,152,163,.2); border-radius: 8px; padding: 1rem 1.25rem; font-size: .8rem; color: rgba(255,255,255,.55); line-height: 1.7; margin-bottom: 1.5rem; }
-    .info-box strong { color: #4ecb9e; }
-    .info-box code { background: rgba(255,255,255,.06); border-radius: 4px; padding: .1rem .4rem; font-family: monospace; font-size: .8rem; color: #a5d8ff; }
-    .btn-save { display: inline-flex; align-items: center; gap: .5rem; background: #4f98a3; color: #fff; border: none; border-radius: 8px; padding: .65rem 1.4rem; font-size: .875rem; font-weight: 700; cursor: pointer; transition: background .15s, transform .1s; letter-spacing: -.01em; }
-    .btn-save:hover  { background: #3a7d88; }
-    .btn-save:active { transform: scale(.98); }
-  </style>
 </head>
 <body>
 
-<div class="adm-page">
+<div class="adm-page" style="max-width:900px;">
 
-  <h1 class="page-title">Instellingen</h1>
-  <p class="page-subtitle">Sitebrede configuratie — reCAPTCHA, SMTP en overige opties.</p>
+  <h1 class="adm-page-title">Instellingen</h1>
+  <p class="adm-page-subtitle">Sitebrede configuratie — reCAPTCHA, SMTP en overige opties.</p>
 
   <?php if ($success): ?>
     <div class="alert alert-success">&#10003; Instellingen opgeslagen.</div>
@@ -152,7 +116,7 @@ require_once __DIR__ . '/includes/admin-header.php';
           <p class="settings-card-desc">
             Beschermt formulieren automatisch op de achtergrond.
             Vereist een gratis Google-account op
-            <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener" style="color:#4ecb9e;">google.com/recaptcha</a>.
+            <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener" class="link-accent">google.com/recaptcha</a>.
           </p>
         </div>
       </div>
@@ -174,7 +138,7 @@ require_once __DIR__ . '/includes/admin-header.php';
         Bij verzenden wordt een onzichtbaar token meegestuurd dat de server valideert via
         <code>verifyRecaptcha($token)</code> in <code>includes/functions.php</code>.<br><br>
         <strong>Sleutels aanmaken:</strong> ga naar
-        <a href="https://www.google.com/recaptcha/admin/create" target="_blank" rel="noopener" style="color:#4ecb9e;">google.com/recaptcha/admin/create</a>,
+        <a href="https://www.google.com/recaptcha/admin/create" target="_blank" rel="noopener">google.com/recaptcha/admin/create</a>,
         kies <strong>Score-based (v3)</strong> en voeg jouw domeinnaam toe.
       </div>
 
@@ -215,7 +179,7 @@ require_once __DIR__ . '/includes/admin-header.php';
           <p class="settings-card-desc">
             Koppel de site aan Brevo voor transactionele e-mails.
             Vereist een account op
-            <a href="https://app.brevo.com" target="_blank" rel="noopener" style="color:#4ecb9e;">app.brevo.com</a>.
+            <a href="https://app.brevo.com" target="_blank" rel="noopener" class="link-accent">app.brevo.com</a>.
           </p>
         </div>
       </div>
@@ -233,7 +197,7 @@ require_once __DIR__ . '/includes/admin-header.php';
 
       <div class="info-box">
         <strong>API Key ophalen:</strong><br>
-        Log in op <a href="https://app.brevo.com/settings/keys/api" target="_blank" rel="noopener" style="color:#4ecb9e;">app.brevo.com → Instellingen → API Keys</a>
+        Log in op <a href="https://app.brevo.com/settings/keys/api" target="_blank" rel="noopener">app.brevo.com → Instellingen → API Keys</a>
         en maak een nieuwe API v3-sleutel aan (begint met <code>xkeysib-</code>).
       </div>
 

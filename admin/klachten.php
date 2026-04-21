@@ -52,7 +52,7 @@ $adminActivePage = 'klachten';
   <title>Klachten &ndash; Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Epilogue:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/base.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/components.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css">
@@ -69,7 +69,7 @@ $adminActivePage = 'klachten';
   <div class="admin-card">
     <h2>Klacht toevoegen</h2>
     <form method="POST" class="form-admin">
-      <input type="hidden" name="csrf" value="<?= csrf() ?>">
+      <input type="hidden" name="csrf"   value="<?= csrf() ?>">
       <input type="hidden" name="action" value="add">
       <div class="form-row-2">
         <div class="field">
@@ -77,7 +77,9 @@ $adminActivePage = 'klachten';
           <select name="tv_model_id" required>
             <option value="">Selecteer model</option>
             <?php foreach ($modellen as $m): ?>
-            <option value="<?= $m['id'] ?>" <?= $m['id']===$model_id?'selected':'' ?>><?= h($m['merk'].' '.$m['modelnummer']) ?></option>
+            <option value="<?= $m['id'] ?>" <?= $m['id']===$model_id ? 'selected' : '' ?>>
+              <?= h($m['merk'] . ' ' . $m['modelnummer']) ?>
+            </option>
             <?php endforeach; ?>
           </select>
         </div>
@@ -91,10 +93,19 @@ $adminActivePage = 'klachten';
         </div>
       </div>
       <div class="form-row-2">
-        <div class="field"><label>Titel *</label><input type="text" name="titel" placeholder="Bijv. Donkere vlekken — LED strip uitval" required></div>
-        <div class="field"><label>Icoon (emoji)</label><input type="text" name="type_icon" value="🔧" maxlength="5"></div>
+        <div class="field">
+          <label>Titel *</label>
+          <input type="text" name="titel" placeholder="Bijv. Donkere vlekken — LED strip uitval" required>
+        </div>
+        <div class="field">
+          <label>Icoon (emoji)</label>
+          <input type="text" name="type_icon" value="🔧" maxlength="5">
+        </div>
       </div>
-      <div class="field"><label>Omschrijving *</label><textarea name="omschrijving" placeholder="Uitgebreide uitleg van de klacht en mogelijke oplossing..." required style="min-height:100px;"></textarea></div>
+      <div class="field">
+        <label>Omschrijving *</label>
+        <textarea name="omschrijving" class="textarea-tall" placeholder="Uitgebreide uitleg van de klacht en mogelijke oplossing..." required></textarea>
+      </div>
       <button type="submit" class="btn btn-primary-sm">+ Klacht toevoegen</button>
     </form>
   </div>
@@ -103,19 +114,29 @@ $adminActivePage = 'klachten';
     <h2>
       <?php if ($model_id):
         $mn = db()->prepare('SELECT merk,modelnummer FROM tv_modellen WHERE id=?');
-        $mn->execute([$model_id]); $mn=$mn->fetch();
-        echo 'Klachten voor '.h($mn['merk'].' '.$mn['modelnummer']).' &mdash; <a href="'.BASE_URL.'/admin/klachten.php" style="font-size:.9rem;font-weight:500;color:#4f98a3">Alle klachten tonen</a>';
-      else: echo count($klachten).' klachten in database'; endif; ?>
+        $mn->execute([$model_id]);
+        $mn = $mn->fetch();
+        echo 'Klachten voor ' . h($mn['merk'] . ' ' . $mn['modelnummer']) . ' &mdash; <a href="' . BASE_URL . '/admin/klachten.php" class="link-muted">Alle klachten tonen</a>';
+      else:
+        echo count($klachten) . ' klachten in database';
+      endif; ?>
     </h2>
     <table class="admin-table">
-      <thead><tr><th>Model</th><th>Titel</th><th>Frequentie</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Titel</th>
+          <th>Frequentie</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody>
       <?php foreach ($klachten as $k): ?>
       <tr>
-        <td style="white-space:nowrap"><?= h($k['merk'].' '.$k['modelnummer']) ?></td>
+        <td style="white-space:nowrap"><?= h($k['merk'] . ' ' . $k['modelnummer']) ?></td>
         <td><?= h($k['type_icon']) ?> <?= h($k['titel']) ?></td>
         <td>
-          <span class="badge <?= $k['frequentie']==='hoog'?'badge-red':($k['frequentie']==='middel'?'badge-yellow':'badge-green') ?>">
+          <span class="badge <?= $k['frequentie']==='hoog' ? 'badge-red' : ($k['frequentie']==='middel' ? 'badge-yellow' : 'badge-green') ?>">
             <?= h($k['frequentie']) ?>
           </span>
         </td>
