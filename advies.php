@@ -14,8 +14,8 @@ $rJs = json_encode($r, JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
 include __DIR__ . '/includes/header.php';
 ?>
 
-<!-- HERO + ZO WERKT HET: één gecombineerd donker blok -->
-<div class="page-header-stappen">
+<!-- HERO: donker blok -->
+<div class="page-header-hero-only">
   <div class="page-header-stappen-inner">
 
     <!-- Breadcrumb -->
@@ -26,36 +26,42 @@ include __DIR__ . '/includes/header.php';
 
     <!-- Hero tekst -->
     <h1>Gratis advies aanvragen</h1>
-    <p class="hero-lead">Vertel ons wat er mis is met je televisie — wij geven eerlijk en persoonlijk advies binnen 24 uur.</p>
+    <p class="hero-lead">Vertel ons wat er mis is met je televisie. Wij geven je eerlijk en persoonlijk advies binnen 24 uur, volledig gratis.</p>
 
     <!-- Badge -->
     <div class="hero-badge">&#128274; Gratis &amp; vrijblijvend</div>
 
-    <h2 class="stappen-titel">Zo werkt het</h2>
-    <p class="stappen-lead">Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.</p>
+  </div>
+</div>
 
-    <!-- Stappen kaarten -->
-    <div class="zowerkhet-steps">
-      <div class="zowerkhet-step">
-        <span class="zowerkhet-step-num">Stap 01</span>
-        <div class="zowerkhet-step-icon">&#128221;</div>
+<!-- ZO WERKT HET: apart blok met lichte achtergrond -->
+<div class="stappen-sectie-licht">
+  <div class="stappen-sectie-inner">
+
+    <h2 class="stappen-titel-licht">Zo werkt het</h2>
+    <p class="stappen-lead-licht">Geen technische kennis nodig. Beschrijf het probleem en wij denken met je mee.</p>
+
+    <div class="zowerkhet-steps-licht">
+      <div class="zowerkhet-step-licht">
+        <span class="zowerkhet-step-num-licht">Stap 01</span>
+        <div class="zowerkhet-step-icon-licht">&#128221;</div>
         <h3>Formulier invullen</h3>
-        <p>Vul merk, modelnummer en een korte omschrijving in. Duurt minder dan twee minuten &mdash; geen technische kennis vereist.</p>
-        <span class="zowerkhet-step-badge">&#10003; Gratis</span>
+        <p>Vul merk, modelnummer en een korte omschrijving in. Duurt minder dan twee minuten en je hebt er geen technische kennis voor nodig.</p>
+        <span class="zowerkhet-step-badge-licht">&#10003; Gratis</span>
       </div>
-      <div class="zowerkhet-step">
-        <span class="zowerkhet-step-num">Stap 02</span>
-        <div class="zowerkhet-step-icon">&#128269;</div>
-        <h3>Wij analyseren uw situatie</h3>
-        <p>Een specialist beoordeelt uw aanvraag op garantie, coulance, reparatiemogelijkheden en waarde van het toestel.</p>
-        <span class="zowerkhet-step-badge">&#10003; Persoonlijk advies</span>
+      <div class="zowerkhet-step-licht">
+        <span class="zowerkhet-step-num-licht">Stap 02</span>
+        <div class="zowerkhet-step-icon-licht">&#128269;</div>
+        <h3>Wij bekijken jouw situatie</h3>
+        <p>Een specialist beoordeelt je aanvraag op garantie, coulance, reparatiemogelijkheden en de waarde van het toestel. Garantie en coulance worden als advies getoond. Werkt een verkoper of merk niet mee? Dan helpen wij je alsnog met vrijblijvend reparatieadvies.</p>
+        <span class="zowerkhet-step-badge-licht">&#10003; Persoonlijk advies</span>
       </div>
-      <div class="zowerkhet-step">
-        <span class="zowerkhet-step-num">Stap 03</span>
-        <div class="zowerkhet-step-icon">&#128233;</div>
+      <div class="zowerkhet-step-licht">
+        <span class="zowerkhet-step-num-licht">Stap 03</span>
+        <div class="zowerkhet-step-icon-licht">&#128233;</div>
         <h3>Advies binnen 24 uur</h3>
-        <p>U ontvangt een helder advies per e-mail met concrete vervolgstappen &mdash; garantie, coulance, reparatie of taxatie.</p>
-        <span class="zowerkhet-step-badge">&#10003; Binnen 1 werkdag</span>
+        <p>Je ontvangt een helder advies per e-mail met concrete vervolgstappen. Of het nu gaat om garantie, coulance, reparatie of taxatie (49 euro), wij wijzen je de beste weg.</p>
+        <span class="zowerkhet-step-badge-licht">&#10003; Binnen 1 werkdag</span>
       </div>
     </div>
 
@@ -70,14 +76,14 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <style>
-/* ── Gecombineerde hero + stappen wrapper ── */
-.page-header-stappen {
+/* ── Hero only: donker blok ── */
+.page-header-hero-only {
   background: var(--ink, #0d1117);
-  padding: 5rem 2.5rem 5rem;
+  padding: 5rem 2.5rem 4rem;
   position: relative;
   overflow: hidden;
 }
-.page-header-stappen::before {
+.page-header-hero-only::before {
   content: '';
   position: absolute;
   top: -100px; right: -100px;
@@ -91,14 +97,14 @@ include __DIR__ . '/includes/header.php';
   margin: 0 auto;
   position: relative;
 }
-.page-header-stappen h1 {
+.page-header-hero-only h1 {
   font-size: clamp(2rem, 3.5vw, 3rem);
   font-weight: 800;
   color: white;
   letter-spacing: -.03em;
   margin-bottom: .75rem;
 }
-.page-header-stappen .hero-lead {
+.page-header-hero-only .hero-lead {
   font-size: 1rem;
   color: rgba(255,255,255,.55);
   max-width: 520px;
@@ -118,90 +124,92 @@ include __DIR__ . '/includes/header.php';
   margin-bottom: 1.1rem;
   letter-spacing: .04em;
 }
-.stappen-titel {
+
+/* ── Stappen sectie licht ── */
+.stappen-sectie-licht {
+  background: #f8fafc;
+  padding: 4rem 2.5rem;
+}
+.stappen-sectie-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.stappen-titel-licht {
   font-size: clamp(1.5rem, 2.2vw, 2rem);
   font-weight: 800;
-  color: #fff;
+  color: #1a2332;
   letter-spacing: -.025em;
   margin-bottom: .5rem;
   text-align: center;
 }
-.stappen-lead {
+.stappen-lead-licht {
   font-size: 1rem;
-  color: rgba(255,255,255,.55);
+  color: #64748b;
   max-width: 48ch;
   margin: 0 auto 2.5rem;
   text-align: center;
   line-height: 1.75;
 }
-.zowerkhet-steps {
+.zowerkhet-steps-licht {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
 }
-.zowerkhet-step {
-  background: #161b22;
-  border: 1px solid rgba(255,255,255,.08);
+.zowerkhet-step-licht {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 2rem 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  transition: border-color .2s ease, transform .2s ease;
-  position: relative;
-  overflow: hidden;
+  transition: border-color .2s ease, box-shadow .2s ease;
 }
-.zowerkhet-step::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at top left, rgba(40,120,100,.12) 0%, transparent 65%);
-  pointer-events: none;
+.zowerkhet-step-licht:hover {
+  border-color: #287864;
+  box-shadow: 0 4px 16px rgba(40,120,100,.1);
 }
-.zowerkhet-step:hover {
-  border-color: rgba(40,120,100,.5);
-  transform: translateY(-3px);
-}
-.zowerkhet-step-num {
+.zowerkhet-step-num-licht {
   font-size: .7rem;
   font-weight: 800;
   letter-spacing: .12em;
-  color: var(--accent, #287864);
+  color: #287864;
   text-transform: uppercase;
 }
-.zowerkhet-step-icon { font-size: 1.75rem; line-height: 1; }
-.zowerkhet-step h3 {
+.zowerkhet-step-icon-licht { font-size: 1.75rem; line-height: 1; }
+.zowerkhet-step-licht h3 {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #fff;
+  color: #1a2332;
   letter-spacing: -.02em;
   margin: 0;
 }
-.zowerkhet-step p {
+.zowerkhet-step-licht p {
   font-size: .875rem;
-  color: rgba(255,255,255,.5);
+  color: #475569;
   line-height: 1.7;
   margin: 0;
   max-width: 36ch;
 }
-.zowerkhet-step-badge {
+.zowerkhet-step-badge-licht {
   display: inline-flex;
   align-items: center;
   gap: .35rem;
-  background: rgba(40,120,100,.15);
-  border: 1px solid rgba(40,120,100,.35);
+  background: rgba(40,120,100,.08);
+  border: 1px solid rgba(40,120,100,.25);
   border-radius: 999px;
   padding: .25rem .75rem;
   font-size: .72rem;
   font-weight: 700;
-  color: #4ecb9e;
+  color: #287864;
   margin-top: auto;
   width: fit-content;
 }
 @media (max-width: 768px) {
-  .page-header-stappen { padding: 4rem 1.25rem 3.5rem; }
-  .zowerkhet-steps { grid-template-columns: 1fr; }
-  .zowerkhet-step  { padding: 1.5rem 1.25rem; }
+  .page-header-hero-only { padding: 4rem 1.25rem 3rem; }
+  .stappen-sectie-licht { padding: 3rem 1.25rem; }
+  .zowerkhet-steps-licht { grid-template-columns: 1fr; }
+  .zowerkhet-step-licht { padding: 1.5rem 1.25rem; }
 }
 </style>
 
@@ -211,7 +219,7 @@ include __DIR__ . '/includes/header.php';
     <div class="status-check-box" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
       <div>
         <h3 style="margin-bottom:.3rem;">&#128274; Al een aanvraag ingediend?</h3>
-        <p class="lead" style="margin:0;">Bekijk de status, upload documenten en volg uw traject via uw persoonlijke klantenomgeving.</p>
+        <p class="lead" style="margin:0;">Bekijk de status, upload documenten en volg je traject via je persoonlijke klantenomgeving.</p>
       </div>
       <a href="<?= BASE_URL ?>/mijn-aanvraag.php" class="btn-check" style="white-space:nowrap;text-decoration:none;">
         Mijn aanvraag bekijken &rarr;
@@ -227,16 +235,16 @@ include __DIR__ . '/includes/header.php';
     <!-- Links -->
     <div class="form-left">
       <h2 class="section-title">Vraag gratis<br>advies aan</h2>
-      <p class="section-lead">Wij filteren automatisch de beste route — garantie, coulance, reparatie of taxatie.</p>
+      <p class="section-lead">Op basis van jouw antwoorden kijken wij automatisch welke route het beste bij je past: garantie, coulance, reparatie of taxatie.</p>
       <div class="outcome-list">
         <div class="outcome-item"><div class="oi-icon oi-blue">&#128737;</div> Garantie aanspreken bij de winkel of fabrikant</div>
         <div class="outcome-item"><div class="oi-icon oi-yellow">&#129309;</div> Coulanceregeling bespreken met de verkoper</div>
         <div class="outcome-item"><div class="oi-icon oi-orange">&#128295;</div> Reparatie aan huis door gespecialiseerde monteur</div>
-        <div class="outcome-item"><div class="oi-icon oi-purple">&#128203;</div> Taxatierapport opstellen voor uw verzekeraar</div>
-        <div class="outcome-item"><div class="oi-icon" style="background:#d1fae5;color:#065f46">&#9851;</div> Recycling: verantwoorde verwerking van uw televisie</div>
+        <div class="outcome-item"><div class="oi-icon oi-purple">&#128203;</div> Taxatierapport opstellen voor je verzekeraar (49 euro)</div>
+        <div class="outcome-item"><div class="oi-icon" style="background:#d1fae5;color:#065f46">&#9851;</div> Recycling: verantwoorde verwerking van je televisie</div>
       </div>
       <div id="routing-indicator" style="display:none;" class="routing-indicator">
-        <div class="routing-label">Mogelijke route op basis van uw antwoorden:</div>
+        <div class="routing-label">Mogelijke route op basis van je antwoorden:</div>
         <div id="routing-badge" class="routing-badge"></div>
         <div id="routing-toelichting" class="routing-toelichting"></div>
       </div>
@@ -247,7 +255,7 @@ include __DIR__ . '/includes/header.php';
       <div class="form-card">
 
         <?php if (isset($_GET['error'])): ?>
-          <div class="alert alert-error">Er is iets misgegaan. Controleer uw gegevens en probeer het opnieuw.</div>
+          <div class="alert alert-error">Er is iets misgegaan. Controleer je gegevens en probeer het opnieuw.</div>
         <?php endif; ?>
 
         <!-- Voortgangsbalk -->
@@ -309,7 +317,7 @@ include __DIR__ . '/includes/header.php';
                 <input type="radio" name="situatie" value="storing" required />
                 <div class="route-keuze-inner">
                   <div class="route-keuze-icon">&#128295;</div>
-                  <strong>Technisch defect / storing</strong>
+                  <strong>Technisch defect of storing</strong>
                   <span>TV doet het niet meer, beeld of geluidsproblemen, software-issues</span>
                 </div>
               </label>
@@ -330,7 +338,7 @@ include __DIR__ . '/includes/header.php';
           <!-- STAP 2 -->
           <div class="form-stap" id="stap-2" style="display:none;">
             <div class="stap-header">
-              <h3>Over uw televisie</h3>
+              <h3>Over je televisie</h3>
               <p>Merk, model en aankoopinformatie bepalen de route.</p>
             </div>
             <div class="field-row">
@@ -405,25 +413,25 @@ include __DIR__ . '/includes/header.php';
               <select name="klacht_type" id="klacht_type" required onchange="berekenRoute()">
                 <option value="">Selecteer type probleem</option>
                 <optgroup label="Beeldproblemen">
-                  <option value="gebarsten_scherm">Kapot / gebarsten scherm</option>
+                  <option value="gebarsten_scherm">Kapot of gebarsten scherm</option>
                   <option value="strepen">Strepen of lijnen in beeld</option>
                   <option value="geen_beeld">Geen beeld, wel geluid</option>
-                  <option value="backlight">Donkere vlekken / backlight-uitval</option>
+                  <option value="backlight">Donkere vlekken of backlight-uitval</option>
                   <option value="flikkering">Bevroren beeld of flikkering</option>
-                  <option value="kleur">Kleurproblemen of erg verkleurde pixels</option>
+                  <option value="kleur">Kleurproblemen of sterk verkleurde pixels</option>
                 </optgroup>
                 <optgroup label="Stroom &amp; hardware">
                   <option value="niet_aan">TV gaat niet aan</option>
-                  <option value="stroomstoot">Schade na stroomstoot / blikseminslag</option>
-                  <option value="oververhitting">Oververhitting / stopt na korte tijd</option>
+                  <option value="stroomstoot">Schade na stroomstoot of blikseminslag</option>
+                  <option value="oververhitting">Oververhitting of stopt na korte tijd</option>
                 </optgroup>
                 <optgroup label="Software &amp; bediening">
-                  <option value="software">Software / Smart TV werkt niet</option>
-                  <option value="afstandsbediening">Afstandsbediening / bediening reageert niet</option>
+                  <option value="software">Software of Smart TV werkt niet</option>
+                  <option value="afstandsbediening">Afstandsbediening of bediening reageert niet</option>
                   <option value="geluid">Geen of slecht geluid, beeld werkt wel</option>
                 </optgroup>
                 <optgroup label="Overig">
-                  <option value="anders">Anders / niet in de lijst</option>
+                  <option value="anders">Anders of niet in de lijst</option>
                 </optgroup>
               </select>
             </div>
@@ -440,13 +448,13 @@ include __DIR__ . '/includes/header.php';
           <!-- STAP 4 -->
           <div class="form-stap" id="stap-4" style="display:none;">
             <div class="stap-header">
-              <h3>Uw contactgegevens</h3>
-              <p>Hier sturen wij uw persoonlijk advies naartoe.</p>
+              <h3>Je contactgegevens</h3>
+              <p>Hier sturen wij je persoonlijk advies naartoe.</p>
             </div>
             <div class="field">
               <label>E-mailadres *</label>
               <input type="email" name="email" placeholder="naam@email.nl" required />
-              <p class="field-hint">Geen spam. Alleen uw advies.</p>
+              <p class="field-hint">Geen spam. Alleen je advies.</p>
             </div>
             <div id="route-samenvatting" class="route-samenvatting"></div>
             <div class="disclaimer-box">
@@ -509,7 +517,7 @@ function toonRepFeedback() {
     fb.innerHTML = '<span class="rep-ico">&#9989;</span> Dit model staat in onze database als <strong>repareerbaar</strong>.';
   } else {
     fb.className = 'rep-feedback rep-nee';
-    fb.innerHTML = '<span class="rep-ico">&#9851;</span> Dit model staat in onze database als <strong>niet-repareerbaar</strong>. Wij begeleiden u richting verantwoorde recycling.';
+    fb.innerHTML = '<span class="rep-ico">&#9851;</span> Dit model staat in onze database als <strong>niet-repareerbaar</strong>. Wij begeleiden je richting verantwoorde recycling.';
   }
   fb.style.display = 'block';
 }
@@ -592,7 +600,7 @@ function berekenRoute() {
     if (!merk || merkToegestaan(taxMerken, merk)) {
       route = 'taxatie';
       badge = '&#128203; Taxatierapport';
-      toel  = 'Omdat er sprake is van externe schade is een taxatierapport de juiste route voor uw verzekeraar.';
+      toel  = 'Omdat er sprake is van externe schade is een taxatierapport de juiste route voor je verzekeraar. De schadetaxatie kost 49 euro.';
     } else {
       if (kanRep) {
         route = 'reparatie';
@@ -601,7 +609,7 @@ function berekenRoute() {
       } else {
         route = 'recycling';
         badge = '&#9851; Recycling';
-        toel  = 'Dit model is niet repareerbaar en komt niet in aanmerking voor taxatie. Wij begeleiden u richting verantwoorde recycling.';
+        toel  = 'Dit model is niet repareerbaar en komt niet in aanmerking voor taxatie. Wij begeleiden je richting verantwoorde recycling.';
       }
     }
   }
@@ -615,7 +623,7 @@ function berekenRoute() {
     if (leeftijd <= gTermijn && !isGUitsluit && (!gAlleenNl || isNl) && merkGarantie) {
       route = 'garantie';
       badge = '&#9989; Garantie';
-      toel  = 'Op basis van het aanschafjaar valt uw televisie waarschijnlijk nog onder de wettelijke garantietermijn van ' + gTermijn + ' jaar.';
+      toel  = 'Op basis van het aanschafjaar valt je televisie waarschijnlijk nog onder de wettelijke garantietermijn van ' + gTermijn + ' jaar. Wij laten je zien hoe je dit aanpakt.';
     }
     else if (leeftijd <= gTermijn && locatie === 'buitenland') {
       if (kanRep) {
@@ -624,7 +632,7 @@ function berekenRoute() {
         toel  = 'Televisies buiten Nederland gekocht vallen buiten Nederlandse garantieregels. Reparatie is de meest praktische optie.';
       } else {
         route = 'recycling'; badge = '&#9851; Recycling';
-        toel  = 'Dit model is niet repareerbaar. Wij begeleiden u richting verantwoorde recycling.';
+        toel  = 'Dit model is niet repareerbaar. Wij begeleiden je richting verantwoorde recycling.';
       }
     }
     else if (leeftijd <= gTermijn && !merkGarantie) {
@@ -650,7 +658,7 @@ function berekenRoute() {
       if (locatie === 'buitenland') kans = Math.max(5, kans - cAftrekBuitenland);
       route = 'coulance';
       badge = '&#129309; Coulanceregeling (' + kans + '% kans)';
-      toel  = 'Uw televisie is ' + leeftijd + ' jaar oud. Garantie is verlopen, maar veel fabrikanten bieden coulance aan. Wij schatten de kans op <strong>' + kans + '%</strong>.';
+      toel  = 'Je televisie is ' + leeftijd + ' jaar oud. Garantie is verlopen, maar veel fabrikanten bieden nog coulance aan. Wij schatten de kans op <strong>' + kans + '%</strong>. Gaat de verkoper of het merk niet mee? Dan helpen wij je alsnog met vrijblijvend reparatieadvies.';
     }
     else if (!route && leeftijd > repMin && leeftijd <= repMax) {
       if (kanRep) {
@@ -659,13 +667,13 @@ function berekenRoute() {
         toel  = 'Garantie en coulance zijn niet meer van toepassing. Reparatie aan huis is de meest kostenefficiënte oplossing.';
       } else {
         route = 'recycling'; badge = '&#9851; Recycling';
-        toel  = 'Dit model staat als niet-repareerbaar in onze database. Wij begeleiden u richting verantwoorde recycling.';
+        toel  = 'Dit model staat als niet-repareerbaar in onze database. Wij begeleiden je richting verantwoorde recycling.';
       }
     }
     else if (!route && leeftijd > recycMin) {
       route = 'recycling';
       badge = '&#9851; Recycling';
-      toel  = 'Een televisie ouder dan ' + recycMin + ' jaar — reparatiekosten overtreffen vaak de waarde. Wij adviseren eerlijk over recycling of doorverkoop.';
+      toel  = 'Een televisie ouder dan ' + recycMin + ' jaar. De reparatiekosten overtreffen vaak de waarde. Wij adviseren je eerlijk over recycling of doorverkoop.';
     }
     else if (!route && klacht === 'gebarsten_scherm') {
       if (kanRep) {
@@ -673,7 +681,7 @@ function berekenRoute() {
         toel  = 'Een gebarsten scherm valt nooit onder de garantie, maar schermvervanging is in veel gevallen kostenefficiënt.';
       } else {
         route = 'recycling'; badge = '&#9851; Recycling';
-        toel  = 'Schermschade op een niet-repareerbaar model — wij adviseren richting verantwoorde recycling.';
+        toel  = 'Schermschade op een niet-repareerbaar model. Wij adviseren richting verantwoorde recycling.';
       }
     }
   }
@@ -698,7 +706,7 @@ function vulSamenvatting() {
   const toel  = document.getElementById('routing-toelichting')?.innerHTML || '';
   if (!el || !badge) { el && (el.style.display = 'none'); return; }
   el.innerHTML = `
-    <div class="samenvatting-label">Uw verwachte route:</div>
+    <div class="samenvatting-label">Jouw verwachte route:</div>
     <div class="samenvatting-badge">${badge}</div>
     <div class="samenvatting-toel">${toel}</div>`;
   el.style.display = 'block';

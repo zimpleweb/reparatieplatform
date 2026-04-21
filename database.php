@@ -33,7 +33,7 @@ include __DIR__ . '/includes/header.php';
       <span style="color:rgba(255,255,255,.7)">TV Database</span>
     </div>
     <h1>TV Database</h1>
-    <p>Typ je modelnummer en zie direct resultaten, of blader op merk.</p>
+    <p>Zoek je modelnummer op en ontdek direct welke klachten bekend zijn en of reparatie mogelijk is.</p>
 
     <div class="hero-search-wrap">
       <div class="hero-search">
@@ -123,9 +123,9 @@ include __DIR__ . '/includes/header.php';
       <div class="not-found-block">
         <div class="not-found-icon">&#128250;</div>
         <h2>Geen modellen gevonden</h2>
-        <p>Voor dit merk of deze serie zijn nog geen modellen in de database. Vraag toch gratis advies aan.</p>
+        <p>Voor dit merk of deze serie staan nog geen modellen in onze database. Geen probleem, je kunt gewoon gratis advies aanvragen en wij helpen je verder op basis van je modelnummer.</p>
         <div class="not-found-actions">
-          <a href="<?= BASE_URL ?>/#advies" class="btn-primary">Gratis advies aanvragen &rarr;</a>
+          <a href="<?= BASE_URL ?>/advies.php" class="btn-primary">Gratis advies aanvragen &rarr;</a>
           <a href="<?= BASE_URL ?>/database.php" class="btn-ghost">Terug naar database</a>
         </div>
       </div>
@@ -137,7 +137,7 @@ include __DIR__ . '/includes/header.php';
     <div class="db-section">
       <div class="db-section-header">
         <h2>Zoek op merk</h2>
-        <p>Selecteer een merk om alle modellen en series te bekijken.</p>
+        <p>Kies een merk om alle bekende modellen en series te bekijken.</p>
       </div>
       <div class="merken-kaarten">
         <?php foreach ($merken as $m):
@@ -160,8 +160,8 @@ include __DIR__ . '/includes/header.php';
     <?php if (!empty($uitgelicht)): ?>
     <div class="db-section">
       <div class="db-section-header">
-        <h2>Veel gerepareerde televisies</h2>
-        <p>Deze modellen worden het vaakst bij ons aangemeld voor reparatie of advies.</p>
+        <h2>Veel aangemelde televisies</h2>
+        <p>Deze modellen worden het vaakst bij ons aangemeld voor reparatie of advies. Klik op een model voor meer informatie over bekende klachten en reparatiemogelijkheden.</p>
       </div>
       <div class="populair-grid">
         <?php foreach ($uitgelicht as $tv): ?>

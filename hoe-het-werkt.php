@@ -9,8 +9,8 @@ $canonicalUrl    = '/hoe-het-werkt.php';
 include __DIR__ . '/includes/header.php';
 ?>
 
-<!-- HERO + STAPPEN: één gecombineerd donker blok -->
-<div class="page-header-stappen">
+<!-- HERO: donker blok -->
+<div class="page-header-hero-only">
   <div class="page-header-stappen-inner">
 
     <!-- Breadcrumb -->
@@ -21,51 +21,57 @@ include __DIR__ . '/includes/header.php';
 
     <!-- Hero tekst -->
     <h1>Hoe werkt<br>Reparatieplatform.nl?</h1>
-    <p class="hero-lead">Van defecte televisie naar de beste oplossing — in drie eenvoudige stappen. Gratis en vrijblijvend.</p>
+    <p class="hero-lead">Televisie kapot? Wij helpen je uitzoeken wat de beste stap is. Gratis en zonder verplichtingen.</p>
 
     <!-- Badge -->
     <div class="hero-badge">&#9881; Eenvoudig proces</div>
 
-    <h2 class="stappen-titel">In drie stappen geholpen</h2>
-    <p class="stappen-lead">Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.</p>
+  </div>
+</div>
 
-    <!-- Stappen kaarten -->
-    <div class="zowerkhet-steps" id="stappen">
-      <div class="zowerkhet-step">
-        <span class="zowerkhet-step-num">Stap 01</span>
-        <div class="zowerkhet-step-icon">&#128221;</div>
+<!-- STAPPEN SECTIE: apart blok met lichte achtergrond -->
+<div class="stappen-sectie-licht">
+  <div class="stappen-sectie-inner">
+
+    <h2 class="stappen-titel-licht">In drie stappen geholpen</h2>
+    <p class="stappen-lead-licht">Geen technische kennis nodig. Vertel ons wat er speelt en wij denken met je mee.</p>
+
+    <div class="zowerkhet-steps-licht" id="stappen">
+      <div class="zowerkhet-step-licht">
+        <span class="zowerkhet-step-num-licht">Stap 01</span>
+        <div class="zowerkhet-step-icon-licht">&#128221;</div>
         <h3>Formulier invullen</h3>
-        <p>Vul het korte adviesformulier in met merk, modelnummer en een omschrijving van het probleem. Kost minder dan twee minuten — geen technische kennis vereist.</p>
-        <ul style="list-style:none;padding:0;margin:.5rem 0 0;display:flex;flex-direction:column;gap:.35rem;">
-          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Merk en modelnummer (staat achter op de tv)</li>
-          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Korte omschrijving van het defect</li>
-          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Uw e-mailadres voor het advies</li>
+        <p>Vul het korte adviesformulier in met merk, modelnummer en een omschrijving van het probleem. Het duurt minder dan twee minuten en je hebt er geen technische kennis voor nodig.</p>
+        <ul class="stap-check-lijst">
+          <li><span class="stap-check">&#10003;</span> Merk en modelnummer (staat achter op de tv)</li>
+          <li><span class="stap-check">&#10003;</span> Korte omschrijving van het defect</li>
+          <li><span class="stap-check">&#10003;</span> Je e-mailadres voor het advies</li>
         </ul>
-        <span class="zowerkhet-step-badge">&#10003; Gratis</span>
+        <span class="zowerkhet-step-badge-licht">&#10003; Gratis</span>
       </div>
-      <div class="zowerkhet-step">
-        <span class="zowerkhet-step-num">Stap 02</span>
-        <div class="zowerkhet-step-icon">&#128269;</div>
-        <h3>Wij analyseren uw situatie</h3>
-        <p>Een specialist bekijkt uw aanvraag en toetst aan garantie- en coulanceregelingen, reparatiemogelijkheden en de waarde van het toestel. Advies op maat, niet van een script.</p>
-        <ul style="list-style:none;padding:0;margin:.5rem 0 0;display:flex;flex-direction:column;gap:.35rem;">
-          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Garantie- en coulancecheck</li>
-          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Reparatiemogelijkheden in kaart</li>
-          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Eerlijk advies — ook als reparatie niet loont</li>
+      <div class="zowerkhet-step-licht">
+        <span class="zowerkhet-step-num-licht">Stap 02</span>
+        <div class="zowerkhet-step-icon-licht">&#128269;</div>
+        <h3>Wij bekijken jouw situatie</h3>
+        <p>Een specialist kijkt naar jouw aanvraag en beoordeelt de mogelijkheden: garantie, coulance, reparatie of taxatie. Je krijgt eerlijk advies, ook als reparatie niet de slimste keuze is.</p>
+        <ul class="stap-check-lijst">
+          <li><span class="stap-check">&#10003;</span> Garantie en coulance worden nagekeken</li>
+          <li><span class="stap-check">&#10003;</span> Reparatiemogelijkheden in beeld gebracht</li>
+          <li><span class="stap-check">&#10003;</span> Eerlijk advies, ook als reparatie niet loont</li>
         </ul>
-        <span class="zowerkhet-step-badge">&#10003; Persoonlijk advies</span>
+        <span class="zowerkhet-step-badge-licht">&#10003; Persoonlijk advies</span>
       </div>
-      <div class="zowerkhet-step">
-        <span class="zowerkhet-step-num">Stap 03</span>
-        <div class="zowerkhet-step-icon">&#128233;</div>
-        <h3>Persoonlijk advies binnen 24 uur</h3>
-        <p>U ontvangt een helder persoonlijk advies per e-mail met concrete vervolgstappen — garantie, coulance, reparatie of taxatie. Wij wijzen u de beste weg.</p>
-        <ul style="list-style:none;padding:0;margin:.5rem 0 0;display:flex;flex-direction:column;gap:.35rem;">
-          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Reactie binnen één werkdag</li>
-          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Duidelijke vervolgstappen</li>
-          <li style="font-size:.8rem;color:rgba(255,255,255,.45);display:flex;gap:.5rem;"><span style="color:#4ecb9e;">&#10003;</span> Volledig gratis en vrijblijvend</li>
+      <div class="zowerkhet-step-licht">
+        <span class="zowerkhet-step-num-licht">Stap 03</span>
+        <div class="zowerkhet-step-icon-licht">&#128233;</div>
+        <h3>Advies binnen 24 uur per e-mail</h3>
+        <p>Je ontvangt een helder persoonlijk advies per e-mail met duidelijke vervolgstappen. Of het nu gaat om garantie, coulance, reparatie of taxatie, wij wijzen je de weg.</p>
+        <ul class="stap-check-lijst">
+          <li><span class="stap-check">&#10003;</span> Reactie binnen één werkdag</li>
+          <li><span class="stap-check">&#10003;</span> Concrete vervolgstappen</li>
+          <li><span class="stap-check">&#10003;</span> Volledig gratis en vrijblijvend</li>
         </ul>
-        <span class="zowerkhet-step-badge">&#10003; Binnen 1 werkdag</span>
+        <span class="zowerkhet-step-badge-licht">&#10003; Binnen 1 werkdag</span>
       </div>
     </div>
 
@@ -73,14 +79,14 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <style>
-/* ── Gecombineerde hero + stappen wrapper ── */
-.page-header-stappen {
+/* ── Hero only: donker blok zonder stappen ── */
+.page-header-hero-only {
   background: var(--ink, #0d1117);
-  padding: 5rem 2.5rem 5rem;
+  padding: 5rem 2.5rem 4rem;
   position: relative;
   overflow: hidden;
 }
-.page-header-stappen::before {
+.page-header-hero-only::before {
   content: '';
   position: absolute;
   top: -100px; right: -100px;
@@ -94,14 +100,14 @@ include __DIR__ . '/includes/header.php';
   margin: 0 auto;
   position: relative;
 }
-.page-header-stappen h1 {
+.page-header-hero-only h1 {
   font-size: clamp(2rem, 3.5vw, 3rem);
   font-weight: 800;
   color: white;
   letter-spacing: -.03em;
   margin-bottom: .75rem;
 }
-.page-header-stappen .hero-lead {
+.page-header-hero-only .hero-lead {
   font-size: 1rem;
   color: rgba(255,255,255,.55);
   max-width: 520px;
@@ -121,93 +127,114 @@ include __DIR__ . '/includes/header.php';
   margin-bottom: 1.1rem;
   letter-spacing: .04em;
 }
-.stappen-titel {
+
+/* ── Stappen sectie licht ── */
+.stappen-sectie-licht {
+  background: #f8fafc;
+  padding: 4rem 2.5rem;
+}
+.stappen-sectie-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.stappen-titel-licht {
   font-size: clamp(1.5rem, 2.2vw, 2rem);
   font-weight: 800;
-  color: #fff;
+  color: #1a2332;
   letter-spacing: -.025em;
   margin-bottom: .5rem;
   text-align: center;
 }
-.stappen-lead {
+.stappen-lead-licht {
   font-size: 1rem;
-  color: rgba(255,255,255,.55);
+  color: #64748b;
   max-width: 48ch;
   margin: 0 auto 2.5rem;
   text-align: center;
   line-height: 1.75;
 }
-
-/* ── Stappen kaarten ── */
-.zowerkhet-steps {
+.zowerkhet-steps-licht {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
-  margin-top: 0;
 }
-.zowerkhet-step {
-  background: #161b22;
-  border: 1px solid rgba(255,255,255,.08);
+.zowerkhet-step-licht {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 2rem 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  transition: border-color .2s ease, transform .2s ease;
+  transition: border-color .2s ease, box-shadow .2s ease;
   position: relative;
-  overflow: hidden;
 }
-.zowerkhet-step::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at top left, rgba(40,120,100,.12) 0%, transparent 65%);
-  pointer-events: none;
+.zowerkhet-step-licht:hover {
+  border-color: #287864;
+  box-shadow: 0 4px 16px rgba(40,120,100,.1);
 }
-.zowerkhet-step:hover {
-  border-color: rgba(40,120,100,.5);
-  transform: translateY(-3px);
-}
-.zowerkhet-step-num {
+.zowerkhet-step-num-licht {
   font-size: .7rem;
   font-weight: 800;
   letter-spacing: .12em;
-  color: var(--accent, #287864);
+  color: #287864;
   text-transform: uppercase;
 }
-.zowerkhet-step-icon { font-size: 1.75rem; line-height: 1; }
-.zowerkhet-step h3 {
+.zowerkhet-step-icon-licht {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+.zowerkhet-step-licht h3 {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #fff;
+  color: #1a2332;
   letter-spacing: -.02em;
   margin: 0;
 }
-.zowerkhet-step p {
+.zowerkhet-step-licht p {
   font-size: .875rem;
-  color: rgba(255,255,255,.5);
+  color: #475569;
   line-height: 1.7;
   margin: 0;
   max-width: 36ch;
 }
-.zowerkhet-step-badge {
+.stap-check-lijst {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+.stap-check-lijst li {
+  font-size: .8rem;
+  color: #64748b;
+  display: flex;
+  gap: .5rem;
+}
+.stap-check {
+  color: #287864;
+  font-weight: 700;
+}
+.zowerkhet-step-badge-licht {
   display: inline-flex;
   align-items: center;
   gap: .35rem;
-  background: rgba(40,120,100,.15);
-  border: 1px solid rgba(40,120,100,.35);
+  background: rgba(40,120,100,.08);
+  border: 1px solid rgba(40,120,100,.25);
   border-radius: 999px;
   padding: .25rem .75rem;
   font-size: .72rem;
   font-weight: 700;
-  color: #4ecb9e;
+  color: #287864;
   margin-top: auto;
   width: fit-content;
 }
 @media (max-width: 768px) {
-  .page-header-stappen { padding: 4rem 1.25rem 3.5rem; }
-  .zowerkhet-steps { grid-template-columns: 1fr; }
-  .zowerkhet-step  { padding: 1.5rem 1.25rem; }
+  .page-header-hero-only { padding: 4rem 1.25rem 3rem; }
+  .stappen-sectie-licht { padding: 3rem 1.25rem; }
+  .zowerkhet-steps-licht { grid-template-columns: 1fr; }
+  .zowerkhet-step-licht { padding: 1.5rem 1.25rem; }
 }
 </style>
 
@@ -264,36 +291,36 @@ include __DIR__ . '/includes/header.php';
 <!-- Welke opties zijn er -->
 <div class="section-light">
   <div class="section" style="padding-top:4rem;padding-bottom:4rem;">
-    <h2 class="section-title">Welke oplossingen bieden wij?</h2>
-    <p class="section-lead">Afhankelijk van uw situatie adviseren wij één van de volgende routes.</p>
+    <h2 class="section-title">Wat kunnen wij voor je doen?</h2>
+    <p class="section-lead">Afhankelijk van jouw situatie kijken wij welke route het beste bij je past. Garantie en coulance worden als advies getoond. Als een verkoper of merk niet meewerkt met de coulance, kun je altijd terecht voor vrijblijvend reparatieadvies.</p>
     <div class="cards-grid">
       <a href="<?= BASE_URL ?>/garantie.php" class="adv-card" style="text-decoration:none;">
         <div class="adv-num">01</div>
         <div class="adv-card-icon">&#9989;</div>
         <h3>Garantie</h3>
-        <p>Televisie nog binnen de garantietermijn? Ontdek of u recht hebt op gratis reparatie of vervanging door de fabrikant.</p>
-        <span class="adv-tag">Wettelijk recht</span>
+        <p>Televisie nog binnen de garantietermijn? Wij helpen je uitzoeken of je recht hebt op gratis reparatie of vervanging door de fabrikant of verkoper.</p>
+        <span class="adv-tag">Gratis advies</span>
       </a>
       <a href="<?= BASE_URL ?>/coulance.php" class="adv-card" style="text-decoration:none;">
         <div class="adv-num">02</div>
         <div class="adv-card-icon">&#129309;</div>
         <h3>Coulanceregeling</h3>
-        <p>Garantie verlopen maar televisie al snel kapot? Veel fabrikanten bieden een coulanceregeling aan buiten de garantietermijn.</p>
-        <span class="adv-tag">Kans op vergoeding</span>
+        <p>Garantie verlopen maar televisie snel stuk? Veel fabrikanten bieden buiten de garantietermijn nog coulance aan. Wij laten je zien hoe je dat het beste aanpakt. Werkt de verkoper niet mee? Dan help je we je verder met reparatieadvies.</p>
+        <span class="adv-tag">Gratis advies</span>
       </a>
       <a href="<?= BASE_URL ?>/reparatie.php" class="adv-card featured" style="text-decoration:none;">
         <div class="adv-num">03</div>
         <div class="adv-card-icon">&#128295;</div>
         <h3>Reparatie aan huis</h3>
-        <p>Een gecertificeerde monteur komt bij u thuis. Transparante prijzen, snel geholpen en drie maanden garantie op de reparatie.</p>
+        <p>Een gecertificeerde monteur komt bij je thuis. Transparante prijzen, snel geholpen en drie maanden garantie op de reparatie.</p>
         <span class="adv-tag">Ons specialisme</span>
       </a>
       <a href="<?= BASE_URL ?>/taxatie.php" class="adv-card featured" style="text-decoration:none;">
         <div class="adv-num">04</div>
         <div class="adv-card-icon">&#128196;</div>
-        <h3>Taxatierapport</h3>
-        <p>Schade door stroom, brand of inbraak? Wij stellen een officieel taxatierapport op dat geaccepteerd wordt door uw verzekeraar.</p>
-        <span class="adv-tag">Geaccepteerd door verzekeraars</span>
+        <h3>Schadetaxatie</h3>
+        <p>Schade door stroom, brand of inbraak? Wij stellen een officieel taxatierapport op voor je verzekeraar. De schadetaxatie kost 49 euro.</p>
+        <span class="adv-tag">49 euro</span>
       </a>
     </div>
   </div>
@@ -303,7 +330,7 @@ include __DIR__ . '/includes/header.php';
 <div style="background:white; padding:5rem 0;">
   <div class="section" style="padding-top:0;padding-bottom:0;">
     <h2 class="section-title">Veelgestelde vragen</h2>
-    <p class="section-lead">Alles wat u wilt weten over hoe Reparatieplatform.nl werkt.</p>
+    <p class="section-lead">Alles wat je wil weten over hoe Reparatieplatform.nl werkt.</p>
     <div class="faq-lijst-fancy">
       <div class="faq-fancy-item">
         <button class="faq-fancy-q faq-q">
@@ -311,16 +338,16 @@ include __DIR__ . '/includes/header.php';
           <span>Wat kost het advies?</span>
         </button>
         <div class="faq-fancy-a faq-a">
-          <p>Het advies is volledig gratis en vrijblijvend. U betaalt niets voor het aanvragen of ontvangen van advies. Aan dit advies kunnen geen rechten worden ontleend.</p>
+          <p>Het reparatieadvies is volledig gratis en vrijblijvend. Je betaalt niets voor het aanvragen of ontvangen van advies. Alleen de schadetaxatie kost 49 euro. Aan het advies kunnen geen rechten worden ontleend.</p>
         </div>
       </div>
       <div class="faq-fancy-item">
         <button class="faq-fancy-q faq-q">
           <span class="faq-fancy-icon">&#128343;</span>
-          <span>Hoe snel ontvang ik een reactie?</span>
+          <span>Hoe snel krijg ik een reactie?</span>
         </button>
         <div class="faq-fancy-a faq-a">
-          <p>U ontvangt binnen één werkdag een persoonlijk advies per e-mail. In drukke periodes kan dit uitlopen tot 48 uur.</p>
+          <p>Je ontvangt binnen één werkdag een persoonlijk advies per e-mail. In drukke periodes kan dit oplopen tot 48 uur.</p>
         </div>
       </div>
       <div class="faq-fancy-item">
@@ -329,16 +356,25 @@ include __DIR__ . '/includes/header.php';
           <span>Werkt Reparatieplatform.nl door heel Nederland?</span>
         </button>
         <div class="faq-fancy-a faq-a">
-          <p>Ja, wij adviseren consumenten door heel Nederland. Reparatie aan huis is beschikbaar in de meeste regio's. Bij de aanvraag wordt uw postcode gecontroleerd op beschikbaarheid.</p>
+          <p>Ja, wij adviseren consumenten door heel Nederland. Reparatie aan huis is beschikbaar in de meeste regio's. Bij de aanvraag controleren wij je postcode op beschikbaarheid.</p>
         </div>
       </div>
       <div class="faq-fancy-item">
         <button class="faq-fancy-q faq-q">
           <span class="faq-fancy-icon">&#128196;</span>
-          <span>Voor welke merken kunt u adviseren?</span>
+          <span>Voor welke merken kunnen jullie adviseren?</span>
         </button>
         <div class="faq-fancy-a faq-a">
           <p>Wij adviseren voor alle grote televisiemerken: Samsung, LG, Sony, Philips, Panasonic, Hisense, TCL en meer. Zowel voor LED, OLED als QLED modellen.</p>
+        </div>
+      </div>
+      <div class="faq-fancy-item">
+        <button class="faq-fancy-q faq-q">
+          <span class="faq-fancy-icon">&#129309;</span>
+          <span>Wat als de verkoper niet meewerkt met coulance?</span>
+        </button>
+        <div class="faq-fancy-a faq-a">
+          <p>Garantie en coulance worden bij ons als advies getoond op de website. Gaat een verkoper of merk niet mee met de coulance? Dan kun je altijd alsnog terecht voor vrijblijvend reparatieadvies. Wij helpen je verder, ook als de eerste route niet lukt.</p>
         </div>
       </div>
       <div class="faq-fancy-item">
@@ -347,7 +383,7 @@ include __DIR__ . '/includes/header.php';
           <span>Is het advies bindend?</span>
         </button>
         <div class="faq-fancy-a faq-a">
-          <p>Nee. Het advies van Reparatieplatform.nl is altijd indicatief en vrijblijvend. U beslist zelf welke vervolgstappen u neemt. Aan het advies kunnen geen rechten worden ontleend.</p>
+          <p>Nee. Het advies van Reparatieplatform.nl is altijd indicatief en vrijblijvend. Je beslist zelf welke stappen je neemt. Aan het advies kunnen geen rechten worden ontleend.</p>
         </div>
       </div>
     </div>
@@ -360,7 +396,7 @@ include __DIR__ . '/includes/header.php';
     <div>
       <h2 class="section-title">Klaar om te beginnen?</h2>
       <p class="section-lead" style="max-width:480px;margin:0 auto 2rem;">
-        Vraag gratis en vrijblijvend advies aan. Wij helpen u binnen één werkdag verder.
+        Vraag gratis en vrijblijvend advies aan. Het reparatieadvies kost je niets en wij helpen je binnen één werkdag verder.
       </p>
       <a href="<?= BASE_URL ?>/advies.php" class="btn-primary" style="margin:0 auto;">
         Gratis advies aanvragen
