@@ -153,25 +153,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $msg = 'Leeftijdsgrenzen & algemene instellingen opgeslagen.';
         }
 
-        // ── Coulance-kans rangen opslaan ──────────────────────────────────
+        // ── Coulance termijnen per prijsbereik opslaan ─────────────────────
         if ($act === 'save_coulance_matrix') {
             $matrix   = [];
             $cnt      = (int)($_POST['matrix_count'] ?? 0);
-            $gebruikte = [];
             for ($i = 0; $i < $cnt; $i++) {
-                $pk  = trim($_POST["matrix_{$i}_prijsklasse"] ?? '');
-                $bk  = (int)($_POST["matrix_{$i}_basis_kans"]      ?? 50);
-                $pja = (int)($_POST["matrix_{$i}_per_jaar_aftrek"]  ?? 6);
-                if (in_array($pk, $gebruikte, true)) continue; // duplicaat overslaan
-                $gebruikte[] = $pk;
+                $minp     = max(0, (int)($_POST["matrix_{$i}_min_prijs"] ?? 0));
+                $maxp_raw = trim($_POST["matrix_{$i}_max_prijs"] ?? '');
+                $maxp     = ($maxp_raw === '' || $maxp_raw === '0') ? null : max($minp + 1, (int)$maxp_raw);
+                $jaren    = max(1, min(15, (int)($_POST["matrix_{$i}_coulance_jaren"] ?? 3)));
+
                 $matrix[] = [
-                    'prijsklasse'    => $pk,
-                    'basis_kans'     => max(5, min(95, $bk)),
-                    'per_jaar_aftrek'=> max(0, min(50, $pja)),
+                    'min_prijs'      => $minp,
+                    'max_prijs'      => $maxp,
+                    'coulance_jaren' => $jaren,
                 ];
             }
+            // Sorteer op minimumprijs
+            usort($matrix, fn($a, $b) => $a['min_prijs'] <=> $b['min_prijs']);
             setAR('coulance_kans_matrix', json_encode($matrix, JSON_UNESCAPED_UNICODE), 'json');
-            $msg = 'Coulance-kans rangen opgeslagen.';
+            $msg = 'Coulance prijsranges (redelijke jaren) opgeslagen.';
         }
 
         // ── Defect/schade routing opslaan ──────────────────────────────────
@@ -246,14 +247,13 @@ if (empty($stappenConfig)) {
     ];
 }
 
-// Standaard coulance-matrix als DB leeg is
+// Standaard coulance-matrix (prijsranges → redelijke jaren) als DB leeg is
 if (empty($coulanceMatrix)) {
     $coulanceMatrix = [
-        ['prijsklasse'=>'<500',      'basis_kans'=>35, 'per_jaar_aftrek'=>6],
-        ['prijsklasse'=>'500-1000',  'basis_kans'=>55, 'per_jaar_aftrek'=>7],
-        ['prijsklasse'=>'1000-2000', 'basis_kans'=>70, 'per_jaar_aftrek'=>8],
-        ['prijsklasse'=>'>2000',     'basis_kans'=>85, 'per_jaar_aftrek'=>9],
-        ['prijsklasse'=>'',          'basis_kans'=>50, 'per_jaar_aftrek'=>6],
+        ['min_prijs' => 0,    'max_prijs' => 499,  'coulance_jaren' => 2],
+        ['min_prijs' => 500,  'max_prijs' => 999,  'coulance_jaren' => 3],
+        ['min_prijs' => 1000, 'max_prijs' => 1999, 'coulance_jaren' => 4],
+        ['min_prijs' => 2000, 'max_prijs' => null, 'coulance_jaren' => 5],
     ];
 }
 
@@ -374,7 +374,7 @@ require_once __DIR__ . '/includes/admin-header.php';
     }
     .matrix-rij-header { display:flex; align-items:center; justify-content:space-between; gap:.5rem; margin-bottom:.75rem; }
     .matrix-kans-preview {
-      font-size:.72rem; font-weight:700; background:#eff6ff; color:#1e40af;
+      font-size:.72rem; font-weight:700; background:#fce7f3; color:#9d174d;
       border-radius:6px; padding:.2rem .5rem; white-space:nowrap;
     }
 
@@ -568,15 +568,14 @@ require_once __DIR__ . '/includes/admin-header.php';
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════════════
-       TAB 3 – COULANCE RANGEN
+       TAB 3 – COULANCE PRIJSRANGES
        ════════════════════════════════════════════════════════════════════════ -->
   <div class="ai-tabpanel" id="tab-coulance">
     <div class="rule-section">
-      <h2>&#129309; Coulance-kans rangen</h2>
+      <h2>&#129309; Coulance termijnen per prijsbereik</h2>
       <p>
-        Stel per prijsklasse de basiskansprocenten en de jaarlijkse aftrek in.
-        Hoe duurder de TV, hoe groter de kans op coulance. Elke prijsklasse mag maximaal één keer voorkomen.
-        De rij met <strong>lege prijsklasse</strong> is de fallback voor onbekende/niet-ingevulde prijs.
+        Bepaal per <strong>aankoopwaarde</strong> (prijs) hoeveel jaar coulance <strong>schappelijk/redelijk</strong> is.<br>
+        Dit bepaalt in advies.php of coulance nog een redelijke optie is. Je kunt ongeveer 4 tot 6 ranges instellen.
       </p>
 
       <form method="POST" id="form-matrix">
@@ -589,60 +588,47 @@ require_once __DIR__ . '/includes/admin-header.php';
           <div class="matrix-rij" id="matrix-rij-<?= $mi ?>">
             <div class="matrix-rij-header">
               <strong style="font-size:.85rem;color:#111827;">
-                <?= h($allePrijsklassen[$rij['prijsklasse']] ?? 'Onbekend') ?>
+                €<?= number_format($rij['min_prijs'], 0, ',', '.') ?> – 
+                <?= $rij['max_prijs'] !== null ? '€'.number_format($rij['max_prijs'], 0, ',', '.') : 'hoger' ?>
               </strong>
               <div style="display:flex;align-items:center;gap:.5rem;">
                 <span class="matrix-kans-preview" id="preview-<?= $mi ?>">
-                  <?= $rij['basis_kans'] ?>% basis
+                  <?= $rij['coulance_jaren'] ?> jaar coulance
                 </span>
                 <button type="button" class="btn-danger-sm" onclick="verwijderMatrixRij(<?= $mi ?>)">&#10005;</button>
               </div>
             </div>
-            <input type="hidden" name="matrix_<?= $mi ?>_prijsklasse" value="<?= h($rij['prijsklasse']) ?>">
-            <div class="two-col">
+            <div class="three-col">
               <div>
-                <label class="field-label">Basiskans (%)</label>
-                <input type="number" name="matrix_<?= $mi ?>_basis_kans" min="5" max="95"
-                       value="<?= (int)$rij['basis_kans'] ?>"
-                       oninput="updateMatrixPreview(<?= $mi ?>)">
-                <p style="font-size:.72rem;color:#9ca3af;margin:.2rem 0 0;">Coulancekans als TV precies de minimumleeftijd heeft bereikt.</p>
+                <label class="field-label">Van prijs (€)</label>
+                <input type="number" name="matrix_<?= $mi ?>_min_prijs" min="0" value="<?= $rij['min_prijs'] ?>">
               </div>
               <div>
-                <label class="field-label">Aftrek per jaar boven minimum (%)</label>
-                <input type="number" name="matrix_<?= $mi ?>_per_jaar_aftrek" min="0" max="50"
-                       value="<?= (int)$rij['per_jaar_aftrek'] ?>"
-                       oninput="updateMatrixPreview(<?= $mi ?>)">
-                <p style="font-size:.72rem;color:#9ca3af;margin:.2rem 0 0;">Wordt elk jaar afgetrokken van de basiskans na de minimum leeftijd.</p>
+                <label class="field-label">Tot prijs (€) <small>(leeg = en hoger)</small></label>
+                <input type="number" name="matrix_<?= $mi ?>_max_prijs" value="<?= $rij['max_prijs'] ?? '' ?>" placeholder="leeg = hoger">
+              </div>
+              <div>
+                <label class="field-label">Redelijke coulance (jaren)</label>
+                <input type="number" name="matrix_<?= $mi ?>_coulance_jaren" min="1" max="15" value="<?= $rij['coulance_jaren'] ?>">
               </div>
             </div>
-            <div id="preview-detail-<?= $mi ?>" style="font-size:.75rem;color:#6b7280;margin-top:.4rem;"></div>
           </div>
           <?php endforeach; ?>
         </div>
 
         <div style="margin-bottom:1rem;">
-          <label class="field-label" style="margin-bottom:.4rem;">Prijsklasse toevoegen</label>
-          <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-            <?php foreach ($allePrijsklassen as $pk => $pklbl): ?>
-            <button type="button" class="btn-outline voeg-pk-toe"
-                    data-pk="<?= h($pk) ?>" data-pklbl="<?= h($pklbl) ?>"
-                    onclick="voegMatrixRijToe('<?= h($pk) ?>', '<?= h($pklbl) ?>')">
-              &#43; <?= h($pklbl) ?>
-            </button>
-            <?php endforeach; ?>
-          </div>
+          <button type="button" class="btn-outline" onclick="voegMatrixRijToe()">&#43; Nieuw prijsbereik toevoegen</button>
         </div>
 
-        <button type="submit" class="btn-sm">&#128190; Rangen opslaan</button>
+        <button type="submit" class="btn-sm">&#128190; Prijsranges opslaan</button>
       </form>
     </div>
 
     <!-- Uitlegkader -->
     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:1rem 1.25rem;font-size:.8rem;color:#92400e;margin-top:1rem;">
-      <strong>&#9888; Rekenvoorbeeld:</strong><br>
-      Een TV van €1.200, 4 jaar oud. Coulance-minimum = 2 jaar, basiskans = 70%, aftrek = 8%/jaar.<br>
-      Leeftijd boven minimum = 4 − 2 = <strong>2 jaar</strong>. Kans = 70 − (8 × 2) = <strong>54%</strong>.<br>
-      Bij aankoop in buitenland: 54 − <?= $coulanceAftrekBl ?>% aftrek = <?= max(5, 54 - $coulanceAftrekBl) ?>%.
+      <strong>&#9888; Voorbeeld:</strong><br>
+      Een TV van €1.250 valt in de range €1.000 – €1.999 → <strong>4 jaar</strong> coulance.<br>
+      Is de TV ouder dan 4 jaar? Dan wordt coulance in advies.php waarschijnlijk niet meer als redelijk voorgesteld.
     </div>
   </div>
 
@@ -688,7 +674,6 @@ require_once __DIR__ . '/includes/admin-header.php';
         <p style="font-size:.78rem;color:#6b7280;margin-bottom:.6rem;">
           Defecten die aangevinkt zijn, worden <strong>altijd</strong> naar de taxatieroute gestuurd
           — mits het merk/model in aanmerking komt voor taxatie.
-          Bijv. barst in scherm = verzekeringskwestie → schadetaxatie.
         </p>
         <div class="klacht-grid">
           <?php foreach ($alleKlachten as $kv => $kl): ?>
@@ -708,7 +693,6 @@ require_once __DIR__ . '/includes/admin-header.php';
         </h3>
         <p style="font-size:.78rem;color:#6b7280;margin-bottom:.6rem;">
           Defecten die aangevinkt zijn, worden <strong>nooit</strong> naar de garantieroute gestuurd.
-          Barst in scherm valt bijv. altijd buiten de wettelijke garantie.
         </p>
         <div class="klacht-grid">
           <?php foreach ($alleKlachten as $kv => $kl): ?>
@@ -816,7 +800,7 @@ require_once __DIR__ . '/includes/admin-header.php';
 <script>
 // ── Tabs ────────────────────────────────────────────────────────────────
 function toonTab(id) {
-  document.querySelectorAll('.ai-tab').forEach((t,i) => {
+  document.querySelectorAll('.ai-tab').forEach((t) => {
     t.classList.toggle('actief', t.getAttribute('onclick').includes("'" + id + "'"));
   });
   document.querySelectorAll('.ai-tabpanel').forEach(p => {
@@ -867,22 +851,11 @@ function verwijderStap(idx) {
   document.getElementById('stap_count').value = stapCount;
 }
 
-// ── Coulance matrix: rij toevoegen/verwijderen ───────────────────────────
+// ── Coulance prijsranges: rij toevoegen/verwijderen ──────────────────────
 let matrixCount = <?= count($coulanceMatrix) ?>;
 
-// Bijhouden welke prijsklassen al in gebruik zijn
-function getGebruiktePrijsklassen() {
-  const inputs = document.querySelectorAll('[name^="matrix_"][name$="_prijsklasse"]');
-  return [...inputs].map(i => i.value);
-}
-
-function voegMatrixRijToe(pk, pklbl) {
-  // Controleer of al aanwezig
-  if (getGebruiktePrijsklassen().includes(pk)) {
-    alert('De prijsklasse "' + pklbl + '" is al toegevoegd.');
-    return;
-  }
-  const idx       = matrixCount;
+function voegMatrixRijToe() {
+  const idx = matrixCount;
   matrixCount++;
   document.getElementById('matrix_count').value = matrixCount;
   const container = document.getElementById('matrix-container');
@@ -891,58 +864,33 @@ function voegMatrixRijToe(pk, pklbl) {
   div.id          = 'matrix-rij-' + idx;
   div.innerHTML   = `
     <div class="matrix-rij-header">
-      <strong style="font-size:.85rem;color:#111827;">${pklbl}</strong>
+      <strong style="font-size:.85rem;color:#111827;">Nieuw prijsbereik</strong>
       <div style="display:flex;align-items:center;gap:.5rem;">
-        <span class="matrix-kans-preview" id="preview-${idx}">50% basis</span>
+        <span class="matrix-kans-preview">3 jaar coulance</span>
         <button type="button" class="btn-danger-sm" onclick="verwijderMatrixRij(${idx})">&#10005;</button>
       </div>
     </div>
-    <input type="hidden" name="matrix_${idx}_prijsklasse" value="${pk}">
-    <div class="two-col">
+    <div class="three-col">
       <div>
-        <label class="field-label">Basiskans (%)</label>
-        <input type="number" name="matrix_${idx}_basis_kans" min="5" max="95" value="50"
-               oninput="updateMatrixPreview(${idx})">
-        <p style="font-size:.72rem;color:#9ca3af;margin:.2rem 0 0;">Kans op coulance bij minimumleeftijd.</p>
+        <label class="field-label">Van prijs (€)</label>
+        <input type="number" name="matrix_${idx}_min_prijs" min="0" value="2000">
       </div>
       <div>
-        <label class="field-label">Aftrek per jaar boven minimum (%)</label>
-        <input type="number" name="matrix_${idx}_per_jaar_aftrek" min="0" max="50" value="6"
-               oninput="updateMatrixPreview(${idx})">
-        <p style="font-size:.72rem;color:#9ca3af;margin:.2rem 0 0;">Jaarlijkse aftrek na de minimum leeftijd.</p>
+        <label class="field-label">Tot prijs (€) <small>(leeg = hoger)</small></label>
+        <input type="number" name="matrix_${idx}_max_prijs" value="" placeholder="leeg = hoger">
       </div>
-    </div>
-    <div id="preview-detail-${idx}" style="font-size:.75rem;color:#6b7280;margin-top:.4rem;"></div>`;
+      <div>
+        <label class="field-label">Redelijke coulance (jaren)</label>
+        <input type="number" name="matrix_${idx}_coulance_jaren" min="1" max="15" value="3">
+      </div>
+    </div>`;
   container.appendChild(div);
-  updateMatrixPreview(idx);
 }
 
 function verwijderMatrixRij(idx) {
   const el = document.getElementById('matrix-rij-' + idx);
   if (el) el.remove();
 }
-
-function updateMatrixPreview(idx) {
-  const bk  = parseInt(document.querySelector(`[name="matrix_${idx}_basis_kans"]`)?.value)  || 50;
-  const pja = parseInt(document.querySelector(`[name="matrix_${idx}_per_jaar_aftrek"]`)?.value) || 0;
-  const prev = document.getElementById('preview-' + idx);
-  if (prev) prev.textContent = bk + '% basis';
-  const det = document.getElementById('preview-detail-' + idx);
-  if (det) {
-    const cMin = <?= $coulanceMinJaar ?>;
-    const voorbeeldLeeftijden = [cMin, cMin+1, cMin+2, cMin+3];
-    const voorbeeldKansen = voorbeeldLeeftijden.map(l => {
-      const k = Math.max(5, Math.min(95, bk - pja * (l - cMin)));
-      return `${l}j→${k}%`;
-    });
-    det.textContent = 'Voorbeeld: ' + voorbeeldKansen.join(', ');
-  }
-}
-
-// Matrix previews initialiseren
-<?php foreach ($coulanceMatrix as $mi => $rij): ?>
-updateMatrixPreview(<?= $mi ?>);
-<?php endforeach; ?>
 
 // ── Merken checkboxen → hidden JSON ─────────────────────────────────────
 document.querySelectorAll('.merk-cb').forEach(cb => {
