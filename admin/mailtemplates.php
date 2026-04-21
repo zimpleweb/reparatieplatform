@@ -133,6 +133,9 @@ foreach ($templates as $t) {
     if ($t['slug'] === $editSlug) { $editTpl = $t; break; }
 }
 if (!$editTpl && !empty($templates)) $editTpl = $templates[0];
+
+$adminActivePage = 'mailtemplates';
+require_once __DIR__ . '/includes/admin-header.php';
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -214,25 +217,8 @@ if (!$editTpl && !empty($templates)) $editTpl = $templates[0];
   </style>
 </head>
 <body>
-<div class="admin-wrap">
-<nav class="admin-nav">
-  <span class="logo">Reparatie<span>Platform</span> Admin</span>
-  <a href="<?= BASE_URL ?>/admin/logout.php">Uitloggen</a>
-</nav>
-<div class="admin-layout">
-  <div class="admin-sidebar">
-    <a href="<?= BASE_URL ?>/admin/dashboard.php"><span class="icon">&#128202;</span> Dashboard</a>
-    <a href="<?= BASE_URL ?>/admin/aanvragen.php"><span class="icon">&#128236;</span> Inzendingen</a>
-    <a href="<?= BASE_URL ?>/admin/meldingen.php"><span class="icon">&#128276;</span> Meldingen</a>
-    <a href="<?= BASE_URL ?>/admin/modellen.php"><span class="icon">&#128250;</span> TV Modellen</a>
-    <a href="<?= BASE_URL ?>/admin/klachten.php"><span class="icon">&#9888;</span> Klachten</a>
-    <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;</span> Advies instellingen</a>
-    <a href="<?= BASE_URL ?>/admin/mailtemplates.php" class="active"><span class="icon">&#128140;</span> Mailtemplates</a>
-    <a href="<?= BASE_URL ?>/admin/admins.php"><span class="icon">&#128100;</span> Admin accounts</a>
-    <a href="<?= BASE_URL ?>/admin/account-instellingen.php"><span class="icon">&#128274;</span> Account instellingen</a>
-    <a href="<?= BASE_URL ?>/" target="_blank"><span class="icon">&#127760;</span> Website bekijken</a>
-  </div>
-  <div class="admin-content">
+<div class="adm-page">
+
     <h1>&#128140; Mailtemplates</h1>
 
     <?php if ($successMsg): ?>
@@ -381,9 +367,8 @@ if (!$editTpl && !empty($templates)) $editTpl = $templates[0];
       <?php endif; ?>
 
     </div><!-- /.tpl-layout -->
-  </div>
-</div>
-</div>
+
+</div><!-- /.adm-page -->
 
 <script>
 const PREVIEW_VARS = {

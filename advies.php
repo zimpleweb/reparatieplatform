@@ -14,29 +14,27 @@ $rJs = json_encode($r, JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="page-header">
-  <div class="page-header-inner">
+<!-- HERO + ZO WERKT HET: één gecombineerd donker blok -->
+<div class="page-header-stappen">
+  <div class="page-header-stappen-inner">
+
+    <!-- Breadcrumb -->
     <div class="breadcrumb">
       <a href="<?= BASE_URL ?>/">Home</a><span class="sep">/</span>
       <span style="color:rgba(255,255,255,.4)">Advies aanvragen</span>
     </div>
-    <h1>Gratis advies aanvragen</h1>
-    <p>Vertel ons wat er mis is met je televisie — wij geven eerlijk en persoonlijk advies binnen 24 uur.</p>
-  </div>
-</div>
 
-<!-- Zo werkt het – nieuwe donkere kaartstijl -->
-<div class="zowerkhet-section">
-  <div class="section" style="padding-top:0;padding-bottom:0;">
-    <div style="text-align:center;margin-bottom:0;">
-      <div style="display:inline-flex;align-items:center;gap:.45rem;background:rgba(40,120,100,.15);border:1px solid rgba(40,120,100,.3);border-radius:999px;padding:.3rem 1rem;font-size:.75rem;font-weight:700;color:#4ecb9e;margin-bottom:1.1rem;letter-spacing:.04em;">
-        &#128274; Gratis &amp; vrijblijvend
-      </div>
-      <h2 class="section-title">Zo werkt het</h2>
-      <p class="section-lead" style="max-width:48ch;margin:.6rem auto 0;">
-        Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.
-      </p>
-    </div>
+    <!-- Hero tekst -->
+    <h1>Gratis advies aanvragen</h1>
+    <p class="hero-lead">Vertel ons wat er mis is met je televisie — wij geven eerlijk en persoonlijk advies binnen 24 uur.</p>
+
+    <!-- Badge -->
+    <div class="hero-badge">&#128274; Gratis &amp; vrijblijvend</div>
+
+    <h2 class="stappen-titel">Zo werkt het</h2>
+    <p class="stappen-lead">Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.</p>
+
+    <!-- Stappen kaarten -->
     <div class="zowerkhet-steps">
       <div class="zowerkhet-step">
         <span class="zowerkhet-step-num">Stap 01</span>
@@ -60,27 +58,86 @@ include __DIR__ . '/includes/header.php';
         <span class="zowerkhet-step-badge">&#10003; Binnen 1 werkdag</span>
       </div>
     </div>
-    <div style="text-align:center;margin-top:3rem;">
+
+    <div style="text-align:center;margin-top:2.5rem;">
       <a href="#advies" class="btn-primary">
         Gratis advies aanvragen
         <span class="btn-primary-arrow">&darr;</span>
       </a>
     </div>
+
   </div>
 </div>
 
 <style>
-.zowerkhet-section {
-  background: #0d1117;
-  padding: 5rem 0;
+/* ── Gecombineerde hero + stappen wrapper ── */
+.page-header-stappen {
+  background: var(--ink, #0d1117);
+  padding: 5rem 2.5rem 5rem;
+  position: relative;
+  overflow: hidden;
 }
-.zowerkhet-section .section-title { color: #fff; }
-.zowerkhet-section .section-lead  { color: rgba(255,255,255,.55); }
+.page-header-stappen::before {
+  content: '';
+  position: absolute;
+  top: -100px; right: -100px;
+  width: 400px; height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(40,120,100,.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+.page-header-stappen-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  position: relative;
+}
+.page-header-stappen h1 {
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 800;
+  color: white;
+  letter-spacing: -.03em;
+  margin-bottom: .75rem;
+}
+.page-header-stappen .hero-lead {
+  font-size: 1rem;
+  color: rgba(255,255,255,.55);
+  max-width: 520px;
+  margin-bottom: 2.5rem;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  background: rgba(40,120,100,.15);
+  border: 1px solid rgba(40,120,100,.3);
+  border-radius: 999px;
+  padding: .3rem 1rem;
+  font-size: .75rem;
+  font-weight: 700;
+  color: #4ecb9e;
+  margin-bottom: 1.1rem;
+  letter-spacing: .04em;
+}
+.stappen-titel {
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.025em;
+  margin-bottom: .5rem;
+  text-align: center;
+}
+.stappen-lead {
+  font-size: 1rem;
+  color: rgba(255,255,255,.55);
+  max-width: 48ch;
+  margin: 0 auto 2.5rem;
+  text-align: center;
+  line-height: 1.75;
+}
 .zowerkhet-steps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
-  margin-top: 3rem;
 }
 .zowerkhet-step {
   background: #161b22;
@@ -141,7 +198,8 @@ include __DIR__ . '/includes/header.php';
   margin-top: auto;
   width: fit-content;
 }
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .page-header-stappen { padding: 4rem 1.25rem 3.5rem; }
   .zowerkhet-steps { grid-template-columns: 1fr; }
   .zowerkhet-step  { padding: 1.5rem 1.25rem; }
 }
@@ -548,9 +606,9 @@ function berekenRoute() {
     }
   }
   else if (situatie === 'storing' && leeftijd !== null) {
-    const isGUitsluit = gUitsluit.includes(klacht);
-    const isCUitsluit = cUitsluit.includes(klacht);
-    const isNl        = locatie === 'nl';
+    const isGUitsluit  = gUitsluit.includes(klacht);
+    const isCUitsluit  = cUitsluit.includes(klacht);
+    const isNl         = locatie === 'nl';
     const merkGarantie = merkToegestaan(gMerken, merk);
     const merkCoulance = merkToegestaan(cMerken, merk);
 
@@ -612,4 +670,39 @@ function berekenRoute() {
     else if (!route && klacht === 'gebarsten_scherm') {
       if (kanRep) {
         route = 'reparatie'; badge = '&#128295; Schermvervanging';
-        toel  = 'Een gebarsten scherm valt nooit onder
+        toel  = 'Een gebarsten scherm valt nooit onder de garantie, maar schermvervanging is in veel gevallen kostenefficiënt.';
+      } else {
+        route = 'recycling'; badge = '&#9851; Recycling';
+        toel  = 'Schermschade op een niet-repareerbaar model — wij adviseren richting verantwoorde recycling.';
+      }
+    }
+  }
+
+  const ind = document.getElementById('routing-indicator');
+  const bdg = document.getElementById('routing-badge');
+  const tl  = document.getElementById('routing-toelichting');
+  if (route && ind) {
+    bdg.innerHTML  = badge;
+    tl.innerHTML   = toel;
+    ind.style.display = 'block';
+    document.getElementById('geadviseerde_route').value = route;
+    document.getElementById('coulance_kans').value      = kans || '';
+  } else if (ind) {
+    ind.style.display = 'none';
+  }
+}
+
+function vulSamenvatting() {
+  const el    = document.getElementById('route-samenvatting');
+  const badge = document.getElementById('routing-badge')?.innerHTML || '';
+  const toel  = document.getElementById('routing-toelichting')?.innerHTML || '';
+  if (!el || !badge) { el && (el.style.display = 'none'); return; }
+  el.innerHTML = `
+    <div class="samenvatting-label">Uw verwachte route:</div>
+    <div class="samenvatting-badge">${badge}</div>
+    <div class="samenvatting-toel">${toel}</div>`;
+  el.style.display = 'block';
+}
+</script>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>

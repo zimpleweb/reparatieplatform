@@ -9,30 +9,28 @@ $canonicalUrl    = '/hoe-het-werkt.php';
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="page-header">
-  <div class="page-header-inner">
+<!-- HERO + STAPPEN: één gecombineerd donker blok -->
+<div class="page-header-stappen">
+  <div class="page-header-stappen-inner">
+
+    <!-- Breadcrumb -->
     <div class="breadcrumb">
       <a href="<?= BASE_URL ?>/">Home</a><span class="sep">/</span>
       <span style="color:rgba(255,255,255,.4)">Hoe het werkt</span>
     </div>
-    <h1>Hoe werkt<br>Reparatieplatform.nl?</h1>
-    <p>Van defecte televisie naar de beste oplossing — in drie eenvoudige stappen. Gratis en vrijblijvend.</p>
-  </div>
-</div>
 
-<!-- In drie stappen geholpen – nieuwe stijl -->
-<div class="zowerkhet-section" id="stappen">
-  <div class="section" style="padding-top:0;padding-bottom:0;">
-    <div style="text-align:center;margin-bottom:0;">
-      <div style="display:inline-flex;align-items:center;gap:.45rem;background:rgba(40,120,100,.15);border:1px solid rgba(40,120,100,.3);border-radius:999px;padding:.3rem 1rem;font-size:.75rem;font-weight:700;color:#4ecb9e;margin-bottom:1.1rem;letter-spacing:.04em;">
-        &#9881; Eenvoudig proces
-      </div>
-      <h2 class="section-title">In drie stappen geholpen</h2>
-      <p class="section-lead" style="max-width:48ch;margin:.6rem auto 0;">
-        Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.
-      </p>
-    </div>
-    <div class="zowerkhet-steps">
+    <!-- Hero tekst -->
+    <h1>Hoe werkt<br>Reparatieplatform.nl?</h1>
+    <p class="hero-lead">Van defecte televisie naar de beste oplossing — in drie eenvoudige stappen. Gratis en vrijblijvend.</p>
+
+    <!-- Badge -->
+    <div class="hero-badge">&#9881; Eenvoudig proces</div>
+
+    <h2 class="stappen-titel">In drie stappen geholpen</h2>
+    <p class="stappen-lead">Geen technische kennis nodig. Beschrijf het probleem en wij regelen de rest.</p>
+
+    <!-- Stappen kaarten -->
+    <div class="zowerkhet-steps" id="stappen">
       <div class="zowerkhet-step">
         <span class="zowerkhet-step-num">Stap 01</span>
         <div class="zowerkhet-step-icon">&#128221;</div>
@@ -70,22 +68,82 @@ include __DIR__ . '/includes/header.php';
         <span class="zowerkhet-step-badge">&#10003; Binnen 1 werkdag</span>
       </div>
     </div>
+
   </div>
 </div>
 
 <style>
-/* ── Zo werkt het / In drie stappen – gedeelde stijl ───────── */
-.zowerkhet-section {
-  background: #0d1117;
-  padding: 5rem 0;
+/* ── Gecombineerde hero + stappen wrapper ── */
+.page-header-stappen {
+  background: var(--ink, #0d1117);
+  padding: 5rem 2.5rem 5rem;
+  position: relative;
+  overflow: hidden;
 }
-.zowerkhet-section .section-title { color: #fff; }
-.zowerkhet-section .section-lead  { color: rgba(255,255,255,.55); }
+.page-header-stappen::before {
+  content: '';
+  position: absolute;
+  top: -100px; right: -100px;
+  width: 400px; height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(40,120,100,.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+.page-header-stappen-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  position: relative;
+}
+.page-header-stappen h1 {
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 800;
+  color: white;
+  letter-spacing: -.03em;
+  margin-bottom: .75rem;
+}
+.page-header-stappen .hero-lead {
+  font-size: 1rem;
+  color: rgba(255,255,255,.55);
+  max-width: 520px;
+  margin-bottom: 2.5rem;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  background: rgba(40,120,100,.15);
+  border: 1px solid rgba(40,120,100,.3);
+  border-radius: 999px;
+  padding: .3rem 1rem;
+  font-size: .75rem;
+  font-weight: 700;
+  color: #4ecb9e;
+  margin-bottom: 1.1rem;
+  letter-spacing: .04em;
+}
+.stappen-titel {
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.025em;
+  margin-bottom: .5rem;
+  text-align: center;
+}
+.stappen-lead {
+  font-size: 1rem;
+  color: rgba(255,255,255,.55);
+  max-width: 48ch;
+  margin: 0 auto 2.5rem;
+  text-align: center;
+  line-height: 1.75;
+}
+
+/* ── Stappen kaarten ── */
 .zowerkhet-steps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
-  margin-top: 3rem;
+  margin-top: 0;
 }
 .zowerkhet-step {
   background: #161b22;
@@ -146,9 +204,60 @@ include __DIR__ . '/includes/header.php';
   margin-top: auto;
   width: fit-content;
 }
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .page-header-stappen { padding: 4rem 1.25rem 3.5rem; }
   .zowerkhet-steps { grid-template-columns: 1fr; }
   .zowerkhet-step  { padding: 1.5rem 1.25rem; }
+}
+</style>
+
+<!-- WIT TUSSENBLOK: vertrouwensrij als kleurscheiding -->
+<div class="vertrouwen-balk">
+  <div class="section" style="padding-top:2.5rem;padding-bottom:2.5rem;">
+    <div class="vertrouwen-items">
+      <div class="vertrouwen-item">
+        <span class="vertrouwen-icon">&#9989;</span>
+        <span><strong>100% gratis</strong> advies</span>
+      </div>
+      <div class="vertrouwen-item">
+        <span class="vertrouwen-icon">&#128338;</span>
+        <span>Reactie <strong>binnen 24 uur</strong></span>
+      </div>
+      <div class="vertrouwen-item">
+        <span class="vertrouwen-icon">&#128274;</span>
+        <span><strong>Vrijblijvend</strong> en zonder verplichtingen</span>
+      </div>
+      <div class="vertrouwen-item">
+        <span class="vertrouwen-icon">&#127464;&#127473;</span>
+        <span>Door heel <strong>Nederland</strong></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.vertrouwen-balk {
+  background: #fff;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+}
+.vertrouwen-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 3rem;
+  justify-content: center;
+  align-items: center;
+}
+.vertrouwen-item {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-size: .92rem;
+  color: #444;
+}
+.vertrouwen-icon { font-size: 1.2rem; }
+@media (max-width: 640px) {
+  .vertrouwen-items { flex-direction: column; gap: 1rem; align-items: flex-start; }
 }
 </style>
 

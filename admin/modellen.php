@@ -31,8 +31,8 @@ function isUitzondering(array $merkLijst, string $merk, int $modelWaarde): ?stri
     $merkDefault = empty($merkLijst)
         ? true
         : in_array(mb_strtolower(trim($merk)), array_map(fn($m) => mb_strtolower(trim($m)), $merkLijst), true);
-    if (!$merkDefault && $modelWaarde === 1) return 'positief'; // merk niet standaard, model wel
-    if ($merkDefault  && $modelWaarde === 0) return 'negatief'; // merk standaard wel, model niet
+    if (!$merkDefault && $modelWaarde === 1) return 'positief';
+    if ($merkDefault  && $modelWaarde === 0) return 'negatief';
     return null;
 }
 
@@ -105,7 +105,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
 // ── Filter & zoek ───────────────────────────────────────
 $filterMerk  = trim($_GET['filter_merk']  ?? '');
 $filterZoek  = trim($_GET['zoek']         ?? '');
-$filterFlag  = trim($_GET['filter_flag']  ?? ''); // 'uitzondering_rep'|'uitzondering_tax'|'niet_rep'
+$filterFlag  = trim($_GET['filter_flag']  ?? '');
 
 $where  = ['actief=1'];
 $params = [];
@@ -115,20 +115,17 @@ if ($filterZoek !== '') {
     $p = '%'.$filterZoek.'%';
     $params[] = $p; $params[] = $p; $params[] = $p;
 }
-// Uitzondering-flags worden gefilterd in PHP na ophalen (kleine overhead, maar flexibel)
 $sql      = 'SELECT * FROM tv_modellen WHERE '.implode(' AND ', $where).' ORDER BY merk,serie,modelnummer';
 $stmt     = db()->prepare($sql);
 $stmt->execute($params);
 $modellenAll = $stmt->fetchAll();
 
-// Gooi uitzondering-flag toe aan elk model (PHP)
 foreach ($modellenAll as &$m) {
     $m['_uitzondering_rep'] = isUitzondering($repareerbareMerken, $m['merk'], (int)$m['repareerbaar']);
     $m['_uitzondering_tax'] = isUitzondering($taxatieMerken,      $m['merk'], (int)$m['taxatie']);
 }
 unset($m);
 
-// Aanvullend filteren op uitzondering
 if ($filterFlag === 'uitzondering_rep') {
     $modellenAll = array_values(array_filter($modellenAll, fn($m) => $m['_uitzondering_rep'] !== null));
 } elseif ($filterFlag === 'uitzondering_tax') {
@@ -142,16 +139,13 @@ $statsTotal = (int)db()->query('SELECT COUNT(*) FROM tv_modellen WHERE actief=1'
 $statsRep   = (int)db()->query('SELECT COUNT(*) FROM tv_modellen WHERE actief=1 AND repareerbaar=1')->fetchColumn();
 $statsTax   = (int)db()->query('SELECT COUNT(*) FROM tv_modellen WHERE actief=1 AND taxatie=1')->fetchColumn();
 
-// Uitzondering-tellingen
 $statsUitzRep = count(array_filter($modellenAll ?: [], fn($m) => $m['_uitzondering_rep'] !== null));
 $statsUitzTax = count(array_filter($modellenAll ?: [], fn($m) => $m['_uitzondering_tax'] !== null));
 
-// Alle unieke merken
 $alleMerken = db()->query(
     'SELECT DISTINCT merk FROM tv_modellen WHERE actief=1 AND merk IS NOT NULL ORDER BY merk'
 )->fetchAll(PDO::FETCH_COLUMN);
 
-// Pas uitzondering-tellingen op ALLE modellen uit DB
 $allModellenVoorTelling = db()->query('SELECT merk, repareerbaar, taxatie FROM tv_modellen WHERE actief=1')->fetchAll();
 $totalUitzRep = 0; $totalUitzTax = 0;
 foreach ($allModellenVoorTelling as $m) {
@@ -160,6 +154,9 @@ foreach ($allModellenVoorTelling as $m) {
 }
 
 $PAGE_SIZE = 35;
+
+$adminActivePage = 'modellen';
+require_once __DIR__ . '/includes/admin-header.php';
 ?>
 <!DOCTYPE html>
 <html lang="nl">
@@ -273,24 +270,8 @@ $PAGE_SIZE = 35;
   </style>
 </head>
 <body>
-<div class="admin-wrap">
-<nav class="admin-nav">
-  <span class="logo">Reparatie<span>Platform</span> Admin</span>
-  <a href="<?= BASE_URL ?>/admin/logout.php">Uitloggen</a>
-</nav>
-<div class="admin-layout">
-  <div class="admin-sidebar">
-    <a href="<?= BASE_URL ?>/admin/dashboard.php"><span class="icon">&#128202;</span> Dashboard</a>
-    <a href="<?= BASE_URL ?>/admin/aanvragen.php"><span class="icon">&#128236;</span> Inzendingen</a>
-    <a href="<?= BASE_URL ?>/admin/meldingen.php"><span class="icon">&#128276;</span> Meldingen</a>
-    <a href="<?= BASE_URL ?>/admin/modellen.php" class="active"><span class="icon">&#128250;</span> TV Modellen</a>
-    <a href="<?= BASE_URL ?>/admin/klachten.php"><span class="icon">&#9888;</span> Klachten</a>
-    <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;</span> Advies instellingen</a>
-    <a href="<?= BASE_URL ?>/admin/mailtemplates.php"><span class="icon">&#128140;</span> Mailtemplates</a>
-    <a href="<?= BASE_URL ?>/admin/admins.php"><span class="icon">&#128100;</span> Admin accounts</a>
-    <a href="<?= BASE_URL ?>/" target="_blank"><span class="icon">&#127760;</span> Website bekijken</a>
-  </div>
-  <div class="admin-content">
+<div class="adm-page">
+
     <h1>TV Modellen</h1>
 
     <!-- Sync info -->
@@ -529,9 +510,7 @@ $PAGE_SIZE = 35;
       </div>
     </div>
 
-  </div><!-- /.admin-content -->
-</div>
-</div>
+</div><!-- /.adm-page -->
 
 <!-- ── Alle modellen als JSON voor de lazy loader ── -->
 <script id="modellen-data" type="application/json">
@@ -582,7 +561,6 @@ function laadBatch() {
   let huidigMerk = geladen > 0 ? MODELLEN[geladen - 1].merk : null;
 
   batch.forEach(m => {
-    // Merk-groep header
     if (m.merk !== huidigMerk) {
       tbody.appendChild(merkGroepLabel(m.merk));
       huidigMerk = m.merk;
@@ -636,17 +614,15 @@ function laadBatch() {
   }
 }
 
-// Intersection Observer voor auto-laden bij scrollen
 const sentinel = document.getElementById('lazy-sentinel');
 const observer = new IntersectionObserver(entries => {
   if (entries[0].isIntersecting) laadBatch();
 }, { rootMargin: '200px' });
 
-// Eerste batch direct laden, daarna via scroll
 laadBatch();
 if (geladen < MODELLEN.length) observer.observe(sentinel);
 
-// ── Add-formulier: checkbox-standaard bij merk-wissel (datalist) ──
+// ── Add-formulier: checkbox-standaard bij merk-wissel ──
 (function() {
   const addMerk = document.getElementById('add_merk');
   if (!addMerk) return;
@@ -665,7 +641,6 @@ if (geladen < MODELLEN.length) observer.observe(sentinel);
     if (hRep) hRep.textContent = 'DB-standaard voor ' + m + ': ' + (dRep ? '\u2713 aan' : '\u2717 uit');
     if (hTax) hTax.textContent = 'DB-standaard voor ' + m + ': ' + (dTax ? '\u2713 aan' : '\u2717 uit');
   }
-  // 'change' fires when datalist option is picked; 'input' when typed
   addMerk.addEventListener('change', updateDefaults);
   addMerk.addEventListener('input', function() {
     clearTimeout(debounce);
@@ -673,7 +648,7 @@ if (geladen < MODELLEN.length) observer.observe(sentinel);
   });
 })();
 
-// ── Zoek: live filter terwijl typen (submit na 400ms debounce) ──
+// ── Zoek: live filter via debounce ──
 (function() {
   const zoekInput = document.querySelector('input[name=zoek]');
   if (!zoekInput) return;

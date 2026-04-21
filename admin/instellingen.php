@@ -1,7 +1,7 @@
 <?php
 /**
  * admin/instellingen.php
- * Sitebrede instellingen — reCAPTCHA v3 en overige opties.
+ * Sitebrede instellingen — reCAPTCHA v3, SMTP (Brevo) en overige opties.
  */
 session_start();
 require_once __DIR__ . '/../includes/db.php';
@@ -31,6 +31,11 @@ $defaults = [
     'recaptcha_site_key'   => '',
     'recaptcha_secret_key' => '',
     'recaptcha_threshold'  => '0.5',
+    // Brevo SMTP
+    'brevo_api_key'        => '',
+    'brevo_sender_name'    => '',
+    'brevo_sender_email'   => '',
+    'brevo_enabled'        => '0',
 ];
 $insertStmt = db()->prepare("
     INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES (?, ?)
@@ -51,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             UPDATE site_settings SET setting_value = ? WHERE setting_key = ?
         ");
 
+        // reCAPTCHA
         $updateStmt->execute([
             isset($_POST['recaptcha_enabled']) ? '1' : '0',
             'recaptcha_enabled'
@@ -70,8 +76,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             'recaptcha_threshold'
         ]);
 
-        // Reset de static cache in getSetting() zodat nieuwe waarden direct zichtbaar zijn
-        // door de pagina te herladen na opslaan
+        // Brevo SMTP
+        $updateStmt->execute([
+            isset($_POST['brevo_enabled']) ? '1' : '0',
+            'brevo_enabled'
+        ]);
+        $updateStmt->execute([
+            trim($_POST['brevo_api_key']      ?? ''),
+            'brevo_api_key'
+        ]);
+        $updateStmt->execute([
+            trim($_POST['brevo_sender_name']  ?? ''),
+            'brevo_sender_name'
+        ]);
+        $updateStmt->execute([
+            trim($_POST['brevo_sender_email'] ?? ''),
+            'brevo_sender_email'
+        ]);
+
         $success = true;
     }
 }
@@ -81,6 +103,11 @@ $rcEnabled   = getSetting('recaptcha_enabled')    === '1';
 $rcSiteKey   = getSetting('recaptcha_site_key');
 $rcSecretKey = getSetting('recaptcha_secret_key');
 $rcThreshold = getSetting('recaptcha_threshold',  '0.5');
+
+$brevoEnabled     = getSetting('brevo_enabled')      === '1';
+$brevoApiKey      = getSetting('brevo_api_key');
+$brevoSenderName  = getSetting('brevo_sender_name');
+$brevoSenderEmail = getSetting('brevo_sender_email');
 
 require_once __DIR__ . '/includes/admin-header.php';
 ?>
@@ -155,7 +182,8 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
   letter-spacing: .01em;
 }
 .s-field input[type="text"],
-.s-field input[type="number"] {
+.s-field input[type="number"],
+.s-field input[type="email"] {
   width: 100%;
   background: #0d1117;
   border: 1px solid rgba(255,255,255,.1);
@@ -168,7 +196,8 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
   box-sizing: border-box;
 }
 .s-field input[type="text"]:focus,
-.s-field input[type="number"]:focus {
+.s-field input[type="number"]:focus,
+.s-field input[type="email"]:focus {
   outline: none;
   border-color: #4f98a3;
   box-shadow: 0 0 0 3px rgba(79,152,163,.15);
@@ -181,6 +210,13 @@ body { background: #0b0f19; font-family: 'Inter', system-ui, sans-serif; color: 
 }
 .s-field .hint a { color: #4ecb9e; text-decoration: none; }
 .s-field .hint a:hover { text-decoration: underline; }
+
+.s-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 600px) { .s-row-2 { grid-template-columns: 1fr; } }
 
 .toggle-row {
   display: flex;
@@ -301,7 +337,7 @@ body { padding-bottom: 3rem; }
 <div class="adm-page">
 
   <h1 class="page-title">Instellingen</h1>
-  <p class="page-subtitle">Sitebrede configuratie — reCAPTCHA en overige opties.</p>
+  <p class="page-subtitle">Sitebrede configuratie — reCAPTCHA, SMTP en overige opties.</p>
 
   <?php if ($success): ?>
     <div class="alert alert-success">&#10003; Instellingen opgeslagen.</div>
@@ -313,6 +349,9 @@ body { padding-bottom: 3rem; }
     <input type="hidden" name="action"     value="save_settings" />
     <input type="hidden" name="csrf_token" value="<?= csrf() ?>" />
 
+    <!-- ══════════════════════════════════════════
+         SECTIE 1 — Google reCAPTCHA v3
+    ══════════════════════════════════════════ -->
     <div class="settings-card">
       <div class="settings-card-header">
         <div class="settings-card-icon">&#128274;</div>
@@ -345,55 +384,124 @@ body { padding-bottom: 3rem; }
         bij verzenden wordt een onzichtbaar token meegestuurd dat jouw server valideert via
         <code>verifyRecaptcha($token)</code> in <code>includes/functions.php</code>.<br><br>
         <strong>Sleutels aanmaken:</strong> ga naar
-        <a href="https://www.google.com/recaptcha/admin/create" target="_blank" rel="noopener">google.com/recaptcha/admin/create</a>,
-        kies <em>reCAPTCHA v3</em>, voeg je domein toe en kopieer de twee sleutels hieronder.
+        <a href="https://www.google.com/recaptcha/admin/create" target="_blank" rel="noopener" style="color:#4ecb9e;">google.com/recaptcha/admin/create</a>,
+        kies <strong>Score-based (v3)</strong> en voeg jouw domeinnaam toe.
       </div>
 
-      <!-- Site key -->
       <div class="s-field">
-        <label for="rc_site_key">Site Key (publiek — wordt in HTML geladen)</label>
-        <input type="text" id="rc_site_key" name="recaptcha_site_key"
-               value="<?= h($rcSiteKey) ?>"
-               placeholder="6Lc…" autocomplete="off" spellcheck="false" />
-        <p class="hint">Wordt zichtbaar in de paginabron — dit is normaal voor reCAPTCHA.</p>
+        <label for="recaptcha_site_key">Site Key (publiek)</label>
+        <input type="text" id="recaptcha_site_key" name="recaptcha_site_key"
+               value="<?= h($rcSiteKey) ?>" placeholder="6LcXXXXXXXXXXXXXXXXXXXXXXXXX" autocomplete="off" />
+        <div class="hint">Zichtbaar in de frontend — wordt meegegeven met het formulier.</div>
       </div>
 
-      <!-- Secret key -->
       <div class="s-field">
-        <label for="rc_secret_key">Secret Key (privé — nooit in de frontend)</label>
-        <input type="text" id="rc_secret_key" name="recaptcha_secret_key"
-               value="<?= h($rcSecretKey) ?>"
-               placeholder="6Lc…" autocomplete="off" spellcheck="false" />
-        <p class="hint">Wordt alleen server-side gebruikt. Bewaar veilig en deel niet.</p>
+        <label for="recaptcha_secret_key">Secret Key (privé)</label>
+        <input type="text" id="recaptcha_secret_key" name="recaptcha_secret_key"
+               value="<?= h($rcSecretKey) ?>" placeholder="6LcXXXXXXXXXXXXXXXXXXXXXXXXX" autocomplete="off" />
+        <div class="hint">Nooit delen — alleen server-side gebruikt voor tokenvalidatie via de Google API.</div>
       </div>
 
-      <!-- Drempelwaarde -->
       <div class="s-field">
-        <label for="rc_threshold">Score-drempel (0.0 = alles toestaan &mdash; 1.0 = alleen zekere mensen)</label>
+        <label for="recaptcha_threshold">Minimale score (drempelwaarde)</label>
         <div class="threshold-row">
-          <input type="range" id="rc_threshold" name="recaptcha_threshold"
-                 min="0" max="1" step="0.05"
+          <input type="range" id="rcSlider" min="0" max="1" step="0.05"
                  value="<?= h($rcThreshold) ?>"
-                 oninput="document.getElementById('rc_threshold_val').textContent = parseFloat(this.value).toFixed(2)" />
-          <span class="threshold-val" id="rc_threshold_val"><?= h($rcThreshold) ?></span>
+                 oninput="document.getElementById('rcVal').textContent=this.value;
+                          document.getElementById('recaptcha_threshold').value=this.value;" />
+          <span class="threshold-val" id="rcVal"><?= h($rcThreshold) ?></span>
         </div>
-        <p class="hint">
-          Google adviseert <strong>0.5</strong> als standaard. Verhoog naar 0.7&ndash;0.8 bij veel spam,
-          verlaag bij klachten van echte gebruikers. Aanvragen onder deze score worden geblokkeerd.
-        </p>
+        <input type="hidden" id="recaptcha_threshold" name="recaptcha_threshold" value="<?= h($rcThreshold) ?>" />
+        <div class="hint">
+          Scores lopen van <strong>0.0</strong> (waarschijnlijk bot) tot <strong>1.0</strong> (waarschijnlijk mens).
+          Aanbevolen: <strong>0.5</strong>. Verlaag bij te veel valse positieven.
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         SECTIE 2 — SMTP / Brevo
+    ══════════════════════════════════════════ -->
+    <div class="settings-card">
+      <div class="settings-card-header">
+        <div class="settings-card-icon">&#128231;</div>
+        <div>
+          <div class="settings-card-title">SMTP — Brevo (Sendinblue)</div>
+          <p class="settings-card-desc">
+            Koppel de site aan Brevo voor het verzenden van transactionele e-mails (bevestigingen, meldingen, templates).
+            Vereist een gratis of betaald Brevo-account op
+            <a href="https://app.brevo.com" target="_blank" rel="noopener" style="color:#4ecb9e;">app.brevo.com</a>.
+          </p>
+        </div>
       </div>
 
-    </div><!-- /settings-card -->
+      <!-- Aan/Uit -->
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-row-label">Brevo SMTP activeren</div>
+          <div class="toggle-row-desc">Wanneer actief worden alle systeem-e-mails via de Brevo API verstuurd.</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" name="brevo_enabled" value="1" <?= $brevoEnabled ? 'checked' : '' ?> />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
 
+      <div class="info-box">
+        <strong>API Key ophalen:</strong><br>
+        Log in op <a href="https://app.brevo.com/settings/keys/api" target="_blank" rel="noopener" style="color:#4ecb9e;">app.brevo.com → Instellingen → API Keys</a>
+        en maak een nieuwe API v3-sleutel aan. Kopieer de volledige sleutel (begint met <code>xkeysib-</code>) en plak die hieronder.<br><br>
+        <strong>Gebruik in code:</strong> roep <code>getSetting('brevo_api_key')</code> aan om de sleutel op te halen
+        en gebruik de officiële <a href="https://github.com/sendinblue/APIv3-php-library" target="_blank" rel="noopener" style="color:#4ecb9e;">Brevo PHP-library</a>
+        (<code>APIv3-php-library</code>) om transactionele mails of campaigns te versturen via
+        <code>Sendinblue\Client\Configuration::getDefaultConfiguration()->setApiKey("api-key", $apiKey)</code>.
+      </div>
+
+      <div class="s-field">
+        <label for="brevo_api_key">Brevo API Key (v3)</label>
+        <input type="text" id="brevo_api_key" name="brevo_api_key"
+               value="<?= h($brevoApiKey) ?>" placeholder="xkeysib-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+        <div class="hint">
+          Vind je sleutel op
+          <a href="https://app.brevo.com/settings/keys/api" target="_blank" rel="noopener">app.brevo.com → Instellingen → API Keys</a>.
+          Bewaar deze sleutel veilig — geef hem nooit publiek vrij.
+        </div>
+      </div>
+
+      <div class="s-row-2">
+        <div class="s-field">
+          <label for="brevo_sender_name">Verzendernaam</label>
+          <input type="text" id="brevo_sender_name" name="brevo_sender_name"
+                 value="<?= h($brevoSenderName) ?>" placeholder="ReparatiePlatform" />
+          <div class="hint">De naam die de ontvanger ziet als afzender.</div>
+        </div>
+        <div class="s-field">
+          <label for="brevo_sender_email">Verzender e-mailadres</label>
+          <input type="email" id="brevo_sender_email" name="brevo_sender_email"
+                 value="<?= h($brevoSenderEmail) ?>" placeholder="noreply@jouwdomein.nl" />
+          <div class="hint">Moet geverifieerd zijn in je Brevo-account (Senders & IPs).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Opslaan -->
     <button type="submit" class="btn-save">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-        <polyline points="17,21 17,13 7,13 7,21"/>
-        <polyline points="7,3 7,8 15,8"/>
-      </svg>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
       Instellingen opslaan
     </button>
 
   </form>
 </div>
+
+<script>
+// Sync slider op paginalaad
+(function(){
+  var slider = document.getElementById('rcSlider');
+  var val    = document.getElementById('rcVal');
+  if (slider && val) {
+    slider.addEventListener('input', function() { val.textContent = this.value; });
+  }
+})();
+</script>
+</body>
+</html>
