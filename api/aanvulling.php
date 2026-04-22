@@ -249,47 +249,50 @@ if ($type === 'taxatie') {
 
 // ── Coulanceaanvraag ─────────────────────────────────────────────────────────
 if ($type === 'coulance') {
-    $verkoopprijs       = trim($_POST['verkoopprijs']               ?? '');
-    $winkelNaam         = trim($_POST['winkel_naam']                ?? '');
-    $heeftBonCoulanceRaw = trim($_POST['heeft_bon_coulance']        ?? '');
-    $resultaat          = trim($_POST['resultaat']                  ?? '');
-    $winkelRaw          = $_POST['coulance_winkel_resultaat']       ?? null;
-    $fabrikantRaw       = $_POST['coulance_fabrikant_resultaat']    ?? null;
+    $verkoopprijs        = trim($_POST['verkoopprijs']            ?? '');
+    $winkelNaam          = trim($_POST['winkel_naam']             ?? '');
+    $resultaat           = trim($_POST['resultaat']               ?? '');
+    $winkelRaw           = $_POST['coulance_winkel_resultaat']    ?? null;
+    $fabrikantRaw        = $_POST['coulance_fabrikant_resultaat'] ?? null;
 
     if (!$verkoopprijs || !$winkelNaam || !$resultaat) {
         redirect(BASE_URL . '/mijn-aanvraag.php?error=onvolledig');
     }
 
-    $heeftBon          = match($heeftBonCoulanceRaw) { 'ja' => 1, 'nee' => 0, default => null };
-    $winkelResultaat   = ($winkelRaw   !== null && $winkelRaw   !== '') ? (int)$winkelRaw   : null;
+    $winkelResultaat    = ($winkelRaw    !== null && $winkelRaw    !== '') ? (int)$winkelRaw    : null;
     $fabrikantResultaat = ($fabrikantRaw !== null && $fabrikantRaw !== '') ? (int)$fabrikantRaw : null;
 
     switch ($resultaat) {
         case 'winkel_gelukt':
-            $statusCoulance = $nieuweStatusNaIndienen;
+            $statusCoulance = 'gesloten';
             $logActie       = 'Coulance gelukt via winkel — aanvraag gesloten door klant';
             break;
         case 'fabrikant_gelukt':
-            $statusCoulance = $nieuweStatusNaIndienen;
+            $statusCoulance = 'gesloten';
             $logActie       = 'Coulance gelukt via fabrikant — aanvraag gesloten door klant';
             break;
+        case 'reparatie_starten':
+            $statusCoulance = 'reparatie_afwachting';
+            $logActie       = 'Coulance niet gelukt — reparatieaanvraag gestart door klant';
+            break;
+        case 'afsluiten':
+            $statusCoulance = 'gesloten';
+            $logActie       = 'Coulance niet gelukt — inzending gesloten door klant';
+            break;
         case 'niet_gelukt':
-            // Repareerbaar? Gebruik opgeslagen waarde of val terug op coulance_ingevuld
-            $modelRep = $rij['model_repareerbaar'] ?? '';
-            $isRepareerbaar = ($modelRep === '1' || $modelRep === 'ja' || $modelRep === true);
-            $statusCoulance = $isRepareerbaar ? 'reparatie_afwachting' : $nieuweStatusNaIndienen;
-            $logActie = 'Coulance niet gelukt'
-                      . ($isRepareerbaar ? ' — reparatieaanvraag gestart' : ' — aanvraag gesloten');
+            // Legacy-pad: gebruik voor niet-repareerbare modellen
+            $statusCoulance = 'gesloten';
+            $logActie       = 'Coulance niet gelukt — aanvraag gesloten';
             break;
         default:
             redirect(BASE_URL . '/mijn-aanvraag.php?error=ongeldig');
     }
 
-    $sql = 'UPDATE aanvragen SET verkoopprijs=?, winkel_naam=?, heeft_bon=?,
+    $sql = 'UPDATE aanvragen SET verkoopprijs=?, winkel_naam=?,
             coulance_winkel_resultaat=?, coulance_fabrikant_resultaat=?, status=?
             WHERE id=?';
     db()->prepare($sql)->execute([
-        $verkoopprijs, $winkelNaam, $heeftBon,
+        $verkoopprijs, $winkelNaam,
         $winkelResultaat, $fabrikantResultaat,
         $statusCoulance, $id,
     ]);
@@ -306,11 +309,11 @@ if ($type === 'recycling') {
     $resultaat = trim($_POST['resultaat'] ?? '');
 
     if ($resultaat === 'niet_geinteresseerd') {
-        db()->prepare("UPDATE aanvragen SET recycling_interesse=0, status='archief' WHERE id=?")
+        db()->prepare("UPDATE aanvragen SET recycling_interesse=0, status='gesloten' WHERE id=?")
            ->execute([$id]);
         try {
             db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, gedaan_door) VALUES (?,?,?)')
-               ->execute([$id, 'Recycling niet gewenst — inzending gesloten door klant', 'klant']);
+               ->execute([$id, 'Geen interesse in recycling — inzending gesloten door klant', 'klant']);
         } catch (\PDOException $e) {}
         redirect(BASE_URL . '/mijn-aanvraag.php?verzonden=2');
     }
