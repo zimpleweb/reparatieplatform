@@ -91,6 +91,116 @@
           <p>Uw aanvulling is ontvangen. Ons team neemt zo spoedig mogelijk contact met u op.</p>
         </div>
 
+        <!-- Ingediend formulier — leesmodus -->
+        <div class="portal-action-card" style="margin-top:1.25rem;">
+          <div class="portal-action-header">
+            <div class="portal-action-icon">&#128196;</div>
+            <div>
+              <h3 style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+                Ingediend formulier
+                <span style="font-size:.72rem;font-weight:600;background:#e0f2fe;color:#0369a1;padding:.15rem .5rem;border-radius:4px;">Leesmodus</span>
+              </h3>
+              <p>Dit is een overzicht van uw ingediende gegevens. Het formulier kan niet meer worden gewijzigd.</p>
+            </div>
+          </div>
+          <?php
+            $ro = fn(string $lbl, string $val) =>
+              '<div class="portal-field"><label>' . htmlspecialchars($lbl, ENT_QUOTES, 'UTF-8') . '</label>'
+              . '<input type="text" value="' . htmlspecialchars($val, ENT_QUOTES, 'UTF-8')
+              . '" readonly class="portal-field-prefilled" style="pointer-events:none;" /></div>';
+            $roArea = fn(string $lbl, string $val) =>
+              '<div class="portal-field"><label>' . htmlspecialchars($lbl, ENT_QUOTES, 'UTF-8') . '</label>'
+              . '<textarea readonly rows="3" class="portal-field-prefilled" style="pointer-events:none;">'
+              . htmlspecialchars($val, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+          ?>
+          <div class="portal-form" style="margin-top:.75rem;">
+
+          <?php if ($advType === 'taxatie'): ?>
+            <div class="portal-form-section">Contactgegevens</div>
+            <?= $ro('Voor- en achternaam', $inzending['naam'] ?? '') ?>
+            <?= $ro('Adres', $inzending['adres'] ?? '') ?>
+            <div class="portal-fields-row">
+              <?= $ro('Postcode', $inzending['postcode'] ?? '') ?>
+              <?= $ro('Plaats', $inzending['plaats'] ?? '') ?>
+            </div>
+            <div class="portal-fields-row">
+              <?= $ro('E-mail', $inzending['email'] ?? '') ?>
+              <?= $ro('Telefoonnummer', $inzending['telefoon'] ?? '') ?>
+            </div>
+            <div class="portal-form-section">Televisie</div>
+            <div class="portal-fields-row">
+              <?= $ro('Merk TV', $inzending['merk'] ?? '') ?>
+              <?= $ro('Modelnummer', $inzending['modelnummer'] ?? '') ?>
+            </div>
+            <?= $ro('Serienummer', $inzending['serienummer'] ?? '') ?>
+            <div class="portal-form-section">Schade</div>
+            <?= $ro('Reden schade', $inzending['reden_schade'] ?? '') ?>
+            <?php if (!empty($inzending['omschrijving'])): echo $roArea('Beschrijving', $inzending['omschrijving']); endif; ?>
+            <div class="portal-form-section">Aankoop</div>
+            <div class="portal-fields-row">
+              <?= $ro('Aankoopbedrag', $inzending['aankoopbedrag'] ?? '') ?>
+              <?= $ro('Aankoopdatum', $inzending['aankoopdatum'] ?? '') ?>
+            </div>
+            <?php
+              $bonVal = $inzending['heeft_bon'] ?? null;
+              $bonTxt = '';
+              if ($bonVal === 'ja'  || $bonVal === '1' || $bonVal === 1)     $bonTxt = 'Ja';
+              elseif ($bonVal === 'nee'  || $bonVal === '0' || $bonVal === 0)     $bonTxt = 'Nee';
+              elseif ($bonVal === 'kwijt' || $bonVal === '2' || $bonVal === 2)    $bonTxt = 'Niet meer in bezit';
+              if ($bonTxt !== '') echo $ro('Aankoopbon', $bonTxt);
+            ?>
+            <div class="portal-form-section">Verzekering</div>
+            <div class="portal-fields-row">
+              <?= $ro('Verzekeraar', $inzending['naam_verzekeraar'] ?? '') ?>
+              <?= $ro('Polisnummer', $inzending['polisnummer'] ?? '') ?>
+            </div>
+
+          <?php elseif ($advType === 'coulance'): ?>
+            <div class="portal-form-section">Aankoopinformatie</div>
+            <?= $ro('Exacte verkoopprijs', $inzending['verkoopprijs'] ?? '') ?>
+            <?= $ro('Winkel', $inzending['winkel_naam'] ?? '') ?>
+
+          <?php elseif ($advType === 'recycling'): ?>
+            <div class="portal-form-section">Contactgegevens</div>
+            <div class="portal-fields-row">
+              <?= $ro('Naam', $inzending['naam'] ?? '') ?>
+              <?= $ro('E-mail', $inzending['email'] ?? '') ?>
+            </div>
+            <?= $ro('Ophaaladres', $inzending['adres'] ?? '') ?>
+            <div class="portal-fields-row">
+              <?= $ro('Postcode', $inzending['postcode'] ?? '') ?>
+              <?= $ro('Plaats', $inzending['plaats'] ?? '') ?>
+            </div>
+            <?= $ro('Telefoonnummer', $inzending['telefoon'] ?? '') ?>
+            <div class="portal-form-section">Televisie</div>
+            <div class="portal-fields-row">
+              <?= $ro('Merk TV', $inzending['merk'] ?? '') ?>
+              <?= $ro('Modelnummer', $inzending['modelnummer'] ?? '') ?>
+            </div>
+            <?php if (!empty($inzending['omschrijving'])): echo $roArea('Klachtomschrijving', $inzending['omschrijving']); endif; ?>
+
+          <?php else: // reparatie / garantie / default ?>
+            <div class="portal-form-section">Contactgegevens</div>
+            <div class="portal-fields-row">
+              <?= $ro('Naam', $inzending['naam'] ?? '') ?>
+              <?= $ro('E-mail', $inzending['email'] ?? '') ?>
+            </div>
+            <div class="portal-fields-row">
+              <?= $ro('Plaats', $inzending['plaats'] ?? '') ?>
+              <?= $ro('Telefoon', $inzending['telefoon'] ?? '') ?>
+            </div>
+            <div class="portal-form-section">Televisie</div>
+            <div class="portal-fields-row">
+              <?= $ro('Merk televisie', $inzending['merk'] ?? '') ?>
+              <?= $ro('Model televisie', $inzending['modelnummer'] ?? '') ?>
+            </div>
+            <div class="portal-form-section">Klacht</div>
+            <?= $roArea('Klachtomschrijving', $inzending['omschrijving'] ?? '') ?>
+          <?php endif; ?>
+
+          </div>
+        </div>
+
       <?php elseif ($status === 'coulance'): ?>
         <div class="portal-action-card card-warning">
           <div class="portal-action-header">
