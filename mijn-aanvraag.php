@@ -18,6 +18,7 @@ $statusLabels = [
     'coulance_ingevuld'    => ['tekst' => 'Aanvraag volledig ontvangen',       'css' => 's-aanvraag'],
     'recycling_ingevuld'   => ['tekst' => 'Aanvraag volledig ontvangen',       'css' => 's-aanvraag'],
     'afgewezen'            => ['tekst' => 'Afgewezen',                          'css' => 's-archief'],
+    'gesloten'             => ['tekst' => 'Gesloten',                           'css' => 's-archief'],
     // Legacy statussen
     'doorgestuurd'         => ['tekst' => 'Aanvulling nodig',                  'css' => 's-doorgestuurd'],
     'aanvraag'             => ['tekst' => 'Aanvraag volledig ontvangen',       'css' => 's-aanvraag'],
@@ -111,7 +112,7 @@ function portalStapNr(string $status): int {
                    'garantie_afwachting','coulance_afwachting','recycling_afwachting'];
     $ingevuld   = ['aanvraag','reparatie_ingevuld','taxatie_ingevuld',
                    'garantie_ingevuld','coulance_ingevuld','recycling_ingevuld'];
-    $afgerond   = ['coulance','recycling','behandeld','archief','afgewezen'];
+    $afgerond   = ['coulance','recycling','behandeld','archief','afgewezen','gesloten'];
     if ($status === 'inzending')        return 1;
     if (in_array($status, $afwachting)) return 2;
     if (in_array($status, $ingevuld))   return 3;

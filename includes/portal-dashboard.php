@@ -161,6 +161,12 @@
           <p>Helaas kunnen wij uw aanvraag niet verder in behandeling nemen. Bij vragen kunt u contact opnemen via onze contactpagina.</p>
         </div>
 
+      <?php elseif ($status === 'gesloten'): ?>
+        <div class="portal-info-card" style="border-left:4px solid #475569;">
+          <h3>&#10007; Inzending gesloten</h3>
+          <p>Uw inzending is afgesloten. Heeft u toch nog vragen of is er een nieuwe situatie? Neem dan contact met ons op via de contactpagina.</p>
+        </div>
+
       <?php elseif (in_array($status, ['aanvraag', 'behandeld', 'archief'])): ?>
         <div class="portal-info-card info-green">
           <h3>&#10003; <?= htmlspecialchars($sl['tekst'], ENT_QUOTES, 'UTF-8') ?></h3>

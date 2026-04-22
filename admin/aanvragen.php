@@ -35,6 +35,7 @@ $statusLabels = [
     'recycling_ingevuld'   => ['tekst' => 'Recycling ingevuld',    'badge' => 'badge-gray'],
     // ── Eindstatus ────────────────────────────────────────────────────────
     'afgewezen'            => ['tekst' => 'Afgewezen',             'badge' => 'badge-red'],
+    'gesloten'             => ['tekst' => 'Gesloten',              'badge' => 'badge-red'],
     // ── Legacy (backwards-compatibel) ─────────────────────────────────────
     'doorgestuurd'         => ['tekst' => 'Aanvulling nodig',      'badge' => 'badge-orange'],
     'aanvraag'             => ['tekst' => 'Aanvraag ontvangen',    'badge' => 'badge-green'],
@@ -48,7 +49,7 @@ $statusDefinitief = [
     'afgewezen',
     'reparatie_ingevuld', 'taxatie_ingevuld', 'garantie_ingevuld',
     'coulance_ingevuld',  'recycling_ingevuld',
-    'behandeld', 'archief',
+    'behandeld', 'archief', 'gesloten',
 ];
 
 $aanvraagTypes = [
@@ -143,9 +144,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'kies_
                   . ' → status ' . ($statusLabels[$nieuweStatus]['tekst'] ?? $nieuweStatus);
 
             $pdo = db();
-            $pdo->prepare(
-                'UPDATE aanvragen SET gekozen_advies=?, status=? WHERE id=?'
-            )->execute([$isAfwijzen ? null : $gekozenAdvies, $nieuweStatus, $aanvraagId]);
+            try {
+                $pdo->prepare(
+                    'UPDATE aanvragen SET gekozen_advies=?, status=? WHERE id=?'
+                )->execute([$isAfwijzen ? null : $gekozenAdvies, $nieuweStatus, $aanvraagId]);
+            } catch (\PDOException $e) {
+                $pdo->prepare('UPDATE aanvragen SET status=? WHERE id=?')
+                   ->execute([$nieuweStatus, $aanvraagId]);
+            }
 
             try {
                 $pdo->prepare(
@@ -199,13 +205,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_t
             } catch (\PDOException $e) {
                 try {
                     if ($nieuweStatus) {
-                        $pdo->prepare('UPDATE aanvragen SET advies_type=?, gekozen_advies=?, status=? WHERE id=?')
-                           ->execute([$nieuwType, $nieuwType, $nieuweStatus, $aanvraagId]);
+                        $pdo->prepare('UPDATE aanvragen SET advies_type=?, status=? WHERE id=?')
+                           ->execute([$nieuwType, $nieuweStatus, $aanvraagId]);
                     } else {
                         $pdo->prepare('UPDATE aanvragen SET advies_type=? WHERE id=?')
                            ->execute([$nieuwType, $aanvraagId]);
                     }
-                } catch (\PDOException $e2) {}
+                } catch (\PDOException $e2) {
+                    if ($nieuweStatus) {
+                        try {
+                            $pdo->prepare('UPDATE aanvragen SET status=? WHERE id=?')
+                               ->execute([$nieuweStatus, $aanvraagId]);
+                        } catch (\PDOException $e3) {}
+                    }
+                }
             }
             $logTekst = 'Aanvraagtype ingesteld op: ' . ($aanvraagTypes[$nieuwType]['label'] ?? $nieuwType);
             if ($nieuweStatus) {
@@ -262,13 +275,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_t
             } catch (\PDOException $e) {
                 try {
                     if ($nieuweStatus) {
-                        $pdo->prepare('UPDATE aanvragen SET advies_type=?, gekozen_advies=?, status=? WHERE id=?')
-                           ->execute([$nieuwType, $nieuwType, $nieuweStatus, $aanvraagId]);
+                        $pdo->prepare('UPDATE aanvragen SET advies_type=?, status=? WHERE id=?')
+                           ->execute([$nieuwType, $nieuweStatus, $aanvraagId]);
                     } else {
                         $pdo->prepare('UPDATE aanvragen SET advies_type=? WHERE id=?')
                            ->execute([$nieuwType, $aanvraagId]);
                     }
-                } catch (\PDOException $e2) {}
+                } catch (\PDOException $e2) {
+                    if ($nieuweStatus) {
+                        try {
+                            $pdo->prepare('UPDATE aanvragen SET status=? WHERE id=?')
+                               ->execute([$nieuweStatus, $aanvraagId]);
+                        } catch (\PDOException $e3) {}
+                    }
+                }
             }
             $logTekst = 'Aanvraagtype gewijzigd naar: ' . ($aanvraagTypes[$nieuwType]['label'] ?? $nieuwType);
             if ($nieuweStatus) {
@@ -416,6 +436,7 @@ $adminActivePage = 'aanvragen';
     .btn-recycling    { background:#0f766e;color:#fff; }
     .btn-archief      { background:#94a3b8;color:#fff; }
     .btn-behandeld    { background:#475569;color:#fff; }
+    .btn-gesloten     { background:#dc2626;color:#fff; }
 
     /* Type-select wijzigen (detail) */
     .type-select-wrap select  { padding:.45rem .75rem;border:1.5px solid var(--adm-border);border-radius:7px;font-size:.85rem;font-family:inherit;background:var(--adm-surface);cursor:pointer;color:var(--adm-ink); }
@@ -856,6 +877,13 @@ $adminActivePage = 'aanvragen';
           <input type="hidden" name="aanvraag_id"  value="<?= (int)$detail['id'] ?>">
           <input type="hidden" name="nieuw_status" value="archief">
           <button type="submit" class="btn-actie btn-archief">Archiveren</button>
+        </form>
+        <form method="POST" style="margin:0;">
+          <input type="hidden" name="csrf"         value="<?= csrf() ?>">
+          <input type="hidden" name="action"       value="status">
+          <input type="hidden" name="aanvraag_id"  value="<?= (int)$detail['id'] ?>">
+          <input type="hidden" name="nieuw_status" value="gesloten">
+          <button type="submit" class="btn-actie btn-gesloten">Sluiten</button>
         </form>
         <form method="POST" action="<?= BASE_URL ?>/api/admin-actie.php" style="margin:0;"
               onsubmit="return confirm('Aanvraag definitief verwijderen incl. foto\'s? Dit kan niet ongedaan worden gemaakt.')">
