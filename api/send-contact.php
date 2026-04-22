@@ -4,11 +4,12 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/mailer.php';
 
-$_origin = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
-         . '://' . $_SERVER['HTTP_HOST'];
+header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCsrf($_POST['csrf_token'] ?? '')) {
-    redirect($_origin . '/?error=csrf#advies');
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'csrf']);
+    exit;
 }
 
 $merk         = strip_tags(trim($_POST['merk']         ?? ''));
@@ -19,9 +20,12 @@ $omschrijving = strip_tags(trim($_POST['omschrijving']  ?? ''));
 $email        = filter_var(trim($_POST['email']         ?? ''), FILTER_VALIDATE_EMAIL);
 
 if (!$email || !$merk || !$modelnummer || !$klacht_type) {
-    redirect($_origin . '/?error=1#advies');
+    http_response_code(422);
+    echo json_encode(['ok' => false, 'error' => 'validation']);
+    exit;
 }
 
+$subject  = 'Contactformulier: ' . $merk . ' ' . $modelnummer;
 $bodyHtml = mailWrap(
     'Contactformulier – ' . htmlspecialchars($merk, ENT_QUOTES, 'UTF-8')
         . ' ' . htmlspecialchars($modelnummer, ENT_QUOTES, 'UTF-8'),
@@ -55,32 +59,6 @@ $bodyHtml = mailWrap(
     </table>'
 );
 
-$fromName  = 'ReparatiePlatform.nl';
-$fromEmail = 'noreply@reparatieplatform.nl';
-$boundary  = '----=_Part_' . md5(uniqid('', true));
-$subject   = 'Contactformulier: ' . $merk . ' ' . $modelnummer;
+$sent = mailSend('info@zimpleweb.nl', $subject, $bodyHtml, $email);
 
-$headers  = "From: {$fromName} <{$fromEmail}>\r\n";
-$headers .= "Reply-To: {$email}\r\n";
-$headers .= "MIME-Version: 1.0\r\n";
-$headers .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
-$headers .= "X-Mailer: ReparatiePlatform/1.0\r\n";
-
-$bodyText = strip_tags(preg_replace('#<br\s*/?>|</p>|</div>|</li>#i', "\n", $bodyHtml));
-$bodyText = html_entity_decode($bodyText, ENT_QUOTES, 'UTF-8');
-$bodyText = preg_replace("/\n{3,}/", "\n\n", trim($bodyText));
-
-$message  = "--{$boundary}\r\n";
-$message .= "Content-Type: text/plain; charset=UTF-8\r\n";
-$message .= "Content-Transfer-Encoding: quoted-printable\r\n\r\n";
-$message .= quoted_printable_encode($bodyText) . "\r\n";
-$message .= "--{$boundary}\r\n";
-$message .= "Content-Type: text/html; charset=UTF-8\r\n";
-$message .= "Content-Transfer-Encoding: quoted-printable\r\n\r\n";
-$message .= quoted_printable_encode($bodyHtml) . "\r\n";
-$message .= "--{$boundary}--";
-
-$encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-$sent = @mail('info@zimpleweb.nl', $encodedSubject, $message, $headers, '-f ' . $fromEmail);
-
-redirect($_origin . ($sent ? '/?verzonden=1#advies' : '/?error=1#advies'));
+echo json_encode(['ok' => $sent]);
