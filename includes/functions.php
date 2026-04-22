@@ -166,34 +166,42 @@ function verifyRecaptcha(string $token, string $action = ''): bool {
         return true; // Instellingen niet bereikbaar — niet blokkeren
     }
 
-    // Uitgeschakeld of geen sleutel/token ingesteld → doorlaten
-    if (!$enabled || empty($secretKey) || empty($token)) {
+    // Uitgeschakeld → doorlaten
+    if (!$enabled) {
         return true;
     }
 
-    $response = @file_get_contents(
-        'https://www.google.com/recaptcha/api/siteverify?' .
-        http_build_query(['secret' => $secretKey, 'response' => $token])
-    );
+    // Geconfigureerd maar secret key of token ontbreekt → blokkeren (fail-closed)
+    if (empty($secretKey) || empty($token)) {
+        return false;
+    }
 
-    // Google niet bereikbaar → fail open (niet blokkeren)
+    // H4: secret key via POST-body, niet als URL-parameter (voorkomt lekkage in logs)
+    $ctx = stream_context_create([
+        'http' => [
+            'method'  => 'POST',
+            'header'  => 'Content-Type: application/x-www-form-urlencoded',
+            'content' => http_build_query(['secret' => $secretKey, 'response' => $token]),
+            'timeout' => 5,
+        ],
+    ]);
+    $response = @file_get_contents('https://www.google.com/recaptcha/api/siteverify', false, $ctx);
+
+    // Google niet bereikbaar → fail open (dienst niet kapotmaken bij Google-uitval)
     if ($response === false) {
         return true;
     }
 
     $data = json_decode($response, true);
 
-    // Token ongeldig
     if (empty($data['success'])) {
         return false;
     }
 
-    // Score te laag (bot-waarschijnlijkheid te hoog)
     if (isset($data['score']) && $data['score'] < $threshold) {
         return false;
     }
 
-    // Optioneel: actienaam controleren
     if ($action !== '' && isset($data['action']) && $data['action'] !== $action) {
         return false;
     }
