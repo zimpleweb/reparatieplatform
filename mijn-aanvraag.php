@@ -4,13 +4,27 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/functions.php';
 
 $statusLabels = [
-    'inzending'    => ['tekst' => 'Ontvangen — wacht op beoordeling',  'css' => 's-inzending'],
-    'doorgestuurd' => ['tekst' => 'Aanvulling nodig',                  'css' => 's-doorgestuurd'],
-    'aanvraag'     => ['tekst' => 'Aanvraag volledig ontvangen',       'css' => 's-aanvraag'],
-    'coulance'     => ['tekst' => 'Coulance traject',                  'css' => 's-coulance'],
-    'recycling'    => ['tekst' => 'Recycling traject',                 'css' => 's-recycling'],
-    'behandeld'    => ['tekst' => 'Behandeld',                         'css' => 's-behandeld'],
-    'archief'      => ['tekst' => 'Gearchiveerd',                      'css' => 's-archief'],
+    'inzending'            => ['tekst' => 'Ontvangen — wacht op beoordeling',  'css' => 's-inzending'],
+    // Nieuwe *_afwachting statussen (wacht op formulier klant)
+    'reparatie_afwachting' => ['tekst' => 'Aanvulling nodig',                  'css' => 's-doorgestuurd'],
+    'taxatie_afwachting'   => ['tekst' => 'Aanvulling nodig',                  'css' => 's-doorgestuurd'],
+    'garantie_afwachting'  => ['tekst' => 'Aanvulling nodig',                  'css' => 's-doorgestuurd'],
+    'coulance_afwachting'  => ['tekst' => 'Aanvulling nodig',                  'css' => 's-doorgestuurd'],
+    'recycling_afwachting' => ['tekst' => 'Aanvulling nodig',                  'css' => 's-doorgestuurd'],
+    // Nieuwe *_ingevuld statussen (formulier ontvangen)
+    'reparatie_ingevuld'   => ['tekst' => 'Aanvraag volledig ontvangen',       'css' => 's-aanvraag'],
+    'taxatie_ingevuld'     => ['tekst' => 'Aanvraag volledig ontvangen',       'css' => 's-aanvraag'],
+    'garantie_ingevuld'    => ['tekst' => 'Aanvraag volledig ontvangen',       'css' => 's-aanvraag'],
+    'coulance_ingevuld'    => ['tekst' => 'Aanvraag volledig ontvangen',       'css' => 's-aanvraag'],
+    'recycling_ingevuld'   => ['tekst' => 'Aanvraag volledig ontvangen',       'css' => 's-aanvraag'],
+    'afgewezen'            => ['tekst' => 'Afgewezen',                          'css' => 's-archief'],
+    // Legacy statussen
+    'doorgestuurd'         => ['tekst' => 'Aanvulling nodig',                  'css' => 's-doorgestuurd'],
+    'aanvraag'             => ['tekst' => 'Aanvraag volledig ontvangen',       'css' => 's-aanvraag'],
+    'coulance'             => ['tekst' => 'Coulance traject',                  'css' => 's-coulance'],
+    'recycling'            => ['tekst' => 'Recycling traject',                 'css' => 's-recycling'],
+    'behandeld'            => ['tekst' => 'Behandeld',                         'css' => 's-behandeld'],
+    'archief'              => ['tekst' => 'Gearchiveerd',                      'css' => 's-archief'],
 ];
 
 $inzending  = null;
@@ -93,13 +107,16 @@ if (isset($_GET['error'])) {
 
 // ── Helpers ────────────────────────────────────────────────────
 function portalStapNr(string $status): int {
-    return match ($status) {
-        'inzending'                                 => 1,
-        'doorgestuurd'                              => 2,
-        'aanvraag'                                  => 3,
-        'coulance', 'recycling', 'behandeld', 'archief' => 4,
-        default                                     => 1,
-    };
+    $afwachting = ['doorgestuurd','reparatie_afwachting','taxatie_afwachting',
+                   'garantie_afwachting','coulance_afwachting','recycling_afwachting'];
+    $ingevuld   = ['aanvraag','reparatie_ingevuld','taxatie_ingevuld',
+                   'garantie_ingevuld','coulance_ingevuld','recycling_ingevuld'];
+    $afgerond   = ['coulance','recycling','behandeld','archief','afgewezen'];
+    if ($status === 'inzending')        return 1;
+    if (in_array($status, $afwachting)) return 2;
+    if (in_array($status, $ingevuld))   return 3;
+    if (in_array($status, $afgerond))   return 4;
+    return 1;
 }
 
 function lockedField(string $value, string $type = 'text'): string {
@@ -137,7 +154,7 @@ include __DIR__ . '/includes/header.php';
   $status   = $inzending['status'];
   $stapNr   = portalStapNr($status);
   $sl       = $statusLabels[$status] ?? ['tekst' => $status, 'css' => ''];
-  $advType     = $inzending['advies_type'] ?? '';
+  $advType     = $inzending['gekozen_advies'] ?? $inzending['aanvraag_type'] ?? $inzending['advies_type'] ?? '';
   $isTaxatie   = $advType === 'taxatie';
   $isReparatie = $advType === 'reparatie';
   require __DIR__ . '/includes/portal-dashboard.php';

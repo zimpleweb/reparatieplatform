@@ -178,21 +178,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_t
         $nieuwType  = trim($_POST['aanvraag_type'] ?? '');
         $toegestaan = array_keys($aanvraagTypes);
         if ($aanvraagId && in_array($nieuwType, $toegestaan, true)) {
+            $pdo = db();
+            // Bepaal of de status mee moet wijzigen (alleen als huidige status een *_afwachting is)
+            $huidigRow = $pdo->prepare('SELECT status FROM aanvragen WHERE id=?');
+            $huidigRow->execute([$aanvraagId]);
+            $huidigStatus = $huidigRow->fetchColumn() ?: '';
+            $afwachtingStatussen = ['reparatie_afwachting','taxatie_afwachting','garantie_afwachting',
+                                    'coulance_afwachting','recycling_afwachting'];
+            $nieuweStatus = in_array($huidigStatus, $afwachtingStatussen, true)
+                ? $nieuwType . '_afwachting'
+                : null;
             try {
-                db()->prepare('UPDATE aanvragen SET aanvraag_type=? WHERE id=?')
-                   ->execute([$nieuwType, $aanvraagId]);
+                if ($nieuweStatus) {
+                    $pdo->prepare('UPDATE aanvragen SET aanvraag_type=?, gekozen_advies=?, status=? WHERE id=?')
+                       ->execute([$nieuwType, $nieuwType, $nieuweStatus, $aanvraagId]);
+                } else {
+                    $pdo->prepare('UPDATE aanvragen SET aanvraag_type=? WHERE id=?')
+                       ->execute([$nieuwType, $aanvraagId]);
+                }
             } catch (\PDOException $e) {
                 try {
-                    db()->prepare('UPDATE aanvragen SET advies_type=? WHERE id=?')
-                       ->execute([$nieuwType, $aanvraagId]);
+                    if ($nieuweStatus) {
+                        $pdo->prepare('UPDATE aanvragen SET advies_type=?, gekozen_advies=?, status=? WHERE id=?')
+                           ->execute([$nieuwType, $nieuwType, $nieuweStatus, $aanvraagId]);
+                    } else {
+                        $pdo->prepare('UPDATE aanvragen SET advies_type=? WHERE id=?')
+                           ->execute([$nieuwType, $aanvraagId]);
+                    }
                 } catch (\PDOException $e2) {}
             }
+            $logTekst = 'Aanvraagtype ingesteld op: ' . ($aanvraagTypes[$nieuwType]['label'] ?? $nieuwType);
+            if ($nieuweStatus) {
+                $logTekst .= ' → status ' . ($statusLabels[$nieuweStatus]['tekst'] ?? $nieuweStatus);
+            }
             try {
-                $ins = db()->prepare(
+                $pdo->prepare(
                     'INSERT INTO aanvragen_log (aanvraag_id, actie, aangemaakt)
                      VALUES (?, ?, NOW())'
-                );
-                $ins->execute([$aanvraagId, 'Aanvraagtype ingesteld op: ' . ($aanvraagTypes[$nieuwType]['label'] ?? $nieuwType)]);
+                )->execute([$aanvraagId, $logTekst]);
             } catch (\PDOException $e) {}
             $qs = http_build_query(array_filter([
                 'id'     => $aanvraagId,
@@ -218,21 +241,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_t
         $nieuwType  = trim($_POST['aanvraag_type'] ?? '');
         $toegestaan = array_keys($aanvraagTypes);
         if ($aanvraagId && in_array($nieuwType, $toegestaan, true)) {
+            $pdo = db();
+            // Bepaal of de status mee moet wijzigen (alleen als huidige status een *_afwachting is)
+            $huidigRow = $pdo->prepare('SELECT status FROM aanvragen WHERE id=?');
+            $huidigRow->execute([$aanvraagId]);
+            $huidigStatus = $huidigRow->fetchColumn() ?: '';
+            $afwachtingStatussen = ['reparatie_afwachting','taxatie_afwachting','garantie_afwachting',
+                                    'coulance_afwachting','recycling_afwachting'];
+            $nieuweStatus = in_array($huidigStatus, $afwachtingStatussen, true)
+                ? $nieuwType . '_afwachting'
+                : null;
             try {
-                db()->prepare('UPDATE aanvragen SET aanvraag_type=? WHERE id=?')
-                   ->execute([$nieuwType, $aanvraagId]);
+                if ($nieuweStatus) {
+                    $pdo->prepare('UPDATE aanvragen SET aanvraag_type=?, gekozen_advies=?, status=? WHERE id=?')
+                       ->execute([$nieuwType, $nieuwType, $nieuweStatus, $aanvraagId]);
+                } else {
+                    $pdo->prepare('UPDATE aanvragen SET aanvraag_type=? WHERE id=?')
+                       ->execute([$nieuwType, $aanvraagId]);
+                }
             } catch (\PDOException $e) {
                 try {
-                    db()->prepare('UPDATE aanvragen SET advies_type=? WHERE id=?')
-                       ->execute([$nieuwType, $aanvraagId]);
+                    if ($nieuweStatus) {
+                        $pdo->prepare('UPDATE aanvragen SET advies_type=?, gekozen_advies=?, status=? WHERE id=?')
+                           ->execute([$nieuwType, $nieuwType, $nieuweStatus, $aanvraagId]);
+                    } else {
+                        $pdo->prepare('UPDATE aanvragen SET advies_type=? WHERE id=?')
+                           ->execute([$nieuwType, $aanvraagId]);
+                    }
                 } catch (\PDOException $e2) {}
             }
+            $logTekst = 'Aanvraagtype gewijzigd naar: ' . ($aanvraagTypes[$nieuwType]['label'] ?? $nieuwType);
+            if ($nieuweStatus) {
+                $logTekst .= ' → status ' . ($statusLabels[$nieuweStatus]['tekst'] ?? $nieuweStatus);
+            }
             try {
-                $ins = db()->prepare(
+                $pdo->prepare(
                     'INSERT INTO aanvragen_log (aanvraag_id, actie, aangemaakt)
                      VALUES (?, ?, NOW())'
-                );
-                $ins->execute([$aanvraagId, 'Aanvraagtype gewijzigd naar: ' . ($aanvraagTypes[$nieuwType]['label'] ?? $nieuwType)]);
+                )->execute([$aanvraagId, $logTekst]);
             } catch (\PDOException $e) {}
             $qs = http_build_query(array_filter([
                 'status' => $filterStatus,
