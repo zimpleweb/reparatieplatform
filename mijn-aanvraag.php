@@ -26,20 +26,32 @@ if (isset($_GET['uitloggen'])) {
 
 // ── Inloggen via formulier ─────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_case'])) {
-    $cnIn = strtoupper(trim($_POST['casenummer_check'] ?? ''));
-    $emIn = strtolower(trim($_POST['email_check']      ?? ''));
-    if ($cnIn && $emIn && filter_var($emIn, FILTER_VALIDATE_EMAIL)) {
-        $chk = db()->prepare('SELECT id FROM aanvragen WHERE casenummer = ? AND LOWER(email) = ?');
-        $chk->execute([$cnIn, $emIn]);
-        if ($chk->fetch()) {
-            $_SESSION['portal_case']  = $cnIn;
-            $_SESSION['portal_email'] = $emIn;
-            redirect(BASE_URL . '/mijn-aanvraag.php');
+    $portalRlKey = 'portal_' . (filter_var($_SERVER['REMOTE_ADDR'] ?? '', FILTER_VALIDATE_IP) !== false
+                    ? $_SERVER['REMOTE_ADDR'] : 'unknown');
+    $portalRl    = rateLimitBekijk($portalRlKey);
+
+    if ($portalRl['geblokkeerd']) {
+        $loginFout = true;
+        $melding   = 'Te veel mislukte pogingen. Probeer over enkele minuten opnieuw.';
+        $meldingOk = false;
+    } else {
+        $cnIn = strtoupper(trim($_POST['casenummer_check'] ?? ''));
+        $emIn = strtolower(trim($_POST['email_check']      ?? ''));
+        if ($cnIn && $emIn && filter_var($emIn, FILTER_VALIDATE_EMAIL)) {
+            $chk = db()->prepare('SELECT id FROM aanvragen WHERE casenummer = ? AND LOWER(email) = ?');
+            $chk->execute([$cnIn, $emIn]);
+            if ($chk->fetch()) {
+                rateLimitReset($portalRlKey);
+                $_SESSION['portal_case']  = $cnIn;
+                $_SESSION['portal_email'] = $emIn;
+                redirect(BASE_URL . '/mijn-aanvraag.php');
+            } else {
+                rateLimitMislukt($portalRlKey, 10, 300);
+                $loginFout = true;
+            }
         } else {
             $loginFout = true;
         }
-    } else {
-        $loginFout = true;
     }
 }
 
