@@ -172,13 +172,21 @@ if ($type === 'reparatie') {
     }
     $fotoDefect = uploadFoto('foto_defect', $uploadDir, $relBase);
     $fotoLabel  = uploadFoto('foto_label',  $uploadDir, $relBase);
-    $sql    = 'UPDATE aanvragen SET naam=?, telefoon=?, plaats=?, omschrijving=?, status=?';
-    $params = [$naam, $tel, $plaats, $omschrijving, $nieuweStatusNaIndienen];
+    $sql    = 'UPDATE aanvragen SET naam=?, telefoon=?, omschrijving=?, status=?';
+    $params = [$naam, $tel, $omschrijving, $nieuweStatusNaIndienen];
     if ($modelnummer) { $sql .= ', modelnummer=?'; $params[] = $modelnummer; }
     if ($fotoDefect)  { $sql .= ', foto_defect=?'; $params[] = $fotoDefect; }
     if ($fotoLabel)   { $sql .= ', foto_label=?';  $params[] = $fotoLabel; }
     $sql .= ' WHERE id=?'; $params[] = $id;
-    db()->prepare($sql)->execute($params);
+    try {
+        // Probeer met plaats-kolom (bestaat mogelijk niet in oudere installaties)
+        $sqlMet  = str_replace('naam=?, telefoon=?,', 'naam=?, telefoon=?, plaats=?,', $sql);
+        $paramsMet = array_merge([$naam, $tel, $plaats], array_slice($params, 2));
+        db()->prepare($sqlMet)->execute($paramsMet);
+    } catch (\PDOException $e) {
+        // Fallback zonder plaats-kolom
+        db()->prepare($sql)->execute($params);
+    }
     try {
         db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, gedaan_door) VALUES (?,?,?)')
            ->execute([$id, 'Reparatieaanvraag ingediend door klant', 'klant']);
@@ -288,14 +296,25 @@ if ($type === 'coulance') {
             redirect(BASE_URL . '/mijn-aanvraag.php?error=ongeldig');
     }
 
-    $sql = 'UPDATE aanvragen SET verkoopprijs=?, winkel_naam=?,
-            coulance_winkel_resultaat=?, coulance_fabrikant_resultaat=?, status=?
-            WHERE id=?';
-    db()->prepare($sql)->execute([
-        $verkoopprijs, $winkelNaam,
-        $winkelResultaat, $fabrikantResultaat,
-        $statusCoulance, $id,
-    ]);
+    try {
+        $sql = 'UPDATE aanvragen SET verkoopprijs=?, winkel_naam=?,
+                coulance_winkel_resultaat=?, coulance_fabrikant_resultaat=?, status=?
+                WHERE id=?';
+        db()->prepare($sql)->execute([
+            $verkoopprijs, $winkelNaam,
+            $winkelResultaat, $fabrikantResultaat,
+            $statusCoulance, $id,
+        ]);
+    } catch (\PDOException $e) {
+        // Fallback: probeer zonder verkoopprijs/coulance-kolommen die mogelijk ontbreken
+        try {
+            db()->prepare('UPDATE aanvragen SET winkel_naam=?, status=? WHERE id=?')
+               ->execute([$winkelNaam, $statusCoulance, $id]);
+        } catch (\PDOException $e2) {
+            db()->prepare('UPDATE aanvragen SET status=? WHERE id=?')
+               ->execute([$statusCoulance, $id]);
+        }
+    }
     try {
         db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, gedaan_door) VALUES (?,?,?)')
            ->execute([$id, $logActie, 'klant']);
