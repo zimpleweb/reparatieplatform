@@ -55,18 +55,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'change_password') {
     if (!verifyCsrf($_POST['csrf'] ?? '')) { $errorMsg = 'Ongeldig verzoek.'; } else {
-        $editId = (int)($_POST['id'] ?? 0);
-        $newPw  = $_POST['new_password'] ?? '';
-        $newPw2 = $_POST['new_password2'] ?? '';
-        if (strlen($newPw) < 10) { $errorMsg = 'Wachtwoord moet minimaal 10 tekens lang zijn.'; }
+        $editId   = (int)($_POST['id'] ?? 0);
+        $eigenId  = (int)($_SESSION['admin_id'] ?? 0);
+        $huidigPw = $_POST['current_password'] ?? '';
+        $newPw    = $_POST['new_password']      ?? '';
+        $newPw2   = $_POST['new_password2']     ?? '';
+        if ($editId !== $eigenId) { $errorMsg = 'U kunt alleen uw eigen wachtwoord wijzigen.'; }
+        elseif (strlen($newPw) < 10) { $errorMsg = 'Wachtwoord moet minimaal 10 tekens lang zijn.'; }
         elseif ($newPw !== $newPw2) { $errorMsg = 'Wachtwoorden komen niet overeen.'; }
-        elseif ($editId) { $hash = password_hash($newPw, PASSWORD_DEFAULT); db()->prepare('UPDATE admins SET password = ? WHERE id = ?')->execute([$hash, $editId]); $successMsg = 'Wachtwoord bijgewerkt.'; }
+        elseif ($editId) {
+            $ownRow = db()->prepare('SELECT password FROM admins WHERE id = ?');
+            $ownRow->execute([$eigenId]);
+            $ownHash = $ownRow->fetchColumn();
+            if (!$ownHash || !password_verify($huidigPw, $ownHash)) {
+                $errorMsg = 'Huidig wachtwoord onjuist.';
+            } else {
+                $hash = password_hash($newPw, PASSWORD_DEFAULT);
+                db()->prepare('UPDATE admins SET password = ? WHERE id = ?')->execute([$hash, $editId]);
+                $successMsg = 'Wachtwoord bijgewerkt.';
+            }
+        }
     }
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'disable_2fa') {
     if (!verifyCsrf($_POST['csrf'] ?? '')) { $errorMsg = 'Ongeldig verzoek.'; } else {
-        $editId = (int)($_POST['id'] ?? 0);
-        if ($editId) { db()->prepare('UPDATE admins SET totp_secret = NULL, totp_enabled = 0 WHERE id = ?')->execute([$editId]); $successMsg = '2FA uitgeschakeld.'; }
+        $editId  = (int)($_POST['id'] ?? 0);
+        $eigenId = (int)($_SESSION['admin_id'] ?? 0);
+        if ($editId && $eigenId && $editId === $eigenId) {
+            db()->prepare('UPDATE admins SET totp_secret = NULL, totp_enabled = 0 WHERE id = ?')->execute([$editId]);
+            $successMsg = '2FA uitgeschakeld.';
+        } else {
+            $errorMsg = 'U kunt alleen uw eigen 2FA beheren.';
+        }
     }
 }
 
@@ -140,9 +160,11 @@ $adminActivePage = 'admins';
             <button type="button"
               onclick="openEmailModal(<?= (int)$a['id'] ?>, '<?= h(addslashes($a['username'])) ?>', '<?= h(addslashes($a['email'] ?? '')) ?>')"
               class="btn btn-secondary btn-sm">E-mail</button>
+            <?php if ($isJij): ?>
             <button type="button"
               onclick="openPwModal(<?= (int)$a['id'] ?>, '<?= h(addslashes($a['username'])) ?>')"
               class="btn btn-secondary btn-sm">Wachtwoord</button>
+            <?php endif; ?>
             <?php if ($isJij && !$has2fa): ?>
               <a href="<?= BASE_URL ?>/admin/2fa-setup.php" class="btn btn-sm adm-btn-warning">2FA instellen</a>
             <?php elseif ($has2fa && $isJij): ?>
@@ -238,6 +260,14 @@ $adminActivePage = 'admins';
       <input type="hidden" name="action" value="change_password">
       <input type="hidden" name="id"     id="pwModalId">
       <div class="field">
+        <label>Huidig wachtwoord *</label>
+        <div class="pw-toggle-wrap">
+          <input type="password" name="current_password" id="modalCurrentPw"
+                 placeholder="••••••••••••" autocomplete="current-password" required />
+          <button type="button" class="pw-eye" onclick="togglePw('modalCurrentPw',this)">&#128065;</button>
+        </div>
+      </div>
+      <div class="field">
         <label>Nieuw wachtwoord *</label>
         <div class="pw-toggle-wrap">
           <input type="password" name="new_password" id="modalPw"
@@ -276,6 +306,7 @@ document.getElementById('emailModal').addEventListener('click', function(e) { if
 function openPwModal(id, username) {
   document.getElementById('pwModalId').value = id;
   document.getElementById('pwModalTitle').textContent = 'Wachtwoord wijzigen – ' + username;
+  document.getElementById('modalCurrentPw').value = '';
   document.getElementById('modalPw').value = '';
   document.getElementById('modalPw2').value = '';
   document.getElementById('modalPwStrength').textContent = '';

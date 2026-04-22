@@ -110,11 +110,22 @@ function stuurAdminFormulierMail(int $id, string $aanvraagType): void {
 
 function uploadFoto(string $veld, string $uploadDir, int $id): ?string {
     if (!isset($_FILES[$veld]) || $_FILES[$veld]['error'] !== UPLOAD_ERR_OK) return null;
-    $mime = mime_content_type($_FILES[$veld]['tmp_name']);
-    if (!in_array($mime, ['image/jpeg','image/png','image/webp','image/gif'])) return null;
     if ($_FILES[$veld]['size'] > 10 * 1024 * 1024) return null;
-    $ext  = strtolower(pathinfo($_FILES[$veld]['name'], PATHINFO_EXTENSION));
-    $bestand = bin2hex(random_bytes(10)) . '.' . $ext;
+
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime  = finfo_file($finfo, $_FILES[$veld]['tmp_name']);
+    finfo_close($finfo);
+
+    // Extensie komt uitsluitend uit de MIME-type map, nooit uit de gebruikersnaam.
+    $mimeNaarExt = [
+        'image/jpeg' => 'jpg',
+        'image/png'  => 'png',
+        'image/webp' => 'webp',
+        'image/gif'  => 'gif',
+    ];
+    if (!isset($mimeNaarExt[$mime])) return null;
+
+    $bestand = bin2hex(random_bytes(10)) . '.' . $mimeNaarExt[$mime];
     if (move_uploaded_file($_FILES[$veld]['tmp_name'], $uploadDir . $bestand)) {
         return 'uploads/aanvragen/' . $id . '/' . $bestand;
     }

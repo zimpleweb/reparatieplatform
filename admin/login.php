@@ -18,16 +18,16 @@ if (isAdmin()) {
 }
 
 // ── Rate limiting (max 5 pogingen per IP, 15 min blokkering) ─────
-$rawIp       = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-$ip          = md5(filter_var($rawIp, FILTER_VALIDATE_IP) !== false ? $rawIp : 'unknown');
-$atKey       = 'login_attempts_' . $ip;
-$lockKey     = 'login_locked_until_' . $ip;
+$rawIp       = filter_var($_SERVER['REMOTE_ADDR'] ?? '', FILTER_VALIDATE_IP) !== false
+               ? ($_SERVER['REMOTE_ADDR'] ?? 'unknown') : 'unknown';
+$rlKey       = 'login_' . $rawIp;
 $maxPogingen = 5;
 $lockSecs    = 900;
 
-$lockedUntil = $_SESSION[$lockKey] ?? 0;
-$isLocked    = time() < $lockedUntil;
-$pogingen    = $_SESSION[$atKey] ?? 0;
+$rl          = rateLimitBekijk($rlKey);
+$isLocked    = $rl['geblokkeerd'];
+$lockedUntil = $rl['locked_until'];
+$pogingen    = $rl['pogingen'];
 $remainSecs  = max(0, $lockedUntil - time());
 
 $errorMsg = '';
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'credent
         $admin = $row->fetch();
 
         if ($admin && password_verify($_POST['password'] ?? '', $admin['password'])) {
-            unset($_SESSION[$atKey], $_SESSION[$lockKey]);
+            rateLimitReset($rlKey);
 
             if (!empty($admin['totp_enabled']) && !empty($admin['totp_secret'])) {
                 // 2FA vereist: sla tussentijdse staat op
@@ -69,11 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'credent
                 exit;
             }
         } else {
-            $pogingen++;
-            $_SESSION[$atKey] = $pogingen;
-            if ($pogingen >= $maxPogingen) {
-                $_SESSION[$lockKey] = time() + $lockSecs;
-                unset($_SESSION[$atKey]);
+            rateLimitMislukt($rlKey, $maxPogingen, $lockSecs);
+            $rl       = rateLimitBekijk($rlKey);
+            $pogingen = $rl['pogingen'];
+            if ($rl['geblokkeerd']) {
                 $isLocked   = true;
                 $remainSecs = $lockSecs;
                 $errorMsg   = "Te veel mislukte pogingen. Probeer over 15 minuten opnieuw.";
@@ -87,9 +86,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'credent
 
 // ── POST: stap 2 – TOTP-code verifiëren ─────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === '2fa') {
+    $totpRlKey = '2fa_' . $rawIp;
+    $totpRl    = rateLimitBekijk($totpRlKey);
 
     if (!verifyCsrf($_POST['csrf'] ?? '')) {
         $errorMsg = 'Ongeldig verzoek.';
+    } elseif ($totpRl['geblokkeerd']) {
+        $min      = max(1, (int) ceil(($totpRl['locked_until'] - time()) / 60));
+        $errorMsg = "Te veel ongeldige codes. Probeer over {$min} minuut" . ($min === 1 ? '' : 'en') . " opnieuw.";
+        $fase     = '2fa';
     } elseif (empty($_SESSION['login_2fa_pending'])) {
         $errorMsg = 'Sessie verlopen. Log opnieuw in.';
         $fase = 'login';
@@ -101,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === '2fa') {
 
         $code = preg_replace('/\s+/', '', $_POST['totp_code'] ?? '');
         if ($admin2 && totpVerify($admin2['totp_secret'], $code)) {
+            rateLimitReset($totpRlKey);
             unset($_SESSION['login_2fa_pending'], $_SESSION['login_2fa_admin_id']);
             session_regenerate_id(true);
             $_SESSION['admin']          = true;
@@ -109,13 +115,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === '2fa') {
             header('Location: ' . BASE_URL . '/admin/dashboard.php');
             exit;
         } else {
+            rateLimitMislukt($totpRlKey, 5, 300);
             $errorMsg = 'Ongeldige authenticatiecode. Controleer uw app en probeer opnieuw.';
             $fase = '2fa';
         }
     }
 }
 
-$huidigPogingen = $_SESSION[$atKey] ?? 0;
+$huidigPogingen = $pogingen;
 ?>
 <!DOCTYPE html>
 <html lang="nl">

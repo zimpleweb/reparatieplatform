@@ -68,6 +68,63 @@ function requireAdmin(): void {
     if (!isAdmin()) redirect(BASE_URL . '/admin/login.php');
 }
 
+// ── Database-backed rate limiting ─────────────────────────────────────────
+
+function _rateLimitMaakTabel(): void {
+    static $done = false;
+    if ($done) return;
+    try {
+        db()->exec("CREATE TABLE IF NOT EXISTS login_attempts (
+            sleutel_hash CHAR(64)     NOT NULL PRIMARY KEY,
+            pogingen     TINYINT      NOT NULL DEFAULT 1,
+            locked_until INT UNSIGNED NOT NULL DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $done = true;
+    } catch (\Throwable $e) {}
+}
+
+function rateLimitBekijk(string $sleutel): array {
+    _rateLimitMaakTabel();
+    $hash = hash('sha256', $sleutel);
+    try {
+        $stmt = db()->prepare('SELECT pogingen, locked_until FROM login_attempts WHERE sleutel_hash = ?');
+        $stmt->execute([$hash]);
+        $rij = $stmt->fetch();
+        return [
+            'geblokkeerd'  => $rij && time() < (int)$rij['locked_until'],
+            'locked_until' => $rij ? (int)$rij['locked_until'] : 0,
+            'pogingen'     => $rij ? (int)$rij['pogingen']     : 0,
+        ];
+    } catch (\Throwable $e) {
+        return ['geblokkeerd' => false, 'locked_until' => 0, 'pogingen' => 0];
+    }
+}
+
+function rateLimitMislukt(string $sleutel, int $max = 5, int $lockSecs = 900): void {
+    _rateLimitMaakTabel();
+    $hash = hash('sha256', $sleutel);
+    try {
+        db()->prepare("
+            INSERT INTO login_attempts (sleutel_hash, pogingen, locked_until) VALUES (?, 1, 0)
+            ON DUPLICATE KEY UPDATE pogingen = pogingen + 1
+        ")->execute([$hash]);
+        $row = db()->prepare('SELECT pogingen FROM login_attempts WHERE sleutel_hash = ?');
+        $row->execute([$hash]);
+        if ((int)$row->fetchColumn() >= $max) {
+            db()->prepare(
+                'UPDATE login_attempts SET locked_until = ? WHERE sleutel_hash = ? AND locked_until <= ?'
+            )->execute([time() + $lockSecs, $hash, time()]);
+        }
+    } catch (\Throwable $e) {}
+}
+
+function rateLimitReset(string $sleutel): void {
+    try {
+        db()->prepare('DELETE FROM login_attempts WHERE sleutel_hash = ?')
+           ->execute([hash('sha256', $sleutel)]);
+    } catch (\Throwable $e) {}
+}
+
 /**
  * Haal een waarde op uit de site_settings tabel.
  * Cached na eerste aanroep binnen dezelfde request.
@@ -109,34 +166,42 @@ function verifyRecaptcha(string $token, string $action = ''): bool {
         return true; // Instellingen niet bereikbaar — niet blokkeren
     }
 
-    // Uitgeschakeld of geen sleutel/token ingesteld → doorlaten
-    if (!$enabled || empty($secretKey) || empty($token)) {
+    // Uitgeschakeld → doorlaten
+    if (!$enabled) {
         return true;
     }
 
-    $response = @file_get_contents(
-        'https://www.google.com/recaptcha/api/siteverify?' .
-        http_build_query(['secret' => $secretKey, 'response' => $token])
-    );
+    // Geconfigureerd maar secret key of token ontbreekt → blokkeren (fail-closed)
+    if (empty($secretKey) || empty($token)) {
+        return false;
+    }
 
-    // Google niet bereikbaar → fail open (niet blokkeren)
+    // H4: secret key via POST-body, niet als URL-parameter (voorkomt lekkage in logs)
+    $ctx = stream_context_create([
+        'http' => [
+            'method'  => 'POST',
+            'header'  => 'Content-Type: application/x-www-form-urlencoded',
+            'content' => http_build_query(['secret' => $secretKey, 'response' => $token]),
+            'timeout' => 5,
+        ],
+    ]);
+    $response = @file_get_contents('https://www.google.com/recaptcha/api/siteverify', false, $ctx);
+
+    // Google niet bereikbaar → fail open (dienst niet kapotmaken bij Google-uitval)
     if ($response === false) {
         return true;
     }
 
     $data = json_decode($response, true);
 
-    // Token ongeldig
     if (empty($data['success'])) {
         return false;
     }
 
-    // Score te laag (bot-waarschijnlijkheid te hoog)
     if (isset($data['score']) && $data['score'] < $threshold) {
         return false;
     }
 
-    // Optioneel: actienaam controleren
     if ($action !== '' && isset($data['action']) && $data['action'] !== $action) {
         return false;
     }
