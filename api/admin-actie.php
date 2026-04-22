@@ -132,13 +132,25 @@ try {
 // Mail: statuswijziging naar inzender
 if ($avRow && !empty($avRow['email'])) {
     $statusTekstMap = [
-        'inzending'    => 'Ontvangen',
-        'doorgestuurd' => 'Aanvulling nodig',
-        'aanvraag'     => 'Aanvraag ontvangen',
-        'coulance'     => 'Coulance',
-        'recycling'    => 'Recycling',
-        'behandeld'    => 'Behandeld',
-        'archief'      => 'Archief',
+        'inzending'            => 'Ontvangen',
+        'reparatie_afwachting' => 'Reparatie afwachting',
+        'reparatie_ingevuld'   => 'Reparatie ingevuld',
+        'taxatie_afwachting'   => 'Taxatie afwachting',
+        'taxatie_ingevuld'     => 'Taxatie ingevuld',
+        'garantie_afwachting'  => 'Garantie afwachting',
+        'garantie_ingevuld'    => 'Garantie ingevuld',
+        'coulance_afwachting'  => 'Coulance afwachting',
+        'coulance_ingevuld'    => 'Coulance ingevuld',
+        'recycling_afwachting' => 'Recycling afwachting',
+        'recycling_ingevuld'   => 'Recycling ingevuld',
+        'afgewezen'            => 'Afgewezen',
+        'gesloten'             => 'Gesloten',
+        'doorgestuurd'         => 'Aanvulling nodig',
+        'aanvraag'             => 'Aanvraag ontvangen',
+        'coulance'             => 'Coulance',
+        'recycling'            => 'Recycling',
+        'behandeld'            => 'Behandeld',
+        'archief'              => 'Archief',
     ];
     @sendMail($avRow['email'], 'inzender_status_gewijzigd', [
         'casenummer'  => $avRow['casenummer'] ?? '',

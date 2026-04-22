@@ -9,6 +9,7 @@ Thumbs.db
 
 # Uploads / cache
 uploads/**
+!uploads/.htaccess
 !uploads/aanvragen/.htaccess
 cache/
 
