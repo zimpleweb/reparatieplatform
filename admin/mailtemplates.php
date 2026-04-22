@@ -36,12 +36,16 @@ $defaults = [
     ['slug' => 'inzender_status_gewijzigd',  'label' => 'Inzender: Status gewijzigd',         'richting' => 'inzender'],
 ];
 foreach ($defaults as $d) {
-    $check = db()->prepare('SELECT COUNT(*) FROM mail_templates WHERE slug = ?');
+    $check = db()->prepare('SELECT subject, body_html FROM mail_templates WHERE slug = ?');
     $check->execute([$d['slug']]);
-    if ($check->fetchColumn() == 0) {
-        $tpl = mailTemplateDefault($d['slug']);
+    $row = $check->fetch(PDO::FETCH_ASSOC);
+    $tpl = mailTemplateDefault($d['slug']);
+    if (!$row) {
         db()->prepare('INSERT INTO mail_templates (slug, label, richting, subject, body_html) VALUES (?, ?, ?, ?, ?)')
              ->execute([$d['slug'], $d['label'], $d['richting'], $tpl['subject'], $tpl['body_html']]);
+    } elseif (empty($row['subject']) || empty($row['body_html'])) {
+        db()->prepare('UPDATE mail_templates SET subject = ?, body_html = ? WHERE slug = ?')
+             ->execute([$tpl['subject'], $tpl['body_html'], $d['slug']]);
     }
 }
 
