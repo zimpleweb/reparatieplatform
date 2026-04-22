@@ -272,25 +272,24 @@ if ($type === 'coulance') {
 
     switch ($resultaat) {
         case 'winkel_gelukt':
-            $statusCoulance = 'gesloten';
-            $logActie       = 'Coulance gelukt via winkel — aanvraag gesloten door klant';
+            $statusCoulance = 'coulance_ingevuld';
+            $logActie       = 'Coulance gelukt via winkel — formulier ingevuld door klant';
             break;
         case 'fabrikant_gelukt':
-            $statusCoulance = 'gesloten';
-            $logActie       = 'Coulance gelukt via fabrikant — aanvraag gesloten door klant';
+            $statusCoulance = 'coulance_ingevuld';
+            $logActie       = 'Coulance gelukt via fabrikant — formulier ingevuld door klant';
             break;
         case 'reparatie_starten':
             $statusCoulance = 'reparatie_afwachting';
             $logActie       = 'Coulance niet gelukt — reparatieaanvraag gestart door klant';
             break;
         case 'afsluiten':
-            $statusCoulance = 'gesloten';
-            $logActie       = 'Coulance niet gelukt — inzending gesloten door klant';
+            $statusCoulance = 'coulance_ingevuld';
+            $logActie       = 'Coulance niet gelukt — formulier ingevuld, ter sluiting door admin';
             break;
         case 'niet_gelukt':
-            // Legacy-pad: gebruik voor niet-repareerbare modellen
-            $statusCoulance = 'gesloten';
-            $logActie       = 'Coulance niet gelukt — aanvraag gesloten';
+            $statusCoulance = 'coulance_ingevuld';
+            $logActie       = 'Coulance niet gelukt — formulier ingevuld door klant';
             break;
         default:
             redirect(BASE_URL . '/mijn-aanvraag.php?error=ongeldig');
