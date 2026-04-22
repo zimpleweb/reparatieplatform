@@ -1,13 +1,12 @@
-Update CLAUDE.md met extra feature regels.
+## Extra regels voor index.php contactformulier (bijgewerkt 22 april 2026)
 
-Voeg onderaan (na de bestaande feature sectie) dit nieuwe blok toe:
-
-## Extra regels voor index.php contactformulier
-
-* Na succesvolle verzending: toon een success melding op dezelfde pagina (op de plek van het formulier) met tekst: "Bedankt voor je bericht. We kijken het zo snel mogelijk door."
-* Redirect NIET naar reparatieplatform.nl, maar blijf op de huidige pagina (de URL waar index.php op staat).
-* Los het probleem op dat de mailactie niet werkt.
+* De knop 'Verstuur en ontvang gratis advies →' mag GEEN redirect veroorzaken naar reparatieplatform.nl of enige andere URL.
+* Na klikken op de knop moet een mailactie worden getriggerd naar info@zimpleweb.nl.
+* Reply-To moet het ingevoerde e-mailadres van de gebruiker zijn.
+* Alle ingevoerde velden moeten duidelijk leesbaar in de e-mail staan.
+* Na succesvolle verzending: toon op dezelfde pagina (op de exacte plek van het formulier) de melding:  
+  "Bedankt voor je bericht. We kijken het zo snel mogelijk door."
+* Er mag absoluut geen doorverwijzing (redirect) plaatsvinden — blijf altijd op de huidige URL.
+* De mailactie werkt momenteel niet. Los dit op.
+* Je mag gebruik maken van de bestaande Brevo (Sendinblue) SMTP/API die al in de admin sectie aanwezig is. Wijzig die API-code niet, maar hergebruik de functionaliteit voor deze mail.
 * Houd alle wijzigingen atomic, unified diff, één commit per kleine stap.
-* Volg ook de eerdere regels voor directe mail naar info@zimpleweb.nl met Reply-To.
-
-Maak dit als één atomic commit met unified diff.
