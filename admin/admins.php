@@ -65,8 +65,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'chang
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'disable_2fa') {
     if (!verifyCsrf($_POST['csrf'] ?? '')) { $errorMsg = 'Ongeldig verzoek.'; } else {
-        $editId = (int)($_POST['id'] ?? 0);
-        if ($editId) { db()->prepare('UPDATE admins SET totp_secret = NULL, totp_enabled = 0 WHERE id = ?')->execute([$editId]); $successMsg = '2FA uitgeschakeld.'; }
+        $editId  = (int)($_POST['id'] ?? 0);
+        $eigenId = (int)($_SESSION['admin_id'] ?? 0);
+        if ($editId && $eigenId && $editId === $eigenId) {
+            db()->prepare('UPDATE admins SET totp_secret = NULL, totp_enabled = 0 WHERE id = ?')->execute([$editId]);
+            $successMsg = '2FA uitgeschakeld.';
+        } else {
+            $errorMsg = 'U kunt alleen uw eigen 2FA beheren.';
+        }
     }
 }
 
