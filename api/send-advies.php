@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/mailer.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCsrf($_POST['csrf_token'] ?? '')) {
     redirect(BASE_URL . '/?error=csrf');
@@ -80,6 +81,35 @@ if ($aanvraagId) {
         ]);
     } catch (\PDOException $e) { /* log-tabel nog niet aangemaakt */ }
 }
+
+// ── E-mailnotificaties ────────────────────────────────────────────
+$mailVars = [
+    'casenummer'         => $casenummer ?? 'onbekend',
+    'merk'               => $merk,
+    'modelnummer'        => $modelnummer,
+    'aanschafjaar'       => $aanschafjaar,
+    'aanschafwaarde'     => $aanschafwaarde,
+    'situatie'           => $situatie,
+    'klacht_type'        => $klacht_type,
+    'omschrijving'       => $omschrijving ?: '—',
+    'email'              => $email,
+    'geadviseerde_route' => $geadviseerde_route ?: 'Onbekend',
+    'coulance_kans'      => $coulance_kans ? $coulance_kans . '%' : '',
+    'advies_toelichting' => '',
+];
+
+// Bevestiging naar inzender
+if ($email && $casenummer) {
+    @sendMail($email, 'inzender_bevestiging', $mailVars);
+}
+
+// Notificatie naar alle admins met een e-mailadres
+try {
+    $adminEmails = db()->query("SELECT email FROM admins WHERE email IS NOT NULL AND email != ''")->fetchAll(PDO::FETCH_COLUMN);
+    foreach ($adminEmails as $adminEmail) {
+        @sendMail($adminEmail, 'admin_nieuwe_inzending', $mailVars);
+    }
+} catch (\PDOException $e) { /* admins-tabel heeft nog geen email-kolom */ }
 
 // ── Redirect naar klantenomgeving ────────────────────────────────
 if ($casenummer) {

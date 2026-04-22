@@ -11,6 +11,98 @@ $merken          = getMerken();
 include __DIR__ . '/includes/header.php';
 ?>
 
+<style>
+/* ── Hero: 25% kleiner ──────────────────────────────────────── */
+.hero {
+  min-height: 60vh !important; /* was ~80vh, nu 25% kleiner */
+}
+
+/* ── Zo werkt het – nieuwe sectie-stijl ─────────────────────── */
+.zowerkhet-section {
+  background: #0d1117;
+  padding: 5rem 0;
+  border-top: none;
+}
+.zowerkhet-section .section-title {
+  color: #fff;
+}
+.zowerkhet-section .section-lead {
+  color: rgba(255,255,255,.55);
+}
+.zowerkhet-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+.zowerkhet-step {
+  background: #161b22;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: border-color .2s ease, transform .2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.zowerkhet-step::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top left, rgba(40,120,100,.12) 0%, transparent 65%);
+  pointer-events: none;
+}
+.zowerkhet-step:hover {
+  border-color: rgba(40,120,100,.5);
+  transform: translateY(-3px);
+}
+.zowerkhet-step-num {
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  color: var(--accent, #287864);
+  text-transform: uppercase;
+}
+.zowerkhet-step-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+.zowerkhet-step h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.02em;
+  margin: 0;
+}
+.zowerkhet-step p {
+  font-size: .875rem;
+  color: rgba(255,255,255,.5);
+  line-height: 1.7;
+  margin: 0;
+  max-width: 36ch;
+}
+.zowerkhet-step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  background: rgba(40,120,100,.15);
+  border: 1px solid rgba(40,120,100,.35);
+  border-radius: 999px;
+  padding: .25rem .75rem;
+  font-size: .72rem;
+  font-weight: 700;
+  color: #4ecb9e;
+  margin-top: auto;
+  width: fit-content;
+}
+@media (max-width: 640px) {
+  .zowerkhet-steps { grid-template-columns: 1fr; }
+  .zowerkhet-step { padding: 1.5rem 1.25rem; }
+}
+</style>
+
 <section>
   <div class="hero">
     <div class="hero-bg"></div>
@@ -48,16 +140,41 @@ include __DIR__ . '/includes/header.php';
   </div>
 </section>
 
-<!-- Zo werkt het – Stap-wizard component -->
-<div class="wizard-section" id="hoe">
-  <div class="section" style="padding-top:4.5rem;padding-bottom:4.5rem;">
-    <div style="text-align:center;margin-bottom:2.5rem;">
+<!-- Zo werkt het – strak donkere sectie -->
+<div class="zowerkhet-section" id="hoe">
+  <div class="section" style="padding-top:0;padding-bottom:0;">
+    <div style="text-align:center;margin-bottom:0;">
+      <div style="display:inline-flex;align-items:center;gap:.45rem;background:rgba(40,120,100,.15);border:1px solid rgba(40,120,100,.3);border-radius:999px;padding:.3rem 1rem;font-size:.75rem;font-weight:700;color:#4ecb9e;margin-bottom:1.1rem;letter-spacing:.04em;">
+        &#9881; Zo simpel werkt het
+      </div>
       <h2 class="section-title">Zo werkt het</h2>
-      <p class="section-lead" style="max-width:52ch;margin:.5rem auto 0;">
+      <p class="section-lead" style="max-width:48ch;margin:.6rem auto 0;">
         Geen technische kennis nodig. Beschrijf wat er mis is en wij regelen de rest.
       </p>
     </div>
-    <?php unset($wizardCompact); include __DIR__ . '/includes/stap-wizard.php'; ?>
+    <div class="zowerkhet-steps">
+      <div class="zowerkhet-step">
+        <span class="zowerkhet-step-num">Stap 01</span>
+        <div class="zowerkhet-step-icon">&#128221;</div>
+        <h3>Formulier invullen</h3>
+        <p>Vul merk, modelnummer en een korte omschrijving in. Duurt minder dan twee minuten &mdash; geen technische kennis vereist.</p>
+        <span class="zowerkhet-step-badge">&#10003; Gratis</span>
+      </div>
+      <div class="zowerkhet-step">
+        <span class="zowerkhet-step-num">Stap 02</span>
+        <div class="zowerkhet-step-icon">&#128269;</div>
+        <h3>Wij analyseren uw situatie</h3>
+        <p>Een specialist beoordeelt uw aanvraag op garantie, coulance, reparatiemogelijkheden en waarde van het toestel.</p>
+        <span class="zowerkhet-step-badge">&#10003; Persoonlijk advies</span>
+      </div>
+      <div class="zowerkhet-step">
+        <span class="zowerkhet-step-num">Stap 03</span>
+        <div class="zowerkhet-step-icon">&#128233;</div>
+        <h3>Advies binnen 24 uur</h3>
+        <p>U ontvangt een helder advies per e-mail met concrete vervolgstappen &mdash; garantie, coulance, reparatie of taxatie.</p>
+        <span class="zowerkhet-step-badge">&#10003; Binnen 1 werkdag</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -82,7 +199,7 @@ include __DIR__ . '/includes/header.php';
         <?php elseif (isset($_GET['error'])): ?>
           <div class="alert alert-error" style="margin-bottom:1.5rem;">Er is iets misgegaan. Controleer uw gegevens en probeer het opnieuw.</div>
         <?php endif; ?>
-        <form action="/api/send-advies.php" method="POST">
+        <form action="/api/send-advies.php" method="POST" data-recaptcha="advies_home">
           <input type="hidden" name="csrf_token" value="<?= csrf() ?>" />
           <div class="field-row">
             <div class="field">

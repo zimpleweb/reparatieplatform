@@ -13,21 +13,24 @@ $wizardCompact = $wizardCompact ?? false;
 $steps = [
     [
         'nr'    => '01',
-        'emoji' => '📝',
+        'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>',
         'title' => 'Formulier invullen',
         'desc'  => 'Merk, modelnummer en een korte omschrijving van het probleem. Klaar in minder dan 2 minuten.',
+        'meta'  => '~2 minuten',
     ],
     [
         'nr'    => '02',
-        'emoji' => '🔍',
+        'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
         'title' => 'Wij analyseren',
         'desc'  => 'Een specialist bekijkt jouw situatie en toetst aan garantie- en coulanceregels van de fabrikant.',
+        'meta'  => 'Binnen 24 uur',
     ],
     [
         'nr'    => '03',
-        'emoji' => '📧',
+        'icon'  => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
         'title' => 'Persoonlijk advies',
-        'desc'  => 'Je ontvangt binnen 24 uur een helder advies met concrete vervolgstappen — gratis en vrijblijvend.',
+        'desc'  => 'Je ontvangt een helder advies met concrete vervolgstappen — gratis en volledig vrijblijvend.',
+        'meta'  => 'Gratis & vrijblijvend',
     ],
 ];
 ?>
@@ -48,26 +51,34 @@ $steps = [
 <div class="wizard-steps wizard-<?= h($wizardVariant) ?>">
     <?php foreach ($steps as $i => $s): ?>
     <div class="wizard-step">
-        <div class="wizard-step-head">
-            <div class="wizard-step-badge">
-                <span class="wizard-step-emoji"><?= $s['emoji'] ?></span>
-                <span class="wizard-step-nr"><?= $s['nr'] ?></span>
+
+        <!-- Stap-header: nummer + connector -->
+        <div class="wizard-step-top">
+            <div class="wizard-step-num">
+                <span class="wizard-num-label"><?= h($s['nr']) ?></span>
+                <div class="wizard-step-ico"><?= $s['icon'] ?></div>
             </div>
             <?php if ($i < count($steps) - 1): ?>
-            <div class="wizard-connector" aria-hidden="true"></div>
+            <div class="wizard-connector" aria-hidden="true">
+                <svg width="100%" height="2" preserveAspectRatio="none"><line x1="0" y1="1" x2="100%" y2="1" stroke-dasharray="6 4"/></svg>
+            </div>
             <?php endif; ?>
         </div>
+
+        <!-- Stap-body -->
         <div class="wizard-step-body">
+            <div class="wizard-step-meta"><?= h($s['meta']) ?></div>
             <h3 class="wizard-step-title"><?= h($s['title']) ?></h3>
             <p class="wizard-step-desc"><?= h($s['desc']) ?></p>
         </div>
+
     </div>
     <?php endforeach; ?>
 </div>
 <?php endif; ?>
 
 <style>
-/* ── Wizard Steps – Volledig ───────────────────────────────────── */
+/* ── Wizard Steps – volledig herontwerp ────────────────────────── */
 .wizard-steps {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -75,103 +86,125 @@ $steps = [
     position: relative;
 }
 @media (max-width: 640px) {
-    .wizard-steps { grid-template-columns: 1fr; gap: 1.75rem; }
+    .wizard-steps { grid-template-columns: 1fr; gap: 2rem; }
 }
 
-.wizard-step-head {
+/* Stap-top: nummer cirkel + connector */
+.wizard-step-top {
     display: flex;
     align-items: center;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
 }
-.wizard-step-badge {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
+.wizard-step-num {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    position: relative;
-    font-size: 1.5rem;
-    transition: transform .25s ease, box-shadow .25s ease;
+    transition: transform .25s ease;
 }
-.wizard-step:hover .wizard-step-badge {
-    transform: scale(1.08);
+.wizard-step:hover .wizard-step-num {
+    transform: translateY(-3px);
 }
-.wizard-step-nr {
+.wizard-step-ico {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.wizard-step-ico svg {
+    width: 100%;
+    height: 100%;
+}
+.wizard-num-label {
     position: absolute;
-    top: -5px;
-    right: -5px;
-    width: 22px;
-    height: 22px;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    font-size: .62rem;
+    font-size: .6rem;
     font-weight: 800;
-    letter-spacing: -.01em;
     display: flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
-    border: 2px solid #fff;
+    letter-spacing: -.01em;
 }
 
-/* Horizontale connector tussen stappen */
+/* SVG stippellijn connector */
 .wizard-connector {
     flex: 1;
     height: 2px;
-    margin: 0 .75rem;
-    border-radius: 2px;
+    margin: 0 1rem;
+    margin-top: -1px;
+    opacity: .45;
 }
 @media (max-width: 640px) {
     .wizard-connector { display: none; }
 }
 
-.wizard-step-title {
-    font-size: 1rem;
+/* Meta-label boven titel */
+.wizard-step-meta {
+    font-size: .7rem;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
     margin-bottom: .4rem;
+}
+
+.wizard-step-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: .5rem;
     line-height: 1.3;
 }
 .wizard-step-desc {
     font-size: .875rem;
-    line-height: 1.7;
-    max-width: 26ch;
+    line-height: 1.75;
+    max-width: 28ch;
     margin: 0;
 }
 
 /* ── Licht thema ───────────────────────────────────────────────── */
-.wizard-light .wizard-step-badge {
-    background: var(--accent-light, #d6f0eb);
-    box-shadow: 0 0 0 6px var(--accent-light, #d6f0eb), 0 4px 14px rgba(40,120,100,.12);
+.wizard-light .wizard-step-num {
+    background: var(--accent-light, #eef7f6);
+    box-shadow: 0 0 0 8px color-mix(in oklab, var(--accent, #01696f) 8%, transparent);
 }
-.wizard-light .wizard-step-emoji { color: var(--accent, #287864); }
-.wizard-light .wizard-step-nr {
-    background: var(--accent, #287864);
+.wizard-light .wizard-step-ico { color: var(--accent, #01696f); }
+.wizard-light .wizard-num-label {
+    background: var(--accent, #01696f);
     color: #fff;
+    border: 2px solid #fff;
 }
-.wizard-light .wizard-connector {
-    background: linear-gradient(90deg, var(--accent, #287864) 0%, var(--border, #e5e7eb) 100%);
-    opacity: .35;
+.wizard-light .wizard-connector line {
+    stroke: var(--accent, #01696f);
 }
-.wizard-light .wizard-step-title { color: var(--ink, #1a1a1a); }
+.wizard-light .wizard-step-meta { color: var(--accent, #01696f); }
+.wizard-light .wizard-step-title { color: var(--ink, #111827); }
 .wizard-light .wizard-step-desc  { color: var(--muted, #6b7280); }
 
 /* ── Donker thema ──────────────────────────────────────────────── */
-.wizard-dark .wizard-step-badge {
-    background: rgba(255,255,255,.12);
-    box-shadow: 0 0 0 6px rgba(255,255,255,.06);
+.wizard-dark .wizard-step-num {
+    background: rgba(255,255,255,.1);
+    box-shadow: 0 0 0 8px rgba(255,255,255,.04);
 }
-.wizard-dark .wizard-step-emoji { color: #fff; }
-.wizard-dark .wizard-step-nr {
+.wizard-dark .wizard-step-ico { color: rgba(255,255,255,.9); }
+.wizard-dark .wizard-num-label {
     background: #fff;
-    color: var(--accent, #287864);
-    border-color: transparent;
+    color: var(--accent, #01696f);
+    border: 2px solid transparent;
 }
-.wizard-dark .wizard-connector { background: rgba(255,255,255,.18); }
+.wizard-dark .wizard-connector line { stroke: rgba(255,255,255,.3); }
+.wizard-dark .wizard-step-meta { color: rgba(255,255,255,.5); }
 .wizard-dark .wizard-step-title { color: #fff; }
-.wizard-dark .wizard-step-desc  { color: rgba(255,255,255,.7); }
+.wizard-dark .wizard-step-desc  { color: rgba(255,255,255,.65); }
 
-/* ── Compact variant (hero-card) ───────────────────────────────── */
+/* ── Compact variant ───────────────────────────────────────────── */
 .wizard-compact {
     display: flex;
     flex-direction: column;

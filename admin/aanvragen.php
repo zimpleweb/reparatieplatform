@@ -1,5 +1,9 @@
 <?php
 session_start();
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 requireAdmin();
@@ -7,24 +11,176 @@ requireAdmin();
 $msg  = '';
 $fout = '';
 
-// ── Filterparameters ──────────────────────────────────────────────
 $filterStatus = trim($_GET['status'] ?? '');
 $filterRoute  = trim($_GET['route']  ?? '');
 $filterZoek   = trim($_GET['zoek']   ?? '');
 
 $statusLabels = [
-    'inzending'    => ['tekst' => 'Ontvangen',           'badge' => 'badge-blue'],
-    'doorgestuurd' => ['tekst' => 'Aanvulling nodig',    'badge' => 'badge-orange'],
-    'aanvraag'     => ['tekst' => 'Aanvraag ontvangen',  'badge' => 'badge-green'],
-    'coulance'     => ['tekst' => 'Coulance',            'badge' => 'badge-yellow'],
-    'recycling'    => ['tekst' => 'Recycling',           'badge' => 'badge-purple'],
-    'behandeld'    => ['tekst' => 'Behandeld',           'badge' => 'badge-green'],
-    'archief'      => ['tekst' => 'Archief',             'badge' => 'badge-gray'],
+    'inzending'    => ['tekst' => 'Ontvangen',          'badge' => 'badge-blue'],
+    'doorgestuurd' => ['tekst' => 'Aanvulling nodig',   'badge' => 'badge-orange'],
+    'aanvraag'     => ['tekst' => 'Aanvraag ontvangen', 'badge' => 'badge-green'],
+    'coulance'     => ['tekst' => 'Coulance',           'badge' => 'badge-yellow'],
+    'recycling'    => ['tekst' => 'Recycling',          'badge' => 'badge-purple'],
+    'behandeld'    => ['tekst' => 'Behandeld',          'badge' => 'badge-green'],
+    'archief'      => ['tekst' => 'Archief',            'badge' => 'badge-gray'],
 ];
 
 $statusDefinitief = ['doorgestuurd', 'coulance', 'recycling', 'behandeld', 'archief'];
 
-// ── Detailweergave ────────────────────────────────────────────────
+$aanvraagTypes = [
+    'reparatie' => ['label' => 'Reparatie',  'kleur' => '#16a34a', 'tekst' => '#fff'],
+    'taxatie'   => ['label' => 'Taxatie',    'kleur' => '#2563eb', 'tekst' => '#fff'],
+    'coulance'  => ['label' => 'Coulance',   'kleur' => '#d97706', 'tekst' => '#fff'],
+    'garantie'  => ['label' => 'Garantie',   'kleur' => '#7c3aed', 'tekst' => '#fff'],
+    'recycling' => ['label' => 'Recycling',  'kleur' => '#0f766e', 'tekst' => '#fff'],
+];
+
+// ── POST: bericht sturen ──────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bericht') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        $fout = 'Ongeldig beveiligingstoken.';
+    } else {
+        $aanvraagId = (int)($_POST['aanvraag_id'] ?? 0);
+        $berichtTxt = trim($_POST['bericht'] ?? '');
+        if ($aanvraagId && $berichtTxt !== '') {
+            try {
+                $ins = db()->prepare(
+                    'INSERT INTO aanvragen_log (aanvraag_id, actie, opmerking, aangemaakt)
+                     VALUES (?, ?, ?, NOW())'
+                );
+                $ins->execute([$aanvraagId, 'Bericht verstuurd aan klant', $berichtTxt]);
+                $msg = 'Bericht opgeslagen in de activiteitenlog.';
+            } catch (\PDOException $e) {
+                $fout = 'Kon bericht niet opslaan: ' . h($e->getMessage());
+            }
+        } else {
+            $fout = 'Bericht mag niet leeg zijn.';
+        }
+        $qs = http_build_query(array_filter([
+            'id'     => $aanvraagId,
+            'status' => $filterStatus,
+            'route'  => $filterRoute,
+            'zoek'   => $filterZoek,
+            'saved'  => '1',
+        ]));
+        header('Location: ?' . $qs);
+        exit;
+    }
+}
+
+// ── POST: status wijzigen ─────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'status') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        $fout = 'Ongeldig beveiligingstoken.';
+    } else {
+        $aanvraagId  = (int)($_POST['aanvraag_id'] ?? 0);
+        $nieuwStatus = trim($_POST['nieuw_status'] ?? '');
+        $toegestaan  = array_keys($statusLabels);
+        if ($aanvraagId && in_array($nieuwStatus, $toegestaan, true)) {
+            db()->prepare('UPDATE aanvragen SET status=? WHERE id=?')
+               ->execute([$nieuwStatus, $aanvraagId]);
+            try {
+                $ins = db()->prepare(
+                    'INSERT INTO aanvragen_log (aanvraag_id, actie, aangemaakt)
+                     VALUES (?, ?, NOW())'
+                );
+                $ins->execute([$aanvraagId, 'Status gewijzigd naar: ' . ($statusLabels[$nieuwStatus]['tekst'] ?? $nieuwStatus)]);
+            } catch (\PDOException $e) {}
+            $qs = http_build_query(array_filter([
+                'id'     => $aanvraagId,
+                'status' => $filterStatus,
+                'route'  => $filterRoute,
+                'zoek'   => $filterZoek,
+                'saved'  => '1',
+            ]));
+            header('Location: ?' . $qs);
+            exit;
+        } else {
+            $fout = 'Ongeldige statuswaarde.';
+        }
+    }
+}
+
+// ── POST: aanvraag-type toekennen / wijzigen ──────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_type') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        $fout = 'Ongeldig beveiligingstoken.';
+    } else {
+        $aanvraagId = (int)($_POST['aanvraag_id'] ?? 0);
+        $nieuwType  = trim($_POST['aanvraag_type'] ?? '');
+        $toegestaan = array_keys($aanvraagTypes);
+        if ($aanvraagId && in_array($nieuwType, $toegestaan, true)) {
+            try {
+                db()->prepare('UPDATE aanvragen SET aanvraag_type=? WHERE id=?')
+                   ->execute([$nieuwType, $aanvraagId]);
+            } catch (\PDOException $e) {
+                try {
+                    db()->prepare('UPDATE aanvragen SET advies_type=? WHERE id=?')
+                       ->execute([$nieuwType, $aanvraagId]);
+                } catch (\PDOException $e2) {}
+            }
+            try {
+                $ins = db()->prepare(
+                    'INSERT INTO aanvragen_log (aanvraag_id, actie, aangemaakt)
+                     VALUES (?, ?, NOW())'
+                );
+                $ins->execute([$aanvraagId, 'Aanvraagtype ingesteld op: ' . ($aanvraagTypes[$nieuwType]['label'] ?? $nieuwType)]);
+            } catch (\PDOException $e) {}
+            $qs = http_build_query(array_filter([
+                'id'     => $aanvraagId,
+                'status' => $filterStatus,
+                'route'  => $filterRoute,
+                'zoek'   => $filterZoek,
+                'saved'  => '1',
+            ]));
+            header('Location: ?' . $qs);
+            exit;
+        } else {
+            $fout = 'Ongeldig aanvraagtype.';
+        }
+    }
+}
+
+// ── POST: aanvraag-type wijzigen via lijst (optiemenu) ────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_type_lijst') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        $fout = 'Ongeldig beveiligingstoken.';
+    } else {
+        $aanvraagId = (int)($_POST['aanvraag_id'] ?? 0);
+        $nieuwType  = trim($_POST['aanvraag_type'] ?? '');
+        $toegestaan = array_keys($aanvraagTypes);
+        if ($aanvraagId && in_array($nieuwType, $toegestaan, true)) {
+            try {
+                db()->prepare('UPDATE aanvragen SET aanvraag_type=? WHERE id=?')
+                   ->execute([$nieuwType, $aanvraagId]);
+            } catch (\PDOException $e) {
+                try {
+                    db()->prepare('UPDATE aanvragen SET advies_type=? WHERE id=?')
+                       ->execute([$nieuwType, $aanvraagId]);
+                } catch (\PDOException $e2) {}
+            }
+            try {
+                $ins = db()->prepare(
+                    'INSERT INTO aanvragen_log (aanvraag_id, actie, aangemaakt)
+                     VALUES (?, ?, NOW())'
+                );
+                $ins->execute([$aanvraagId, 'Aanvraagtype gewijzigd naar: ' . ($aanvraagTypes[$nieuwType]['label'] ?? $nieuwType)]);
+            } catch (\PDOException $e) {}
+            $qs = http_build_query(array_filter([
+                'status' => $filterStatus,
+                'route'  => $filterRoute,
+                'zoek'   => $filterZoek,
+                'saved'  => '1',
+            ]));
+            header('Location: ?' . $qs);
+            exit;
+        } else {
+            $fout = 'Ongeldig aanvraagtype.';
+        }
+    }
+}
+
+// ── Detail ophalen ────────────────────────────────────────────────────────
 $detail = null;
 if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $ds = db()->prepare('SELECT * FROM aanvragen WHERE id=?');
@@ -32,17 +188,17 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $detail = $ds->fetch() ?: null;
     if ($detail) {
         try {
-            $ls = db()->prepare('SELECT * FROM aanvragen_log WHERE aanvraag_id=? ORDER BY aangemaakt ASC');
+            $ls = db()->prepare(
+                'SELECT * FROM aanvragen_log WHERE aanvraag_id=? ORDER BY aangemaakt ASC'
+            );
             $ls->execute([$detail['id']]);
             $detail['log'] = $ls->fetchAll();
         } catch (\PDOException $e) { $detail['log'] = []; }
 
-        // ── Foto-pad validatie (path traversal fix) ──────────────── ← FIX
         $uploadBase = realpath(__DIR__ . '/../uploads');
         foreach (['foto_defect', 'foto_label', 'foto_bon'] as $fotoKey) {
             if (!empty($detail[$fotoKey])) {
                 $absPath = realpath(__DIR__ . '/../' . $detail[$fotoKey]);
-                // Alleen tonen als het pad daadwerkelijk binnen uploads/ valt
                 if ($absPath === false || strpos($absPath, $uploadBase) !== 0) {
                     $detail[$fotoKey] = null;
                 }
@@ -51,441 +207,455 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     }
 }
 
-// ── Lijstquery met filters ────────────────────────────────────────
+// ── Lijst ophalen ─────────────────────────────────────────────────────────
 $where = ['1=1']; $params = [];
 if ($filterStatus) { $where[] = 'status = ?'; $params[] = $filterStatus; }
-if ($filterRoute)  { $where[] = '(geadviseerde_route = ? OR advies_type = ?)'; $params[] = $filterRoute; $params[] = $filterRoute; }
-if ($filterZoek)   {
+if ($filterRoute)  {
+    $where[] = '(geadviseerde_route = ? OR advies_type = ? OR aanvraag_type = ?)';
+    $params[] = $filterRoute; $params[] = $filterRoute; $params[] = $filterRoute;
+}
+if ($filterZoek) {
     $where[] = '(merk LIKE ? OR modelnummer LIKE ? OR email LIKE ? OR casenummer LIKE ?)';
     $like = '%' . $filterZoek . '%';
     $params = array_merge($params, [$like, $like, $like, $like]);
 }
-$sql = 'SELECT * FROM aanvragen WHERE ' . implode(' AND ', $where) . ' ORDER BY id DESC';
+$sql  = 'SELECT * FROM aanvragen WHERE ' . implode(' AND ', $where) . ' ORDER BY id DESC';
 $stmt = db()->prepare($sql);
 $stmt->execute($params);
 $aanvragen = $stmt->fetchAll();
 
-// ── Whitelist datumkolom (SQL injection fix) ──────────────────────── ← FIX
 $TOEGESTANE_KOLOMMEN = ['aangemaakt_op', 'created_at', 'id'];
 $datumKolom = 'created_at';
 try {
-    $cols = db()->query('SHOW COLUMNS FROM aanvragen LIKE \'aangemaakt_op\'')->fetchColumn();
+    $cols = db()->query("SHOW COLUMNS FROM aanvragen LIKE 'aangemaakt_op'")->fetchColumn();
     if ($cols) $datumKolom = 'aangemaakt_op';
 } catch (\Exception $e) {}
-if (!in_array($datumKolom, $TOEGESTANE_KOLOMMEN, true)) $datumKolom = 'id'; // ← FIX
+if (!in_array($datumKolom, $TOEGESTANE_KOLOMMEN, true)) $datumKolom = 'id';
+
+$adminActivePage = 'aanvragen';
 ?>
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="UTF-8"><title>Inzendingen &ndash; Admin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Epilogue:wght@800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Inzendingen &ndash; Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Epilogue:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/base.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/components.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css">
-  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin-aanvragen.css">
   <meta name="robots" content="noindex,nofollow">
   <style>
-    .filter-bar {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: .6rem;
-      flex-wrap: wrap;
-      margin-bottom: 1.5rem;
-    }
-    .filter-bar .field { margin: 0; }
-    .filter-bar select {
-      padding: .5rem .85rem;
-      border: 1.5px solid var(--border, #d1d5db);
-      border-radius: 8px;
-      font-size: .85rem;
-      font-family: inherit;
-      background: #fff;
-      height: 38px;
-    }
-    .filter-bar input[type=text] {
-      padding: .5rem .85rem;
-      border: 1.5px solid var(--border, #d1d5db);
-      border-radius: 8px;
-      font-size: .85rem;
-      font-family: inherit;
-      background: #fff;
-      height: 38px;
-      width: 240px;
-    }
-    .filter-bar button {
-      padding: 0 1.1rem;
-      height: 38px;
-      background: var(--ink, #0f172a);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: .85rem;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .filter-bar .btn-secondary {
-      height: 38px;
-      display: inline-flex;
-      align-items: center;
-      white-space: nowrap;
-    }
+    /* ── Aanvragen-specifiek (niet in admin.css) ── */
 
-    .badge-orange { background:#fef3c7; color:#92400e; }
-    .badge-yellow { background:#fef9c3; color:#78350f; }
-    .badge-purple { background:#ede9fe; color:#5b21b6; }
+    /* Foto labels */
+    .foto-img  { max-width:120px;max-height:80px;border-radius:6px;border:1px solid var(--adm-border); }
+    .foto-lbl  { font-size:.72rem;color:var(--adm-muted);margin-top:.3rem; }
 
-    .detail-card { border: 2px solid var(--accent); }
-    .detail-header {
-      display:flex; align-items:center; justify-content:space-between;
-      flex-wrap:wrap; gap:.5rem; margin-bottom:1.25rem; }
-    .detail-header h2 { margin:0; }
-    .detail-casenr { font-size:.8rem; font-weight:700; color:#1d4ed8; }
-    .detail-header-right { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
-
-    .detail-section { margin-bottom:1.25rem; padding-bottom:1.25rem; border-bottom:1px solid #f1f5f9; }
-    .detail-section:last-child { border-bottom:none; }
-    .detail-section h4 {
-      font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
-      color:#94a3b8; margin-bottom:.7rem; }
-
-    .specs-grid { display:grid; grid-template-columns:140px 1fr; gap:.3rem .75rem; font-size:.875rem; }
-    .specs-grid .lbl { color:#64748b; font-size:.82rem; }
-    .specs-grid .val { color:#0f172a; font-weight:500; }
-
-    .fotos-wrap { display:flex; gap:1rem; flex-wrap:wrap; }
-    .foto-item { text-align:center; }
-    .foto-img { max-width:120px; max-height:80px; border-radius:6px; border:1px solid #e2e8f0; }
-    .foto-lbl { font-size:.72rem; color:#64748b; margin-top:.3rem; }
-
-    .berichten-sectie { padding:0!important; border:none!important; }
-    .berichten-kolommen {
-      display:grid; grid-template-columns:1fr 1fr; gap:0;
-      border-top:1px solid #f1f5f9; }
-    .berichten-overzicht, .bericht-sturen { padding:1.25rem; }
-    .berichten-overzicht { border-right:1px solid #f1f5f9; }
+    /* Berichten & acties layout */
+    .berichten-kolommen  { display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--adm-border); }
+    .berichten-overzicht { padding:1.25rem;border-right:1px solid var(--adm-border); }
+    .bericht-sturen      { padding:1.25rem; }
     @media (max-width:768px) {
-      .berichten-kolommen { grid-template-columns:1fr; }
-      .berichten-overzicht { border-right:none; border-bottom:1px solid #f1f5f9; }
+      .berichten-kolommen  { grid-template-columns:1fr; }
+      .berichten-overzicht { border-right:none;border-bottom:1px solid var(--adm-border); }
     }
 
-    .log-lijst { max-height:320px; overflow-y:auto; }
-    .log-item { display:flex; gap:.75rem; padding:.4rem 0; border-bottom:1px solid #f8fafc; align-items:flex-start; }
+    /* Activiteitenlog */
+    .log-lijst  { max-height:320px;overflow-y:auto; }
+    .log-item   { display:flex;gap:.75rem;padding:.4rem 0;border-bottom:1px solid var(--adm-surface-2);align-items:flex-start; }
     .log-item:last-child { border-bottom:none; }
-    .log-time { font-size:.72rem; color:#94a3b8; white-space:nowrap; min-width:80px; margin-top:.15rem; }
-    .log-tekst { font-size:.83rem; color:#374151; line-height:1.5; }
-    .log-tekst small { display:block; color:#64748b; font-size:.78rem; }
-    .log-tekst .log-door { color:#cbd5e1; }
-    .log-leeg { font-size:.82rem; color:#94a3b8; }
+    .log-time   { font-size:.72rem;color:var(--adm-faint);white-space:nowrap;min-width:80px;margin-top:.15rem; }
+    .log-tekst  { font-size:.83rem;color:var(--adm-text);line-height:1.5; }
+    .log-tekst small { display:block;color:var(--adm-muted);font-size:.78rem; }
+    .log-leeg   { font-size:.82rem;color:var(--adm-faint); }
 
-    .opmerking-field {
-      width:100%; padding:.5rem .75rem; border:1.5px solid #d1d5db; border-radius:7px;
-      font-size:.85rem; font-family:inherit; margin-top:.5rem; resize:vertical; min-height:60px; }
+    /* Bericht form */
+    .opmerking-field { width:100%;padding:.5rem .75rem;border:1.5px solid var(--adm-border);border-radius:7px;font-size:.85rem;font-family:inherit;margin-top:.5rem;resize:vertical;min-height:60px;background:var(--adm-surface-2);color:var(--adm-ink); }
+    .opmerking-field:focus { outline:none;border-color:var(--adm-accent);box-shadow:0 0 0 3px var(--adm-accent-ring); }
     .bericht-footer { margin-top:.6rem; }
 
-    .actie-separator {
-      text-align:center; position:relative; margin:1rem 0 .75rem;
-      border-top:1px solid #e5e7eb; }
-    .actie-separator span {
-      background:#fff; padding:0 .75rem; font-size:.75rem; color:#94a3b8;
-      position:relative; top:-.65rem; }
-    .actie-info { font-size:.82rem; color:#64748b; margin-bottom:.6rem; }
+    /* Actie-separator */
+    .actie-separator { text-align:center;position:relative;margin:1rem 0 .75rem;border-top:1px solid var(--adm-border); }
+    .actie-separator span { background:var(--adm-surface);padding:0 .75rem;font-size:.75rem;color:var(--adm-faint);position:relative;top:-.65rem; }
+    .actie-info { font-size:.82rem;color:var(--adm-muted);margin-bottom:.6rem; }
 
-    .actie-knoppen { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.6rem; }
-    .btn-actie {
-      padding:.5rem .9rem; border:none; border-radius:8px; font-size:.82rem;
-      font-weight:700; cursor:pointer; transition:opacity .15s; }
-    .btn-actie:hover { opacity:.85; }
-    .btn-reparatie { background:#16a34a; color:#fff; }
-    .btn-taxatie   { background:#2563eb; color:#fff; }
-    .btn-coulance  { background:#d97706; color:#fff; }
-    .btn-recycling { background:#5b3a29; color:#fff; }
-    .btn-archief   { background:#94a3b8; color:#fff; }
-    .btn-behandeld { background:#475569; color:#fff; }
+    /* Aanvraagtype gekleurde buttons */
+    .aanvraagtype-buttons { display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:.75rem; }
+    .btn-type             { padding:.45rem .9rem;border:none;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;transition:opacity .15s,transform .1s;white-space:nowrap; }
+    .btn-type:hover       { opacity:.85; }
+    .btn-type:active      { transform:scale(.97); }
+    .btn-type.active-type { outline:3px solid var(--adm-ink);outline-offset:2px; }
+    .btn-type-reparatie   { background:#16a34a;color:#fff; }
+    .btn-type-taxatie     { background:#2563eb;color:#fff; }
+    .btn-type-coulance    { background:#d97706;color:#fff; }
+    .btn-type-garantie    { background:#7c3aed;color:#fff; }
+    .btn-type-recycling   { background:#0f766e;color:#fff; }
 
-    .casenr-col { font-size:.78rem; font-weight:700; color:#1d4ed8; letter-spacing:.03em; }
+    /* Status actieknoppen (detail) */
+    .actie-knoppen { display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem; }
+    .btn-actie        { padding:.5rem .9rem;border:none;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;transition:opacity .15s; }
+    .btn-actie:hover  { opacity:.85; }
+    .btn-coulance     { background:#d97706;color:#fff; }
+    .btn-recycling    { background:#0f766e;color:#fff; }
+    .btn-archief      { background:#94a3b8;color:#fff; }
+    .btn-behandeld    { background:#475569;color:#fff; }
 
-    .optiemenu-wrap { position:relative; }
-    .optiemenu-btn {
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:3px; width:36px; height:36px; border-radius:8px; border:1.5px solid #d1d5db;
-      background:#fff; cursor:pointer; transition:background .15s, border-color .15s; }
-    .optiemenu-btn:hover { background:#f8fafc; border-color:#94a3b8; }
-    .optiemenu-btn span { display:block; width:5px; height:5px; border-radius:50%; background:#64748b; }
-    .optiemenu-dropdown {
-      display:none; position:absolute; right:0; top:calc(100% + 6px); z-index:200;
-      background:#fff; border:1.5px solid #e2e8f0; border-radius:10px;
-      box-shadow:0 8px 24px rgba(0,0,0,.1); min-width:190px; overflow:hidden; }
+    /* Type-select wijzigen (detail) */
+    .type-select-wrap select  { padding:.45rem .75rem;border:1.5px solid var(--adm-border);border-radius:7px;font-size:.85rem;font-family:inherit;background:var(--adm-surface);cursor:pointer;color:var(--adm-ink); }
+    .type-select-wrap button  { margin-left:.4rem;padding:.45rem .85rem;background:var(--adm-ink);color:#fff;border:none;border-radius:7px;font-size:.82rem;font-weight:700;cursor:pointer; }
+    .type-select-wrap button:hover { background:var(--adm-accent); }
+
+    /* Casenummer kolom */
+    .casenr-col a { font-size:.78rem;font-weight:700;color:#1d4ed8;letter-spacing:.03em;text-decoration:none; }
+    .casenr-col a:hover { text-decoration:underline; }
+
+    /* Optiemenu */
+    .optiemenu-wrap       { position:relative; }
+    .optiemenu-btn        { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:36px;height:36px;border-radius:8px;border:1.5px solid var(--adm-border);background:var(--adm-surface);cursor:pointer;transition:background .15s,border-color .15s; }
+    .optiemenu-btn:hover  { background:var(--adm-bg);border-color:var(--adm-muted); }
+    .optiemenu-btn span   { display:block;width:5px;height:5px;border-radius:50%;background:var(--adm-muted); }
+    .optiemenu-dropdown   { display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:200;background:var(--adm-surface);border:1.5px solid var(--adm-border);border-radius:10px;box-shadow:var(--adm-shadow-md);min-width:200px;overflow:hidden; }
     .optiemenu-wrap.open .optiemenu-dropdown { display:block; }
-    .optiemenu-header {
-      padding:.5rem .9rem; font-size:.72rem; font-weight:700; text-transform:uppercase;
-      letter-spacing:.06em; color:#94a3b8; border-bottom:1px solid #f1f5f9; }
-    .optiemenu-item {
-      display:block; width:100%; text-align:left;
-      padding:.55rem .9rem; font-size:.85rem; font-weight:600; cursor:pointer;
-      background:none; border:none; border-bottom:1px solid #f8fafc; transition:background .12s; }
-    .optiemenu-item:last-child { border-bottom:none; }
-    .optiemenu-item:hover { background:#f8fafc; }
-    .item-reparatie:hover { background:#f0fdf4; color:#16a34a; }
-    .item-taxatie:hover   { background:#eff6ff; color:#2563eb; }
-    .item-coulance:hover  { background:#fffbeb; color:#d97706; }
-    .item-recycling:hover { background:#fdf4ff; color:#5b3a29; }
-    .item-behandeld:hover { background:#f1f5f9; color:#475569; }
-    .item-archief:hover   { background:#f8fafc; color:#64748b; }
+    .optiemenu-header     { padding:.5rem .9rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--adm-faint);border-bottom:1px solid var(--adm-border); }
+    .optiemenu-item       { display:block;width:100%;text-align:left;padding:.55rem .9rem;font-size:.85rem;font-weight:600;cursor:pointer;border:none;background:none;color:var(--adm-text);transition:background .1s; }
+    .optiemenu-item:hover { background:var(--adm-bg); }
+    .optiemenu-item.danger       { color:#b91c1c; }
+    .optiemenu-item.danger:hover { background:#fef2f2; }
+    .optiemenu-divider    { border:none;border-top:1px solid var(--adm-border);margin:.25rem 0; }
+    .optiemenu-type-dot   { display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:.5rem;vertical-align:middle; }
   </style>
 </head>
 <body>
-<div class="admin-wrap">
-<nav class="admin-nav">
-  <span class="logo">Reparatie<span>Platform</span> Admin</span>
-  <a href="<?= BASE_URL ?>/admin/logout.php">Uitloggen</a>
-</nav>
-<div class="admin-layout">
-  <div class="admin-sidebar">
-    <a href="<?= BASE_URL ?>/admin/dashboard.php"><span class="icon">&#128202;</span> Dashboard</a>
-    <a href="<?= BASE_URL ?>/admin/aanvragen.php" class="active"><span class="icon">&#128236;</span> Inzendingen</a>
-    <a href="<?= BASE_URL ?>/admin/meldingen.php"><span class="icon">&#128276;</span> Meldingen</a>
-    <a href="<?= BASE_URL ?>/admin/modellen.php"><span class="icon">&#128250;</span> TV Modellen</a>
-    <a href="<?= BASE_URL ?>/admin/klachten.php"><span class="icon">&#9888;</span> Klachten</a>
-    <a href="<?= BASE_URL ?>/admin/advies-instellingen.php"><span class="icon">&#9881;</span> Advies instellingen</a>
-    <a href="<?= BASE_URL ?>/" target="_blank"><span class="icon">&#127760;</span> Website bekijken</a>
+
+<?php require_once __DIR__ . '/includes/admin-header.php'; ?>
+
+<div class="adm-page">
+  <div class="page-header-row">
+    <div>
+      <h1 class="adm-page-title">Inzendingen</h1>
+      <p class="adm-page-subtitle">Overzicht van alle aanvragen en inzendingen.</p>
+    </div>
   </div>
-  <div class="admin-content">
-    <h1>Inzendingen</h1>
 
-    <?php if ($msg):  ?><div class="alert alert-success"><?= h($msg) ?></div><?php endif; ?>
-    <?php if ($fout): ?><div class="alert alert-error"><?= h($fout) ?></div><?php endif; ?>
-    <?php if (isset($_GET['saved'])): ?><div class="alert alert-success">Wijziging opgeslagen.</div><?php endif; ?>
+  <?php if ($msg):  ?><div class="alert alert-success"><?= h($msg) ?></div><?php endif; ?>
+  <?php if ($fout): ?><div class="alert alert-error"><?= h($fout) ?></div><?php endif; ?>
+  <?php if (isset($_GET['saved'])): ?><div class="alert alert-success">&#10003; Wijziging opgeslagen.</div><?php endif; ?>
 
-    <?php if ($detail): ?>
-    <?php
-      $sl = $statusLabels[$detail['status']] ?? ['tekst'=>$detail['status'],'badge'=>'badge-gray'];
-      $isDefinitief = in_array($detail['status'], $statusDefinitief);
-    ?>
-    <div class="admin-card detail-card">
-      <div class="detail-header">
-        <div>
-          <h2><?= h($detail['merk'].' '.$detail['modelnummer']) ?></h2>
-          <?php if (!empty($detail['casenummer'])): ?>
-            <span class="detail-casenr">&#128230; <?= h($detail['casenummer']) ?></span>
-          <?php endif; ?>
-        </div>
-        <div class="detail-header-right">
-          <span class="badge <?= $sl['badge'] ?>"><?= h($sl['tekst']) ?></span>
+  <?php if ($detail): ?>
+  <?php
+    $sl = $statusLabels[$detail['status']] ?? ['tekst' => $detail['status'], 'badge' => 'badge-gray'];
+    $isDefinitief = in_array($detail['status'], $statusDefinitief);
+    $huidigType = $detail['aanvraag_type'] ?? $detail['advies_type'] ?? '';
+  ?>
 
-          <?php if ($isDefinitief): ?>
-          <div class="optiemenu-wrap">
-            <button class="optiemenu-btn" aria-label="Meer opties" onclick="toggleOptiemenu(this)">
-              <span></span><span></span><span></span>
-            </button>
-            <div class="optiemenu-dropdown">
-              <div class="optiemenu-header">Status wijzigen</div>
-              <form method="POST" action="<?= BASE_URL ?>/api/admin-actie.php">
-                <input type="hidden" name="csrf" value="<?= csrf() ?>"> <!-- ← FIX -->
-                <input type="hidden" name="id" value="<?= (int)$detail['id'] ?>" />
-                <input type="hidden" name="opmerking" value="" />
-                <button type="submit" name="actie" value="doorzetten_reparatie" class="optiemenu-item item-reparatie">&#128295; Reparatie</button>
-                <button type="submit" name="actie" value="doorzetten_taxatie"   class="optiemenu-item item-taxatie">&#128203; Taxatie</button>
-                <button type="submit" name="actie" value="coulance"             class="optiemenu-item item-coulance">&#129309; Coulance</button>
-                <button type="submit" name="actie" value="recycling"            class="optiemenu-item item-recycling">&#9851; Recycling</button>
-                <button type="submit" name="actie" value="behandeld"            class="optiemenu-item item-behandeld">&#10003; Behandeld</button>
-                <button type="submit" name="actie" value="archiveren"           class="optiemenu-item item-archief">&#128193; Archiveren</button>
-              </form>
-            </div>
+  <div class="admin-card detail-card">
+    <div class="detail-header">
+      <div>
+        <h2>Aanvraag #<?= (int)$detail['id'] ?></h2>
+        <?php if (!empty($detail['casenummer'])): ?>
+          <span class="detail-casenr">
+            <a href="?id=<?= (int)$detail['id'] ?>&<?= h(http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek]))) ?>">
+              <?= h($detail['casenummer']) ?>
+            </a>
+          </span>
+        <?php endif; ?>
+      </div>
+      <div class="detail-header-right">
+        <span class="badge <?= $sl['badge'] ?>"><?= h($sl['tekst']) ?></span>
+        <a href="?<?= h(http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek]))) ?>"
+           class="btn btn-sm btn-secondary">&larr; Terug naar lijst</a>
+      </div>
+    </div>
+
+    <!-- Klantgegevens -->
+    <div class="detail-section">
+      <h4>Klantgegevens</h4>
+      <div class="specs-grid">
+        <span class="lbl">E-mail</span><span class="val"><?= h($detail['email'] ?? '—') ?></span>
+        <span class="lbl">Naam</span><span class="val"><?= h($detail['naam'] ?? '—') ?></span>
+        <span class="lbl">Telefoon</span><span class="val"><?= h($detail['telefoon'] ?? '—') ?></span>
+        <span class="lbl">Adres</span><span class="val"><?= h(trim(($detail['straat']??'').' '.($detail['huisnummer']??''))) ?: '—' ?></span>
+        <span class="lbl">Postcode / Plaats</span><span class="val"><?= h(trim(($detail['postcode']??'').' '.($detail['woonplaats']??''))) ?: '—' ?></span>
+      </div>
+    </div>
+
+    <!-- TV-gegevens -->
+    <div class="detail-section">
+      <h4>TV-gegevens</h4>
+      <div class="specs-grid">
+        <span class="lbl">Merk</span><span class="val"><?= h($detail['merk'] ?? '—') ?></span>
+        <span class="lbl">Modelnummer</span><span class="val"><?= h($detail['modelnummer'] ?? '—') ?></span>
+        <span class="lbl">Serienummer</span><span class="val"><?= h($detail['serienummer'] ?? '—') ?></span>
+        <span class="lbl">Aankoopjaar</span><span class="val"><?= h($detail['aankoopjaar'] ?? '—') ?></span>
+        <span class="lbl">Defect</span><span class="val"><?= h($detail['defect_omschrijving'] ?? '—') ?></span>
+        <span class="lbl">Route</span><span class="val"><?= h($detail['geadviseerde_route'] ?? $detail['advies_type'] ?? '—') ?></span>
+      </div>
+    </div>
+
+    <!-- Foto's -->
+    <?php if (!empty($detail['foto_defect']) || !empty($detail['foto_label']) || !empty($detail['foto_bon'])): ?>
+    <div class="detail-section">
+      <h4>Foto's</h4>
+      <div class="fotos-wrap">
+        <?php foreach (['foto_defect' => "Defect", 'foto_label' => "Label", 'foto_bon' => "Aankoopbon"] as $fk => $fl): ?>
+          <?php if (!empty($detail[$fk])): ?>
+          <div class="foto-item">
+            <a href="<?= BASE_URL ?>/<?= h($detail[$fk]) ?>" target="_blank">
+              <img src="<?= BASE_URL ?>/<?= h($detail[$fk]) ?>" alt="<?= $fl ?>" class="foto-img" loading="lazy">
+            </a>
+            <div class="foto-lbl"><?= $fl ?></div>
           </div>
           <?php endif; ?>
-
-          <a href="<?= BASE_URL ?>/admin/aanvragen.php?<?= http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek])) ?>" class="btn btn-secondary btn-sm">&#8592; Terug</a>
-        </div>
+        <?php endforeach; ?>
       </div>
-
-      <div class="detail-section">
-        <h4>Inzendinggegevens</h4>
-        <div class="specs-grid">
-          <span class="lbl">Casenummer</span>  <span class="val"><?= h($detail['casenummer'] ?? '—') ?></span>
-          <span class="lbl">Datum</span>        <span class="val"><?= h($detail[$datumKolom] ?? '') ?></span>
-          <span class="lbl">E-mail</span>       <span class="val"><a href="mailto:<?= h($detail['email']) ?>"><?= h($detail['email']) ?></a></span>
-          <span class="lbl">Merk / model</span> <span class="val"><?= h($detail['merk'].' '.$detail['modelnummer']) ?></span>
-          <span class="lbl">Aanschafjaar</span> <span class="val"><?= h($detail['aanschafjaar'] ?? '—') ?></span>
-          <span class="lbl">Aanschafwaarde</span><span class="val"><?= h($detail['aanschafwaarde'] ?? '—') ?></span>
-          <span class="lbl">Aankoop</span>      <span class="val"><?= h($detail['aankoop_locatie'] ?? 'nl') ?></span>
-          <span class="lbl">Situatie</span>     <span class="val"><?= h($detail['situatie'] ?? '—') ?></span>
-          <span class="lbl">Klachttype</span>   <span class="val"><?= h($detail['klacht_type'] ?? '—') ?></span>
-          <span class="lbl">Geadv. route</span> <span class="val"><?= h($detail['geadviseerde_route'] ?? '—') ?>
-            <?php if ($detail['coulance_kans'] ?? 0): ?> (<?= (int)$detail['coulance_kans'] ?>%<?php endif; ?>)</span>
-          <?php if (!empty($detail['omschrijving'])): ?>
-          <span class="lbl">Omschrijving</span> <span class="val" style="font-style:italic;"><?= h($detail['omschrijving']) ?></span>
-          <?php endif; ?>
-        </div>
-      </div>
-
-      <?php if (!empty($detail['naam']) || !empty($detail['telefoon']) || !empty($detail['adres'])): ?>
-      <div class="detail-section">
-        <h4>Klantgegevens (ingevuld na doorzetten)</h4>
-        <div class="specs-grid">
-          <?php if ($detail['naam']): ?>    <span class="lbl">Naam</span>     <span class="val"><?= h($detail['naam']) ?></span><?php endif; ?>
-          <?php if ($detail['telefoon']): ?><span class="lbl">Telefoon</span> <span class="val"><?= h($detail['telefoon']) ?></span><?php endif; ?>
-          <?php if ($detail['adres']): ?>   <span class="lbl">Adres</span>    <span class="val"><?= h($detail['adres']) ?></span><?php endif; ?>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <?php if (!empty($detail['foto_defect']) || !empty($detail['foto_label']) || !empty($detail['foto_bon'])): ?>
-      <div class="detail-section">
-        <h4>Foto's</h4>
-        <div class="fotos-wrap">
-          <?php foreach (['foto_defect'=>'Defect','foto_label'=>'Label/S/N','foto_bon'=>'Aankoopbon'] as $k=>$lbl): ?>
-            <?php if (!empty($detail[$k])): ?>
-            <div class="foto-item">
-              <a href="<?= BASE_URL ?>/<?= h($detail[$k]) ?>" target="_blank">
-                <img src="<?= BASE_URL ?>/<?= h($detail[$k]) ?>" alt="<?= $lbl ?>" class="foto-img" loading="lazy" />
-              </a>
-              <div class="foto-lbl"><?= $lbl ?></div>
-            </div>
-            <?php endif; ?>
-          <?php endforeach; ?>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <div class="detail-section berichten-sectie">
-        <div class="berichten-kolommen">
-
-          <div class="berichten-overzicht">
-            <h4>Berichtenoverzicht</h4>
-            <?php if (!empty($detail['log'])): ?>
-              <div class="log-lijst">
-              <?php foreach (array_reverse($detail['log']) as $le): ?>
-                <div class="log-item">
-                  <span class="log-time"><?= date('d-m H:i', strtotime($le['aangemaakt'])) ?></span>
-                  <span class="log-tekst"><?= h($le['actie']) ?>
-                    <?php if ($le['opmerking']): ?><small><?= h($le['opmerking']) ?></small><?php endif; ?>
-                    <small class="log-door"><?= h($le['gedaan_door']) ?></small>
-                  </span>
-                </div>
-              <?php endforeach; ?>
-              </div>
-            <?php else: ?>
-              <p class="log-leeg">Nog geen log-entries.</p>
-            <?php endif; ?>
-          </div>
-
-          <div class="bericht-sturen">
-            <h4>Bericht sturen naar klant</h4>
-            <form method="POST" action="<?= BASE_URL ?>/api/admin-actie.php">
-              <input type="hidden" name="csrf" value="<?= csrf() ?>"> <!-- ← FIX -->
-              <input type="hidden" name="id" value="<?= (int)$detail['id'] ?>" />
-              <textarea name="opmerking" class="opmerking-field" placeholder="Typ hier uw bericht aan de klant..." rows="4" required></textarea>
-              <div class="bericht-footer">
-                <button type="submit" name="actie" value="bericht_admin" class="btn-actie btn-reparatie">&#128172; Bericht versturen</button>
-              </div>
-            </form>
-
-            <?php if (!$isDefinitief): ?>
-            <div class="actie-separator"><span>of voer een actie uit</span></div>
-            <p class="actie-info">
-              Status: <strong><?= h($sl['tekst']) ?></strong> &bull;
-              Adviestype: <strong><?= h($detail['advies_type'] ?? 'niet bepaald') ?></strong>
-            </p>
-            <form method="POST" action="<?= BASE_URL ?>/api/admin-actie.php">
-              <input type="hidden" name="csrf" value="<?= csrf() ?>"> <!-- ← FIX -->
-              <input type="hidden" name="id" value="<?= (int)$detail['id'] ?>" />
-              <textarea name="opmerking" class="opmerking-field" placeholder="Optionele opmerking bij actie..." rows="2"></textarea>
-              <div class="actie-knoppen">
-                <button type="submit" name="actie" value="doorzetten_reparatie" class="btn-actie btn-reparatie">&#128295; Reparatie</button>
-                <button type="submit" name="actie" value="doorzetten_taxatie"   class="btn-actie btn-taxatie">&#128203; Taxatie</button>
-                <button type="submit" name="actie" value="coulance"             class="btn-actie btn-coulance">&#129309; Coulance</button>
-                <button type="submit" name="actie" value="recycling"            class="btn-actie btn-recycling">&#9851; Recycling</button>
-                <button type="submit" name="actie" value="behandeld"            class="btn-actie btn-behandeld">&#10003; Behandeld</button>
-                <button type="submit" name="actie" value="archiveren"           class="btn-actie btn-archief">Archiveren</button>
-              </div>
-            </form>
-            <?php endif; ?>
-          </div>
-
-        </div>
-      </div>
-
     </div>
     <?php endif; ?>
 
-    <div class="admin-card">
-      <form method="GET" class="filter-bar">
-        <select name="status">
-          <option value="">Alle statussen</option>
-          <?php foreach ($statusLabels as $k => $v): ?>
-            <option value="<?= $k ?>" <?= $filterStatus===$k?'selected':'' ?>><?= h($v['tekst']) ?></option>
-          <?php endforeach; ?>
-        </select>
-        <select name="route">
-          <option value="">Alle routes</option>
-          <?php foreach (['garantie','coulance','reparatie','taxatie','recycling'] as $r): ?>
-            <option value="<?= $r ?>" <?= $filterRoute===$r?'selected':'' ?>><?= ucfirst($r) ?></option>
-          <?php endforeach; ?>
-        </select>
-        <input type="text" name="zoek" value="<?= h($filterZoek) ?>" placeholder="Zoek op merk, email, casenummer…" />
-        <button type="submit">Filteren</button>
-        <?php if ($filterStatus || $filterRoute || $filterZoek): ?>
-          <a href="<?= BASE_URL ?>/admin/aanvragen.php" class="btn btn-secondary btn-sm">Wis filters</a>
-        <?php endif; ?>
-      </form>
+    <!-- Berichten & acties -->
+    <div class="detail-section" style="padding:0;border:none;">
+      <div class="berichten-kolommen">
 
-      <h2>Inzendingen (<?= count($aanvragen) ?>)</h2>
-      <?php if (empty($aanvragen)): ?>
-        <p style="color:var(--muted);font-size:.875rem;">Geen inzendingen gevonden.</p>
-      <?php else: ?>
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Casenummer</th>
-            <th>Datum</th>
-            <th>TV</th>
-            <th>E-mail</th>
-            <th>Route</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-        <?php foreach ($aanvragen as $r): ?>
-        <tr>
-          <td class="casenr-col"><?= h($r['casenummer'] ?? '#'.$r['id']) ?></td>
-          <td style="white-space:nowrap;font-size:.78rem;color:#64748b;"><?= date('d-m-y H:i', strtotime($r[$datumKolom] ?? '')) ?></td>
-          <td><strong style="font-size:.875rem;"><?= h($r['merk'].' '.$r['modelnummer']) ?></strong></td>
-          <td style="font-size:.8rem;"><?= h($r['email']) ?></td>
-          <td>
-            <?php $rt = $r['advies_type'] ?: $r['geadviseerde_route']; ?>
-            <?php if ($rt): ?><span class="badge badge-blue" style="font-size:.72rem;"><?= h($rt) ?></span><?php else: ?>—<?php endif; ?>
-          </td>
-          <td>
-            <?php $sl2 = $statusLabels[$r['status']] ?? ['tekst'=>$r['status'],'badge'=>'badge-gray']; ?>
-            <span class="badge <?= $sl2['badge'] ?>" style="font-size:.72rem;"><?= h($sl2['tekst']) ?></span>
-          </td>
-          <td>
-            <a href="?id=<?= $r['id'] ?>&<?= http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek])) ?>"
-               class="btn btn-sm btn-secondary">Openen</a>
-          </td>
-        </tr>
+        <!-- Links: activiteitenlog -->
+        <div class="berichten-overzicht">
+          <h4>Activiteitenlog</h4>
+          <?php if (empty($detail['log'])): ?>
+            <p class="log-leeg">Nog geen activiteit geregistreerd.</p>
+          <?php else: ?>
+          <div class="log-lijst">
+            <?php foreach (array_reverse($detail['log']) as $lg): ?>
+            <div class="log-item">
+              <span class="log-time"><?= h(substr($lg['aangemaakt'] ?? '', 0, 16)) ?></span>
+              <span class="log-tekst">
+                <?= h($lg['actie'] ?? '') ?>
+                <?php if (!empty($lg['opmerking'])): ?>
+                  <small><?= h($lg['opmerking']) ?></small>
+                <?php endif; ?>
+              </span>
+            </div>
+            <?php endforeach; ?>
+          </div>
+          <?php endif; ?>
+        </div>
+
+        <!-- Rechts: acties -->
+        <div class="bericht-sturen">
+
+          <!-- Bericht sturen -->
+          <h4>Bericht sturen aan klant</h4>
+          <form method="POST">
+            <input type="hidden" name="csrf"        value="<?= csrf() ?>">
+            <input type="hidden" name="action"      value="bericht">
+            <input type="hidden" name="aanvraag_id" value="<?= (int)$detail['id'] ?>">
+            <textarea name="bericht" class="opmerking-field" placeholder="Typ hier uw bericht aan de klant…"></textarea>
+            <div class="bericht-footer">
+              <button type="submit" class="btn btn-primary btn-sm">Verzenden</button>
+            </div>
+          </form>
+
+          <!-- Aanvraagtype toekennen (gekleurde buttons) -->
+          <div class="actie-separator"><span>Aanvraagtype</span></div>
+          <p class="actie-info">
+            Huidig type: <strong><?= $huidigType ? h($aanvraagTypes[$huidigType]['label'] ?? $huidigType) : '— niet ingesteld —' ?></strong>
+          </p>
+          <div class="aanvraagtype-buttons">
+            <?php foreach ($aanvraagTypes as $typeSlug => $typeInfo): ?>
+            <form method="POST" style="margin:0;">
+              <input type="hidden" name="csrf"          value="<?= csrf() ?>">
+              <input type="hidden" name="action"        value="set_type">
+              <input type="hidden" name="aanvraag_id"   value="<?= (int)$detail['id'] ?>">
+              <input type="hidden" name="aanvraag_type" value="<?= h($typeSlug) ?>">
+              <button type="submit"
+                class="btn-type btn-type-<?= h($typeSlug) ?><?= ($huidigType === $typeSlug) ? ' active-type' : '' ?>">
+                <?= h($typeInfo['label']) ?>
+              </button>
+            </form>
+            <?php endforeach; ?>
+          </div>
+
+          <?php if ($huidigType): ?>
+          <!-- Type wijzigen via selectmenu (detail) -->
+          <div class="actie-separator"><span>Type wijzigen via menu</span></div>
+          <form method="POST" style="display:flex;align-items:center;flex-wrap:wrap;gap:.4rem;">
+            <input type="hidden" name="csrf"        value="<?= csrf() ?>">
+            <input type="hidden" name="action"      value="set_type">
+            <input type="hidden" name="aanvraag_id" value="<?= (int)$detail['id'] ?>">
+            <div class="type-select-wrap" style="display:contents;">
+              <select name="aanvraag_type">
+                <?php foreach ($aanvraagTypes as $ts => $ti): ?>
+                  <option value="<?= h($ts) ?>" <?= $huidigType === $ts ? 'selected' : '' ?>>
+                    <?= h($ti['label']) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+              <button type="submit">Wijzigen</button>
+            </div>
+          </form>
+          <?php endif; ?>
+
+          <!-- Status wijzigen -->
+          <div class="actie-separator"><span>Status wijzigen</span></div>
+          <p class="actie-info">Huidige status: <strong><?= h($sl['tekst']) ?></strong></p>
+          <div class="actie-knoppen">
+            <form method="POST" style="margin:0;">
+              <input type="hidden" name="csrf"         value="<?= csrf() ?>">
+              <input type="hidden" name="action"       value="status">
+              <input type="hidden" name="aanvraag_id"  value="<?= (int)$detail['id'] ?>">
+              <input type="hidden" name="nieuw_status" value="doorgestuurd">
+              <button type="submit" class="btn-actie btn-coulance">Aanvulling nodig</button>
+            </form>
+            <form method="POST" style="margin:0;">
+              <input type="hidden" name="csrf"         value="<?= csrf() ?>">
+              <input type="hidden" name="action"       value="status">
+              <input type="hidden" name="aanvraag_id"  value="<?= (int)$detail['id'] ?>">
+              <input type="hidden" name="nieuw_status" value="behandeld">
+              <button type="submit" class="btn-actie btn-behandeld">Behandeld</button>
+            </form>
+            <form method="POST" style="margin:0;">
+              <input type="hidden" name="csrf"         value="<?= csrf() ?>">
+              <input type="hidden" name="action"       value="status">
+              <input type="hidden" name="aanvraag_id"  value="<?= (int)$detail['id'] ?>">
+              <input type="hidden" name="nieuw_status" value="archief">
+              <button type="submit" class="btn-actie btn-archief">Archiveren</button>
+            </form>
+          </div>
+
+        </div><!-- /.bericht-sturen -->
+      </div><!-- /.berichten-kolommen -->
+    </div><!-- /.berichten-sectie -->
+
+  </div><!-- /.detail-card -->
+
+  <?php else: ?>
+
+  <!-- Lijst: overzicht aanvragen -->
+  <div class="filter-bar">
+    <form method="GET" id="filter-form" style="display:contents;">
+      <select name="status" onchange="this.form.submit()">
+        <option value="">Alle statussen</option>
+        <?php foreach ($statusLabels as $val => $lbl): ?>
+          <option value="<?= $val ?>" <?= $filterStatus === $val ? 'selected' : '' ?>><?= h($lbl['tekst']) ?></option>
         <?php endforeach; ?>
-        </tbody>
-      </table>
+      </select>
+      <input type="text" name="zoek" placeholder="Zoek op e-mail, merk, model, casenr…" value="<?= h($filterZoek) ?>">
+      <button type="submit">Zoeken</button>
+      <?php if ($filterStatus || $filterZoek || $filterRoute): ?>
+        <a href="?" class="btn btn-sm btn-secondary">Wis filters</a>
       <?php endif; ?>
-    </div>
+    </form>
   </div>
-</div>
-</div>
+
+  <div class="admin-card">
+    <h2><?= count($aanvragen) ?> aanvragen</h2>
+    <?php if (empty($aanvragen)): ?>
+      <p style="color:var(--adm-faint);padding:1rem 0;">Geen aanvragen gevonden.</p>
+    <?php else: ?>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Casenr.</th>
+          <th>E-mail</th>
+          <th>Merk / Model</th>
+          <th>Route</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Datum</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php foreach ($aanvragen as $r):
+        $sl        = $statusLabels[$r['status']] ?? ['tekst' => $r['status'], 'badge' => 'badge-gray'];
+        $rType     = $r['aanvraag_type'] ?? $r['advies_type'] ?? '';
+        $rTypeInfo = $aanvraagTypes[$rType] ?? null;
+        $qs        = http_build_query(array_filter(['status' => $filterStatus, 'route' => $filterRoute, 'zoek' => $filterZoek]));
+      ?>
+      <tr>
+        <td class="casenr-col">
+          <a href="?id=<?= $r['id'] ?><?= $qs ? '&'.$qs : '' ?>">
+            <?= h($r['casenummer'] ?? '#'.$r['id']) ?>
+          </a>
+        </td>
+        <td style="font-size:.85rem;"><?= h($r['email'] ?? '—') ?></td>
+        <td style="font-size:.85rem;"><?= h(($r['merk']??'').' '.($r['modelnummer']??'')) ?></td>
+        <td style="font-size:.82rem;color:var(--adm-muted);"><?= h($r['geadviseerde_route'] ?? $r['advies_type'] ?? '—') ?></td>
+        <td>
+          <?php if ($rTypeInfo): ?>
+            <span style="display:inline-flex;align-items:center;gap:.35rem;font-size:.78rem;font-weight:700;
+              background:<?= h($rTypeInfo['kleur']) ?>;color:<?= h($rTypeInfo['tekst']) ?>;
+              padding:.2rem .55rem;border-radius:6px;">
+              <?= h($rTypeInfo['label']) ?>
+            </span>
+          <?php else: ?>
+            <span style="font-size:.78rem;color:var(--adm-faint);">—</span>
+          <?php endif; ?>
+        </td>
+        <td><span class="badge <?= $sl['badge'] ?>"><?= h($sl['tekst']) ?></span></td>
+        <td style="font-size:.8rem;color:var(--adm-faint);"><?= h($r[$datumKolom] ?? '—') ?></td>
+        <td>
+          <div class="optiemenu-wrap">
+            <button type="button" class="optiemenu-btn" onclick="toggleOptiemenu(this)" aria-label="Opties">
+              <span></span><span></span><span></span>
+            </button>
+            <div class="optiemenu-dropdown">
+              <div class="optiemenu-header">Acties</div>
+              <a href="?id=<?= $r['id'] ?><?= $qs ? '&'.$qs : '' ?>"
+                 class="optiemenu-item">&#128065; Openen</a>
+              <hr class="optiemenu-divider">
+              <div class="optiemenu-header" style="padding-top:.35rem;">Aanvraagtype</div>
+              <?php foreach ($aanvraagTypes as $ts => $ti): ?>
+              <form method="POST" style="margin:0;">
+                <input type="hidden" name="csrf"          value="<?= csrf() ?>">
+                <input type="hidden" name="action"        value="set_type_lijst">
+                <input type="hidden" name="aanvraag_id"   value="<?= (int)$r['id'] ?>">
+                <input type="hidden" name="aanvraag_type" value="<?= h($ts) ?>">
+                <button type="submit" class="optiemenu-item<?= $rType === $ts ? ' active-type' : '' ?>">
+                  <span class="optiemenu-type-dot" style="background:<?= h($ti['kleur']) ?>;"></span>
+                  <?= h($ti['label']) ?>
+                  <?= $rType === $ts ? ' ✓' : '' ?>
+                </button>
+              </form>
+              <?php endforeach; ?>
+              <hr class="optiemenu-divider">
+              <div class="optiemenu-header" style="padding-top:.35rem;">Status</div>
+              <?php foreach ($statusLabels as $sv => $si): ?>
+              <form method="POST" style="margin:0;">
+                <input type="hidden" name="csrf"         value="<?= csrf() ?>">
+                <input type="hidden" name="action"       value="status">
+                <input type="hidden" name="aanvraag_id"  value="<?= (int)$r['id'] ?>">
+                <input type="hidden" name="nieuw_status" value="<?= h($sv) ?>">
+                <button type="submit" class="optiemenu-item">
+                  <?= h($si['tekst']) ?>
+                  <?= $r['status'] === $sv ? ' ✓' : '' ?>
+                </button>
+              </form>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        </td>
+      </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+    <?php endif; ?>
+  </div>
+
+  <?php endif; ?>
+
+</div><!-- /.adm-page -->
 
 <script>
 function toggleOptiemenu(btn) {
-  const wrap = btn.closest('.optiemenu-wrap');
-  const isOpen = wrap.classList.contains('open');
-  document.querySelectorAll('.optiemenu-wrap.open').forEach(w => w.classList.remove('open'));
+  var wrap   = btn.closest('.optiemenu-wrap');
+  var isOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.optiemenu-wrap.open').forEach(function(w){ w.classList.remove('open'); });
   if (!isOpen) wrap.classList.add('open');
 }
 document.addEventListener('click', function(e) {
   if (!e.target.closest('.optiemenu-wrap')) {
-    document.querySelectorAll('.optiemenu-wrap.open').forEach(w => w.classList.remove('open'));
+    document.querySelectorAll('.optiemenu-wrap.open').forEach(function(w){ w.classList.remove('open'); });
   }
 });
 </script>

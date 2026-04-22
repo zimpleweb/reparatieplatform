@@ -1,790 +1,1024 @@
 <?php
+/**
+ * admin/advies-instellingen.php
+ * Beheer van alle adviesrouting-regels voor advies.php
+ */
 session_start();
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/../includes/advies_regels.php';
 requireAdmin();
 
+// ── DB: tabel aanmaken/migreren indien nodig ─────────────────────────────
+try {
+    db()->exec("
+        CREATE TABLE IF NOT EXISTS advies_regels (
+            id          INT AUTO_INCREMENT PRIMARY KEY,
+            regel_key   VARCHAR(100) NOT NULL UNIQUE,
+            regel_waarde TEXT        NOT NULL DEFAULT '',
+            type        VARCHAR(20)  NOT NULL DEFAULT 'string',
+            updated_at  TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $cols = db()->query("SHOW COLUMNS FROM advies_regels LIKE 'type'")->fetchAll();
+    if (empty($cols)) {
+        db()->exec("ALTER TABLE advies_regels ADD COLUMN type VARCHAR(20) NOT NULL DEFAULT 'string' AFTER regel_waarde");
+    }
+    $colsV = db()->query("SHOW COLUMNS FROM advies_regels LIKE 'regel_value'")->fetchAll();
+    if (!empty($colsV)) {
+        $colsW = db()->query("SHOW COLUMNS FROM advies_regels LIKE 'regel_waarde'")->fetchAll();
+        if (empty($colsW)) {
+            db()->exec("ALTER TABLE advies_regels CHANGE regel_value regel_waarde TEXT NOT NULL DEFAULT ''");
+        }
+    }
+} catch (\Exception $e) {}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function getAR(string $key, string $default = ''): string {
+    static $cache = [];
+    if (!array_key_exists($key, $cache)) {
+        try {
+            try {
+                $s = db()->prepare("SELECT regel_waarde FROM advies_regels WHERE regel_key=?");
+            } catch (\Exception $e) {
+                $s = db()->prepare("SELECT regel_value FROM advies_regels WHERE regel_key=?");
+            }
+            $s->execute([$key]);
+            $v = $s->fetchColumn();
+            $cache[$key] = ($v !== false && $v !== '') ? $v : $default;
+        } catch (\Exception $e) { $cache[$key] = $default; }
+    }
+    return $cache[$key];
+}
+
+function setAR(string $key, string $value, string $type = 'string'): void {
+    try {
+        db()->prepare("
+            INSERT INTO advies_regels (regel_key, regel_waarde, type) VALUES (?,?,?)
+            ON DUPLICATE KEY UPDATE regel_waarde=VALUES(regel_waarde), type=VALUES(type)
+        ")->execute([$key, $value, $type]);
+    } catch (\Exception $e) {
+        db()->prepare("
+            INSERT INTO advies_regels (regel_key, regel_value) VALUES (?,?)
+            ON DUPLICATE KEY UPDATE regel_value=VALUES(regel_value)
+        ")->execute([$key, $value]);
+    }
+}
+
+// ── Alle klacht-opties ────────────────────────────────────────────────────
+$alleKlachten = [
+    'gebarsten_scherm'  => 'Kapot of gebarsten scherm',
+    'strepen'           => 'Strepen of lijnen in beeld',
+    'geen_beeld'        => 'Geen beeld, wel geluid',
+    'backlight'         => 'Donkere vlekken of backlight-uitval',
+    'flikkering'        => 'Bevroren beeld of flikkering',
+    'kleur'             => 'Kleurproblemen of sterk verkleurde pixels',
+    'niet_aan'          => 'TV gaat niet aan',
+    'stroomstoot'       => 'Schade na stroomstoot of blikseminslag',
+    'oververhitting'    => 'Oververhitting of stopt na korte tijd',
+    'software'          => 'Software of Smart TV werkt niet',
+    'afstandsbediening' => 'Afstandsbediening reageert niet',
+    'geluid'            => 'Geen of slecht geluid, beeld werkt wel',
+    'anders'            => 'Anders of niet in de lijst',
+];
+
+// ── Prijsklasse-opties ────────────────────────────────────────────────────
+$allePrijsklassen = [
+    '<500'      => 'Minder dan €500',
+    '500-1000'  => '€500 – €1.000',
+    '1000-2000' => '€1.000 – €2.000',
+    '>2000'     => 'Meer dan €2.000',
+    ''          => 'Onbekend / niet ingevuld',
+];
+
+// ── TV-modellen statistieken ──────────────────────────────────────────────
+$statsTotal = $statsRep = $statsTax = 0;
+try {
+    $statsTotal = (int) db()->query("SELECT COUNT(*) FROM tv_modellen")->fetchColumn();
+    $statsRep   = (int) db()->query("SELECT COUNT(*) FROM tv_modellen WHERE repareerbaar=1")->fetchColumn();
+    $statsTax   = (int) db()->query("SELECT COUNT(*) FROM tv_modellen WHERE taxatie=1")->fetchColumn();
+} catch (\Exception $e) {}
+
+$beschikbareMerken = [];
+try {
+    $beschikbareMerken = db()->query("SELECT DISTINCT merk FROM tv_modellen ORDER BY merk")->fetchAll(\PDO::FETCH_COLUMN);
+} catch (\Exception $e) {}
+
+// ── Opslaan ───────────────────────────────────────────────────────────────
 $msg  = '';
 $type = 'success';
 
-// =====================================================================
-// OPSLAAN
-// =====================================================================
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    try {
-        $pdo = db();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if (!verifyCsrf($_POST['csrf_token'] ?? '')) {
+        $msg = 'Beveiligingstoken ongeldig.'; $type = 'error';
+    } else {
+        $act = $_POST['action'];
 
-        // ── Bool-velden: altijd '0' tenzij checkbox aangevinkt ─────────
-        $bools = ['garantie_alleen_nl', 'reparatie_vereist_repareerbaar', 'taxatie_bij_schade'];
-        foreach ($bools as $bk) {
-            $pdo->prepare('UPDATE advies_regels SET regel_waarde = ? WHERE regel_key = ?')
-                ->execute([isset($_POST[$bk]) ? '1' : '0', $bk]);
-        }
-
-        // ── Int-velden ─────────────────────────────────────────────────
-        $ints = [
-            'garantie_termijn_jaar',
-            'coulance_min_jaar', 'coulance_max_jaar',
-            'coulance_aftrek_buitenland', 'coulance_aftrek_failliet',
-            'reparatie_min_jaar', 'reparatie_max_jaar',
-            'recycling_min_jaar',
-        ];
-        foreach ($ints as $k) {
-            if (!isset($_POST[$k])) continue;
-            $pdo->prepare('UPDATE advies_regels SET regel_waarde = ? WHERE regel_key = ?')
-                ->execute([(string)(int)$_POST[$k], $k]);
-        }
-
-        // ── JSON merk-lijsten (hidden velden via JS checkbox-sync) ─────
-        $jsonMerken = [
-            'garantie_merken', 'coulance_merken', 'reparatie_merken', 'taxatie_merken'
-        ];
-        foreach ($jsonMerken as $k) {
-            if (!isset($_POST[$k])) continue;
-            $decoded = json_decode($_POST[$k], true);
-            if (!is_array($decoded)) $decoded = [];
-            $pdo->prepare('UPDATE advies_regels SET regel_waarde = ? WHERE regel_key = ?')
-                ->execute([json_encode(array_values($decoded), JSON_UNESCAPED_UNICODE), $k]);
-        }
-
-        // ── JSON klacht-uitsluitingen ──────────────────────────────────
-        $jsonKlachten = ['garantie_uitsluiten_klachten', 'coulance_uitsluiten_klachten'];
-        foreach ($jsonKlachten as $k) {
-            if (!isset($_POST[$k])) continue;
-            $decoded = json_decode($_POST[$k], true);
-            if ($decoded === null) {
-                // Probeer als komma-gescheiden tekst
-                $decoded = array_filter(array_map('trim', explode(',', $_POST[$k])));
-            }
-            if (!is_array($decoded)) $decoded = [];
-            $pdo->prepare('UPDATE advies_regels SET regel_waarde = ? WHERE regel_key = ?')
-                ->execute([json_encode(array_values($decoded), JSON_UNESCAPED_UNICODE), $k]);
-        }
-
-        // ── Coulance kansmatrix: opgebouwd uit matrix_basis[] + matrix_aftrek[] ─
-        // Dit wordt UITSLUITEND via de tabel-inputs aangeboden (geen vrije textarea)
-        // zodat de data altijd geldig is.
-        $prijsklassen = ['', '<500', '500-1000', '1000-2000', '>2000'];
-        if (isset($_POST['matrix_basis'])) {
-            $matrix = [];
-            foreach ($prijsklassen as $pk) {
-                $matrix[] = [
-                    'prijsklasse'    => $pk,
-                    'basis_kans'     => max(0, min(100, (int)($_POST['matrix_basis'][$pk]  ?? 50))),
-                    'per_jaar_aftrek'=> max(0, min(50,  (int)($_POST['matrix_aftrek'][$pk] ?? 6))),
+        if ($act === 'save_stappen') {
+            $stappen = [];
+            $cnt = (int)($_POST['stap_count'] ?? 4);
+            for ($i = 1; $i <= min($cnt, 10); $i++) {
+                $stappen[] = [
+                    'nummer' => $i,
+                    'label'  => trim($_POST["stap_{$i}_label"]  ?? ''),
+                    'titel'  => trim($_POST["stap_{$i}_titel"]  ?? ''),
+                    'lead'   => trim($_POST["stap_{$i}_lead"]   ?? ''),
                 ];
             }
-            $pdo->prepare('UPDATE advies_regels SET regel_waarde = ? WHERE regel_key = ?')
-                ->execute([json_encode($matrix, JSON_UNESCAPED_UNICODE), 'coulance_kans_matrix']);
+            setAR('stappen_config', json_encode($stappen, JSON_UNESCAPED_UNICODE), 'json');
+            $msg = 'Stappenplan opgeslagen.';
         }
 
-        if (!$msg) $msg = 'Instellingen succesvol opgeslagen. Wijzigingen zijn direct actief in het adviesformulier.';
+        if ($act === 'save_leeftijd') {
+            setAR('garantie_termijn_jaar',          (string)(int)($_POST['garantie_termijn_jaar']     ?? 2), 'int');
+            setAR('coulance_min_jaar',              (string)(int)($_POST['coulance_min_jaar']         ?? 2), 'int');
+            setAR('coulance_max_jaar',              (string)(int)($_POST['coulance_max_jaar']         ?? 5), 'int');
+            setAR('reparatie_min_jaar',             (string)(int)($_POST['reparatie_min_jaar']        ?? 2), 'int');
+            setAR('reparatie_max_jaar',             (string)(int)($_POST['reparatie_max_jaar']        ?? 10), 'int');
+            setAR('recycling_min_jaar',             (string)(int)($_POST['recycling_min_jaar']        ?? 10), 'int');
+            setAR('garantie_alleen_nl',             isset($_POST['garantie_alleen_nl'])         ? '1' : '0', 'bool');
+            setAR('reparatie_vereist_repareerbaar', isset($_POST['reparatie_vereist_repareerbaar']) ? '1' : '0', 'bool');
+            setAR('taxatie_bij_schade',             isset($_POST['taxatie_bij_schade'])         ? '1' : '0', 'bool');
+            setAR('coulance_aftrek_buitenland',     (string)(int)($_POST['coulance_aftrek_buitenland'] ?? 30), 'int');
+            $msg = 'Leeftijdsgrenzen & algemene instellingen opgeslagen.';
+        }
 
-    } catch (Exception $e) {
-        $msg  = 'Fout bij opslaan: ' . $e->getMessage();
-        $type = 'error';
+        if ($act === 'save_coulance_matrix') {
+            $matrix = [];
+            $cnt    = (int)($_POST['matrix_count'] ?? 0);
+            for ($i = 0; $i < $cnt; $i++) {
+                $minp     = max(0, (int)($_POST["matrix_{$i}_min_prijs"] ?? 0));
+                $maxp_raw = trim($_POST["matrix_{$i}_max_prijs"] ?? '');
+                $maxp     = ($maxp_raw === '' || $maxp_raw === '0') ? null : max($minp + 1, (int)$maxp_raw);
+                $jaren    = max(1, min(15, (int)($_POST["matrix_{$i}_coulance_jaren"] ?? 3)));
+                $matrix[] = ['min_prijs' => $minp, 'max_prijs' => $maxp, 'coulance_jaren' => $jaren];
+            }
+            usort($matrix, fn($a, $b) => $a['min_prijs'] <=> $b['min_prijs']);
+            setAR('coulance_kans_matrix', json_encode($matrix, JSON_UNESCAPED_UNICODE), 'json');
+            $msg = 'Coulance prijsranges (redelijke jaren) opgeslagen.';
+        }
+
+        if ($act === 'save_defecten') {
+            $reparatieUitsluit = $_POST['reparatie_uitsluiten'] ?? [];
+            $taxatieUitsluit   = $_POST['taxatie_uitsluiten']   ?? [];
+            $taxatieInclude    = $_POST['taxatie_include']       ?? [];
+            $garantieUitsluit  = $_POST['garantie_uitsluiten']  ?? [];
+            $coulanceUitsluit  = $_POST['coulance_uitsluiten']  ?? [];
+            $geldig = array_keys($alleKlachten);
+            $reparatieUitsluit = array_values(array_intersect($reparatieUitsluit, $geldig));
+            $taxatieUitsluit   = array_values(array_intersect($taxatieUitsluit,   $geldig));
+            $taxatieInclude    = array_values(array_intersect($taxatieInclude,    $geldig));
+            $garantieUitsluit  = array_values(array_intersect($garantieUitsluit,  $geldig));
+            $coulanceUitsluit  = array_values(array_intersect($coulanceUitsluit,  $geldig));
+            setAR('reparatie_uitsluiten_klachten', json_encode($reparatieUitsluit, JSON_UNESCAPED_UNICODE), 'json');
+            setAR('taxatie_uitsluiten_klachten',   json_encode($taxatieUitsluit,   JSON_UNESCAPED_UNICODE), 'json');
+            setAR('taxatie_include_klachten',      json_encode($taxatieInclude,    JSON_UNESCAPED_UNICODE), 'json');
+            setAR('garantie_uitsluiten_klachten',  json_encode($garantieUitsluit,  JSON_UNESCAPED_UNICODE), 'json');
+            setAR('coulance_uitsluiten_klachten',  json_encode($coulanceUitsluit,  JSON_UNESCAPED_UNICODE), 'json');
+            $msg = 'Defect/schade routing opgeslagen.';
+        }
+
+        if ($act === 'save_merken') {
+            foreach (['garantie_merken','coulance_merken','reparatie_merken','taxatie_merken'] as $mk) {
+                $raw = $_POST[$mk . '_json'] ?? '[]';
+                $arr = json_decode($raw, true);
+                if (!is_array($arr)) $arr = [];
+                $arr = array_values(array_filter(array_map('trim', $arr)));
+                setAR($mk, json_encode($arr, JSON_UNESCAPED_UNICODE), 'json');
+            }
+            $msg = 'Merkfilters opgeslagen.';
+        }
     }
 }
 
-// Laad de (verse) regels NADAT opslaan
-$r = getAdviesRegels();
+// ── Huidige waarden ophalen ───────────────────────────────────────────────
+$garantieTermijn  = (int) getAR('garantie_termijn_jaar',           '2');
+$coulanceMinJaar  = (int) getAR('coulance_min_jaar',               '2');
+$coulanceMaxJaar  = (int) getAR('coulance_max_jaar',               '5');
+$reparatieMinJaar = (int) getAR('reparatie_min_jaar',              '2');
+$reparatieMaxJaar = (int) getAR('reparatie_max_jaar',              '10');
+$recyclingMinJaar = (int) getAR('recycling_min_jaar',              '10');
+$garantieAlleenNl = getAR('garantie_alleen_nl',                    '1') === '1';
+$repVereistRepbr  = getAR('reparatie_vereist_repareerbaar',        '1') === '1';
+$taxatieBijSchade = getAR('taxatie_bij_schade',                    '1') === '1';
+$coulanceAftrekBl = (int) getAR('coulance_aftrek_buitenland',      '30');
 
-// Merk-standaarden voor uitzonderingsberekening
-$repareerbareMerken = is_array($r['reparatie_merken'] ?? null) ? $r['reparatie_merken'] : [];
-$taxatieMerken      = is_array($r['taxatie_merken']   ?? null) ? $r['taxatie_merken']   : [];
+$stappenConfig     = json_decode(getAR('stappen_config', '[]'), true) ?: [];
+$coulanceMatrix    = json_decode(getAR('coulance_kans_matrix', '[]'), true) ?: [];
+$reparatieUitsluit = json_decode(getAR('reparatie_uitsluiten_klachten', '["gebarsten_scherm"]'), true) ?: [];
+$taxatieUitsluit   = json_decode(getAR('taxatie_uitsluiten_klachten',   '[]'), true) ?: [];
+$taxatieInclude    = json_decode(getAR('taxatie_include_klachten',      '["gebarsten_scherm","stroomstoot"]'), true) ?: [];
+$garantieUitsluit  = json_decode(getAR('garantie_uitsluiten_klachten',  '["gebarsten_scherm"]'), true) ?: [];
+$coulanceUitsluit  = json_decode(getAR('coulance_uitsluiten_klachten',  '["gebarsten_scherm"]'), true) ?: [];
+$garantieMerken    = json_decode(getAR('garantie_merken',  '[]'), true) ?: [];
+$coulanceMerken    = json_decode(getAR('coulance_merken',  '[]'), true) ?: [];
+$reparatieMerken   = json_decode(getAR('reparatie_merken', '[]'), true) ?: [];
+$taxatieMerken     = json_decode(getAR('taxatie_merken',   '[]'), true) ?: [];
 
-// Model-uitzonderingen: modellen die afwijken van hun merk-standaard
-$uitzRep = $uitzTax = [];
-try {
-    foreach (
-        db()->query('SELECT merk, modelnummer, repareerbaar, taxatie FROM tv_modellen WHERE actief=1 ORDER BY merk, modelnummer')
-            ->fetchAll(PDO::FETCH_ASSOC)
-        as $m
-    ) {
-        $dRep = empty($repareerbareMerken)
-            || in_array(mb_strtolower(trim($m['merk'])), array_map('mb_strtolower', $repareerbareMerken), true);
-        $dTax = empty($taxatieMerken)
-            || in_array(mb_strtolower(trim($m['merk'])), array_map('mb_strtolower', $taxatieMerken), true);
-
-        if (!$dRep && (int)$m['repareerbaar'] === 1) $uitzRep[] = $m + ['_type' => 'positief'];
-        elseif ($dRep  && (int)$m['repareerbaar'] === 0) $uitzRep[] = $m + ['_type' => 'negatief'];
-
-        if (!$dTax && (int)$m['taxatie'] === 1) $uitzTax[] = $m + ['_type' => 'positief'];
-        elseif ($dTax  && (int)$m['taxatie'] === 0) $uitzTax[] = $m + ['_type' => 'negatief'];
-    }
-} catch (Exception $e) {}
-
-// Haal alle unieke merken uit de TV-database
-$alleMerken = [];
-try {
-    $alleMerken = db()->query(
-        'SELECT DISTINCT merk FROM tv_modellen WHERE merk IS NOT NULL AND merk != "" AND actief=1 ORDER BY merk'
-    )->fetchAll(PDO::FETCH_COLUMN);
-} catch (Exception $e) { $alleMerken = []; }
-
-// Haal statistieken op
-$statsRep = $statsTax = $statsTotal = 0;
-try {
-    $statsTotal = (int)db()->query('SELECT COUNT(*) FROM tv_modellen WHERE actief=1')->fetchColumn();
-    $statsRep   = (int)db()->query('SELECT COUNT(*) FROM tv_modellen WHERE actief=1 AND repareerbaar=1')->fetchColumn();
-    $statsTax   = (int)db()->query('SELECT COUNT(*) FROM tv_modellen WHERE actief=1 AND taxatie=1')->fetchColumn();
-} catch (Exception $e) {}
-
-function jsPretty($v): string {
-    return json_encode($v, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-}
-function selectedMerken($v): array {
-    if (is_array($v)) return $v;
-    $d = json_decode($v ?? '[]', true);
-    return is_array($d) ? $d : [];
+if (empty($stappenConfig)) {
+    $stappenConfig = [
+        ['nummer'=>1,'label'=>'Situatie',    'titel'=>'Wat is er aan de hand?',   'lead'=>'Dit bepaalt direct welke route het meest geschikt is.'],
+        ['nummer'=>2,'label'=>'TV gegevens', 'titel'=>'Over je televisie',         'lead'=>'Merk, model en aankoopinformatie bepalen de route.'],
+        ['nummer'=>3,'label'=>'Defect',      'titel'=>'Beschrijf het defect',      'lead'=>'Hoe specifieker, hoe beter het advies.'],
+        ['nummer'=>4,'label'=>'Contact',     'titel'=>'Je contactgegevens',        'lead'=>'Hier sturen wij je persoonlijk advies naartoe.'],
+    ];
 }
 
-// Coulance matrix als geindexeerde array
-$matrix    = $r['coulance_kans_matrix'] ?? [];
-$matrixIdx = [];
-foreach ($matrix as $row) $matrixIdx[$row['prijsklasse']] = $row;
-$prijsklassenLabels = [
-    ''          => 'Onbekend',
-    '<500'      => '< €500',
-    '500-1000'  => '€500 – €1.000',
-    '1000-2000' => '€1.000 – €2.000',
-    '>2000'     => '> €2.000',
-];
+if (empty($coulanceMatrix)) {
+    $coulanceMatrix = [
+        ['min_prijs' => 0,    'max_prijs' => 499,  'coulance_jaren' => 2],
+        ['min_prijs' => 500,  'max_prijs' => 999,  'coulance_jaren' => 3],
+        ['min_prijs' => 1000, 'max_prijs' => 1999, 'coulance_jaren' => 4],
+        ['min_prijs' => 2000, 'max_prijs' => null, 'coulance_jaren' => 5],
+    ];
+}
+
+$adminActivePage = 'advies-instellingen';
 ?>
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="UTF-8"><title>Advies Instellingen &ndash; Admin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Epilogue:wght@800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Adviesregels &ndash; Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Epilogue:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/base.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/components.css">
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/admin.css">
   <meta name="robots" content="noindex,nofollow">
   <style>
-    /* Layout */
-    .rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-    @media(max-width:900px){ .rules-grid { grid-template-columns: 1fr; } }
+    /* ── Pagina-specifieke stijlen die NIET in admin.css thuishoren ── */
+
+    /* Sectieblokken binnen tabs */
     .rule-section {
-      background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
-      padding: 1.5rem; display:flex; flex-direction:column; gap:1rem;
+      background: var(--adm-surface);
+      border: 1px solid var(--adm-border);
+      border-radius: var(--adm-radius-xl);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
     }
-    .rule-section h3 {
-      font-size: .95rem; font-weight: 700; margin: 0;
-      padding-bottom: .75rem; border-bottom: 1px solid #f1f5f9;
-      display: flex; align-items: center; gap: .5rem;
+    .rule-section h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--adm-ink);
+      margin: 0 0 .1rem;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
     }
-    .full-width { grid-column: 1 / -1; }
-    /* Badges */
-    .rule-badge {
-      font-size: .6rem; font-weight: 700; padding: .2rem .55rem;
-      border-radius: 999px; text-transform: uppercase; letter-spacing: .06em;
+    .rule-section > p {
+      font-size: .8rem;
+      color: var(--adm-muted);
+      margin: 0;
     }
-    .badge-garantie  { background:#dcfce7; color:#14532d; }
-    .badge-coulance  { background:#fef9c3; color:#78350f; }
-    .badge-reparatie { background:#dbeafe; color:#1e3a8a; }
-    .badge-recycling { background:#f1f5f9; color:#334155; }
-    .badge-taxatie   { background:#ede9fe; color:#3b0764; }
-    /* Veld */
-    .field { display:flex; flex-direction:column; gap:.3rem; }
-    .field label { font-size:.82rem; font-weight:600; color:#374151; }
-    .field .hint { font-size:.73rem; color:#9ca3af; margin:0; }
-    .field input[type=number], .field input[type=text], .field textarea {
-      width:100%; padding:.5rem .75rem; border:1px solid #d1d5db;
-      border-radius:8px; font-size:.875rem; transition:border-color .15s;
+
+    /* Grid hulpklassen (pagina-specifiek) */
+    .two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .75rem; }
+    @media(max-width:700px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+    /* Veldlabels */
+    label.field-label {
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--adm-text);
+      display: block;
+      margin-bottom: .3rem;
     }
-    .field textarea {
-      font-family:'Courier New',monospace; font-size:.78rem;
-      min-height:90px; resize:vertical;
+
+    /* Invoervelden (paginabreed, zonder .field wrapper) */
+    input[type=number],
+    input[type=text],
+    select {
+      width: 100%;
+      padding: .5rem .75rem;
+      border: 1.5px solid var(--adm-border);
+      border-radius: var(--adm-radius);
+      font-size: .875rem;
+      font-family: var(--adm-font);
+      color: var(--adm-ink);
+      background: var(--adm-surface);
     }
-    .field input:focus, .field textarea:focus {
-      outline:none; border-color:#287864; box-shadow:0 0 0 3px rgba(40,120,100,.12);
+    textarea.field-ta {
+      width: 100%;
+      padding: .5rem .75rem;
+      border: 1.5px solid var(--adm-border);
+      border-radius: var(--adm-radius);
+      font-size: .875rem;
+      font-family: var(--adm-font);
+      color: var(--adm-ink);
+      background: var(--adm-surface);
+      resize: vertical;
+      min-height: 60px;
     }
-    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
-    /* Checkbox veld */
-    .cb-field { display:flex; align-items:flex-start; gap:.6rem; }
-    .cb-field input[type=checkbox] {
-      width:16px; height:16px; margin-top:.2rem; flex-shrink:0;
-      accent-color:#287864; cursor:pointer;
+    input[type=number]:focus,
+    input[type=text]:focus,
+    select:focus,
+    textarea.field-ta:focus {
+      outline: none;
+      border-color: var(--adm-accent);
+      box-shadow: 0 0 0 3px var(--adm-accent-ring);
     }
-    .cb-field label { font-size:.875rem; color:#374151; cursor:pointer; }
-    /* Merk-grid */
-    .merken-grid {
-      display:flex; flex-wrap:wrap; gap:.35rem .6rem; margin-top:.25rem;
+
+    /* Checkbox toggle-rijen (advies-specifiek) */
+    label.toggle-row {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      font-size: .875rem;
+      color: var(--adm-text);
+      cursor: pointer;
     }
-    .merken-grid label {
-      display:flex; align-items:center; gap:.3rem;
-      font-size:.8rem; color:#374151; cursor:pointer;
-      background:#f8fafc; border:1px solid #e5e7eb; border-radius:6px;
-      padding:.28rem .55rem; transition:all .12s;
+    label.toggle-row input[type=checkbox] {
+      accent-color: var(--adm-accent);
+      width: 16px;
+      height: 16px;
     }
-    .merken-grid label:hover { background:#f0fdf4; border-color:#287864; }
-    .merken-grid label:has(input:checked) {
-      background:#dcfce7; border-color:#287864; color:#14532d; font-weight:600;
-    }
-    .merken-grid input[type=checkbox] { width:13px; height:13px; accent-color:#287864; }
-    .merken-hint-all {
-      font-size:.73rem; color:#059669; background:#ecfdf5;
-      border:1px solid #a7f3d0; border-radius:5px; padding:.25rem .55rem;
-    }
-    /* Kansmatrix */
-    .matrix-table { width:100%; border-collapse:collapse; font-size:.82rem; }
-    .matrix-table th {
-      background:#f8fafc; font-weight:600; color:#475569;
-      padding:.4rem .6rem; text-align:left; border:1px solid #e5e7eb;
-    }
-    .matrix-table td { padding:.35rem .5rem; border:1px solid #e5e7eb; }
-    .matrix-table td:first-child { color:#374151; font-weight:500; }
-    .matrix-table input {
-      width:100%; border:1px solid #d1d5db; border-radius:5px;
-      font-size:.82rem; padding:.25rem .4rem; text-align:center;
-    }
-    .matrix-table input:focus { outline:none; border-color:#287864; }
-    /* Stats chips */
-    .stats-row { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.5rem; }
-    .stat-chip {
-      font-size:.75rem; font-weight:600; padding:.25rem .65rem;
-      border-radius:999px; display:flex; align-items:center; gap:.3rem;
-    }
-    .sc-total   { background:#f1f5f9; color:#475569; }
-    .sc-rep     { background:#dbeafe; color:#1e3a8a; }
-    .sc-tax     { background:#ede9fe; color:#3b0764; }
+
     /* Route legenda */
-    .route-legenda { display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1.25rem; }
-    .route-chip {
-      display:flex; align-items:center; gap:.3rem;
-      padding:.3rem .75rem; border-radius:999px; font-size:.75rem; font-weight:700;
+    .route-legenda { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1.25rem; }
+    .route-chip    {
+      font-size: .72rem;
+      font-weight: 700;
+      padding: .25rem .65rem;
+      border-radius: 999px;
     }
-    .chip-garantie  { background:#dcfce7; color:#14532d; }
-    .chip-coulance  { background:#fef9c3; color:#78350f; }
-    .chip-reparatie { background:#dbeafe; color:#1e3a8a; }
-    .chip-recycling { background:#f1f5f9; color:#334155; }
-    .chip-taxatie   { background:#ede9fe; color:#3b0764; }
-    /* Recycling uitleg box */
-    .recycling-rules {
-      background:#f8fafc; border-radius:8px; padding:.85rem 1rem;
-      font-size:.82rem; color:#475569;
+
+    /* Merken grid */
+    .merken-grid { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .4rem; }
+    .merk-label  {
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+      font-size: .78rem;
+      font-weight: 500;
+      color: var(--adm-text);
+      background: var(--adm-surface-2);
+      border: 1px solid var(--adm-border);
+      border-radius: 6px;
+      padding: .25rem .6rem;
+      cursor: pointer;
+      transition: background .1s, border-color .1s;
     }
-    .recycling-rules ul { margin:.4rem 0 0 1.2rem; line-height:1.9; }
-    /* Info/link box */
-    .info-box {
-      background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;
-      padding:.8rem 1rem; font-size:.82rem; color:#14532d;
+    .merk-label:hover { background: #f0f9ff; border-color: #bae6fd; }
+    .merk-label:has(input:checked) { background: #eff6ff; border-color: #bfdbfe; }
+    .merken-hint-all {
+      font-size: .75rem;
+      color: var(--adm-muted);
+      margin-bottom: .4rem;
+      display: inline-block;
     }
-    .info-box a { color:#15803d; font-weight:600; text-decoration:none; }
-    /* Opslaan sticky balk */
-    .save-bar {
-      position:sticky; bottom:0; background:#fff;
-      border-top:1px solid #e5e7eb; padding:1rem 1.5rem;
-      display:flex; align-items:center; gap:1rem;
-      margin-top:2rem; z-index:10;
+
+    /* Stappenplan editor */
+    .stap-editor-rij {
+      border: 1px solid var(--adm-border);
+      border-radius: var(--adm-radius-lg);
+      padding: 1rem 1.1rem;
+      background: var(--adm-surface-2);
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+      margin-bottom: .75rem;
     }
-    .btn-save {
-      background:#287864; color:#fff; border:none; border-radius:8px;
-      padding:.7rem 2rem; font-size:.9rem; font-weight:700;
-      cursor:pointer; transition:background .2s;
+    .stap-editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
-    .btn-save:hover { background:#1e5c4c; }
-    /* Alerts */
-    .alert { padding:.75rem 1rem; border-radius:8px; font-size:.875rem; }
-    .alert-success { background:#f0fdf4; color:#14532d; border:1px solid #bbf7d0; }
-    .alert-error   { background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; }
-    /* SQL note */
-    .sql-note {
-      background:#fffbeb; border:1px solid #fde68a; border-radius:8px;
-      padding:.9rem 1rem; font-size:.82rem; color:#78350f; margin-bottom:1.25rem;
+    .stap-nr-badge {
+      font-size: .72rem;
+      font-weight: 800;
+      background: var(--adm-ink);
+      color: #fff;
+      border-radius: 999px;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
-    .sql-note code { background:#fef3c7; padding:.1rem .35rem; border-radius:4px; font-size:.8rem; }
-    /* Sectie-divider label */
-    .section-label {
-      font-size:.7rem; font-weight:700; letter-spacing:.08em;
-      text-transform:uppercase; color:#9ca3af; margin:.25rem 0 0;
+
+    /* Coulance matrix */
+    .matrix-rij {
+      border: 1px solid var(--adm-border);
+      border-radius: var(--adm-radius-lg);
+      padding: 1rem 1.1rem;
+      background: var(--adm-surface-2);
+      margin-bottom: .75rem;
     }
-    /* Uitzonderingen lijst */
-    .uitzondering-lijst {
-      display:flex; flex-direction:column; gap:.3rem;
-      max-height:260px; overflow-y:auto; margin-top:.25rem;
+    .matrix-rij-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem;
+      margin-bottom: .75rem;
     }
-    .uitzondering-item {
-      display:flex; flex-direction:column; gap:.1rem;
-      padding:.4rem .7rem; border-radius:6px; font-size:.78rem;
-      border:1px solid transparent;
+    .matrix-kans-preview {
+      font-size: .72rem;
+      font-weight: 700;
+      background: #fce7f3;
+      color: #9d174d;
+      border-radius: 6px;
+      padding: .2rem .5rem;
+      white-space: nowrap;
     }
-    .uitzondering-item strong { font-weight:700; font-size:.8rem; }
-    .uitzondering-item span   { font-size:.72rem; opacity:.85; }
-    .uitz-positief { background:#fef9c3; color:#713f12; border-color:#fde68a; }
-    .uitz-negatief { background:#fee2e2; color:#7f1d1d; border-color:#fca5a5; }
-    .uitzondering-leeg { font-size:.8rem; color:#9ca3af; font-style:italic; }
-    .uitz-col-title {
-      font-size:.72rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
-      color:#64748b; margin-bottom:.4rem; display:flex; align-items:center; gap:.4rem;
+
+    /* Defect/schade checkboxen */
+    .klacht-grid  {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: .35rem;
+      margin-top: .5rem;
     }
-    .uitz-count {
-      background:#f1f5f9; color:#475569; border-radius:999px;
-      padding:.1rem .45rem; font-size:.68rem; font-weight:700;
+    .klacht-label {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      font-size: .8rem;
+      color: var(--adm-text);
+      background: var(--adm-surface-2);
+      border: 1px solid var(--adm-border);
+      border-radius: 7px;
+      padding: .35rem .65rem;
+      cursor: pointer;
+      transition: background .1s, border-color .1s;
     }
+    .klacht-label:hover { background: #f0f9ff; border-color: #bae6fd; }
+    .klacht-label:has(input:checked) {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #dc2626;
+      font-weight: 600;
+    }
+    .klacht-label.taxatie-incl:has(input:checked) {
+      background: #fef9c3;
+      border-color: #fde68a;
+      color: #92400e;
+    }
+
+    .section-divider { border: none; border-top: 1px solid var(--adm-border); margin: 1.25rem 0; }
+
+    /* Btn-outline (lokaal, want niet globaal benodigd) */
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      background: var(--adm-surface);
+      color: var(--adm-text);
+      border: 1.5px solid var(--adm-border);
+      border-radius: var(--adm-radius);
+      padding: .45rem .9rem;
+      font-size: .78rem;
+      font-weight: 600;
+      font-family: var(--adm-font);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-outline:hover { background: var(--adm-bg); }
+
+    /* Btn-danger-sm (lokaal) */
+    .btn-danger-sm {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      padding: .3rem .65rem;
+      font-size: .75rem;
+      font-weight: 600;
+      font-family: var(--adm-font);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-danger-sm:hover { background: #fee2e2; }
   </style>
 </head>
 <body>
-<div class="admin-wrap">
-<nav class="admin-nav">
-  <span class="logo">Reparatie<span>Platform</span> Admin</span>
-  <a href="<?= BASE_URL ?>/admin/logout.php">Uitloggen</a>
-</nav>
-<div class="admin-layout">
-  <div class="admin-sidebar">
-    <a href="<?= BASE_URL ?>/admin/dashboard.php"><span class="icon">&#128202;</span> Dashboard</a>
-    <a href="<?= BASE_URL ?>/admin/aanvragen.php"><span class="icon">&#128236;</span> Inzendingen</a>
-    <a href="<?= BASE_URL ?>/admin/meldingen.php"><span class="icon">&#128276;</span> Meldingen</a>
-    <a href="<?= BASE_URL ?>/admin/modellen.php"><span class="icon">&#128250;</span> TV Modellen</a>
-    <a href="<?= BASE_URL ?>/admin/klachten.php"><span class="icon">&#9888;</span> Klachten</a>
-    <a href="<?= BASE_URL ?>/admin/advies-instellingen.php" class="active"><span class="icon">&#9881;</span> Advies instellingen</a>
-    <a href="<?= BASE_URL ?>/" target="_blank"><span class="icon">&#127760;</span> Website bekijken</a>
+<?php require_once __DIR__ . '/includes/admin-header.php'; ?>
+
+<div class="adm-page">
+
+  <h1 class="adm-page-title">&#9881; Advies routing instellingen</h1>
+  <p class="adm-page-subtitle">
+    Configureer het gehele adviesformulier op <strong>advies.php</strong>.
+    Wijzigingen zijn <strong>direct actief</strong>.
+  </p>
+
+  <!-- Route legenda -->
+  <div class="route-legenda">
+    <span class="route-chip chip-garantie">&#9989; Garantie</span>
+    <span class="route-chip chip-coulance">&#129309; Coulance</span>
+    <span class="route-chip chip-reparatie">&#128295; Reparatie</span>
+    <span class="route-chip chip-taxatie">&#128203; Taxatie</span>
+    <span class="route-chip chip-recycling">&#9851; Recycling</span>
   </div>
-  <div class="admin-content">
 
-    <h1>&#9881; Advies routing instellingen</h1>
-    <p style="color:#6b7280;margin-bottom:.75rem;font-size:.875rem;">
-      Stel hier de voorwaarden in voor doorverwijzing naar
-      <strong>Garantie</strong>, <strong>Coulance</strong>, <strong>Reparatie</strong>,
-      <strong>Taxatie</strong> en <strong>Recycling</strong>.
-      Wijzigingen zijn <strong>direct actief</strong> in het adviesformulier.
-    </p>
+  <!-- Statistieken -->
+  <div class="stats-row">
+    <span class="stat-chip sc-total">&#128250; <?= $statsTotal ?> modellen totaal</span>
+    <span class="stat-chip sc-rep">&#128295; <?= $statsRep ?> repareerbaar</span>
+    <span class="stat-chip sc-tax">&#128203; <?= $statsTax ?> taxatie mogelijk</span>
+  </div>
 
-    <div class="route-legenda">
-      <span class="route-chip chip-garantie">&#9989; Garantie</span>
-      <span class="route-chip chip-coulance">&#129309; Coulance</span>
-      <span class="route-chip chip-reparatie">&#128295; Reparatie</span>
-      <span class="route-chip chip-taxatie">&#128203; Taxatie</span>
-      <span class="route-chip chip-recycling">&#9851; Recycling</span>
-    </div>
+  <?php if ($msg): ?>
+  <div class="alert alert-<?= $type ?>"><?= h($msg) ?></div>
+  <?php endif; ?>
 
-    <!-- TV-modellen statistieken -->
-    <div class="stats-row">
-      <span class="stat-chip sc-total">&#128250; <?= $statsTotal ?> modellen totaal</span>
-      <span class="stat-chip sc-rep">&#128295; <?= $statsRep ?> repareerbaar</span>
-      <span class="stat-chip sc-tax">&#128203; <?= $statsTax ?> taxatie mogelijk</span>
-    </div>
+  <!-- TABS -->
+  <div class="ai-tab-bar" role="tablist">
+    <button class="ai-tab active" role="tab" onclick="toonTab('stappen')">&#128203; Stappenplan</button>
+    <button class="ai-tab" role="tab" onclick="toonTab('leeftijd')">&#128197; Leeftijd &amp; Algemeen</button>
+    <button class="ai-tab" role="tab" onclick="toonTab('coulance')">&#129309; Coulance rangen</button>
+    <button class="ai-tab" role="tab" onclick="toonTab('defecten')">&#9889; Defecten routing</button>
+    <button class="ai-tab" role="tab" onclick="toonTab('merken')">&#127981; Merkfilters</button>
+  </div>
 
-    <?php if (!$r): ?>
-    <div class="sql-note">
-      &#9888; De tabel <code>advies_regels</code> bestaat nog niet of is leeg.
-      Voer eerst het SQL-script uit: <code>sql/advies_regels.sql</code>
-    </div>
-    <?php endif; ?>
+  <!-- ════════════════════════════════════════════════════════════════════════
+       TAB 1 – STAPPENPLAN
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="ai-panel active" id="tab-stappen">
+    <div class="rule-section">
+      <h2>&#128203; Stappenplan configureren</h2>
+      <p>Stel de labels, titels en lead-teksten in van elk formulierstap. De volgorde en labels worden ook gebruikt in de voortgangsbalk op advies.php.</p>
 
-    <?php if ($msg): ?>
-    <div class="alert alert-<?= $type ?>" style="margin-bottom:1.25rem;"><?= h($msg) ?></div>
-    <?php endif; ?>
+      <form method="POST" id="form-stappen">
+        <input type="hidden" name="action" value="save_stappen">
+        <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+        <input type="hidden" name="stap_count" id="stap_count" value="<?= count($stappenConfig) ?>">
 
-    <form method="POST" id="instellingen-form">
-    <div class="rules-grid">
-
-      <!-- ====================================================== -->
-      <!-- GARANTIE                                               -->
-      <!-- ====================================================== -->
-      <div class="rule-section">
-        <h3>&#9989; Garantie <span class="rule-badge badge-garantie">Garantie</span></h3>
-
-        <div class="field">
-          <label>Garantietermijn (jaren)</label>
-          <input type="number" name="garantie_termijn_jaar" min="1" max="10"
-                 value="<?= (int)($r['garantie_termijn_jaar'] ?? 2) ?>">
-          <p class="hint">TV jonger dan X jaar komt in aanmerking voor garantieroute.</p>
-        </div>
-
-        <div class="field">
-          <div class="cb-field">
-            <input type="checkbox" id="gnl" name="garantie_alleen_nl" value="1"
-                   <?= !empty($r['garantie_alleen_nl']) ? 'checked' : '' ?>>
-            <label for="gnl">Garantie alleen bij aankoop in Nederland</label>
-          </div>
-          <p class="hint">Bij buitenland-aankoop geen garantieroute, maar reparatie of coulance.</p>
-        </div>
-
-        <div class="field">
-          <label>Klachten uitgesloten van garantie</label>
-          <textarea name="garantie_uitsluiten_klachten" rows="3"
-          ><?= h(jsPretty($r['garantie_uitsluiten_klachten'] ?? ['gebarsten_scherm'])) ?></textarea>
-          <p class="hint">JSON-array met klachtcodes. Bijv: <code>["gebarsten_scherm","stroomstoot"]</code></p>
-        </div>
-
-        <?php
-          $gMerken = selectedMerken($r['garantie_merken'] ?? []);
-          $gAlles  = empty($gMerken);
-        ?>
-        <div class="field">
-          <label>Merken in aanmerking voor garantie</label>
-          <?php if ($gAlles): ?>
-            <span class="merken-hint-all">&#10003; Alle merken toegestaan (geen selectie = geen beperking)</span>
-          <?php endif; ?>
-          <input type="hidden" name="garantie_merken" id="garantie_merken_json"
-                 value="<?= h(json_encode($gMerken)) ?>">
-          <div class="merken-grid" id="garantie_merken_grid">
-            <?php if (empty($alleMerken)): ?>
-              <span style="font-size:.8rem;color:#9ca3af;font-style:italic;">Geen merken gevonden in database.</span>
-            <?php else: foreach ($alleMerken as $m): ?>
-            <label>
-              <input type="checkbox" class="merk-cb" data-group="garantie_merken"
-                     value="<?= h($m) ?>" <?= in_array($m, $gMerken) ? 'checked' : '' ?>>
-              <?= h($m) ?>
-            </label>
-            <?php endforeach; endif; ?>
-          </div>
-          <p class="hint">Laat leeg = alle merken. Aanvinken = alleen die merken.</p>
-        </div>
-      </div>
-
-      <!-- ====================================================== -->
-      <!-- COULANCE                                               -->
-      <!-- ====================================================== -->
-      <div class="rule-section">
-        <h3>&#129309; Coulance <span class="rule-badge badge-coulance">Coulance</span></h3>
-
-        <div class="two-col">
-          <div class="field">
-            <label>Min. leeftijd TV (jaren)</label>
-            <input type="number" name="coulance_min_jaar" min="1" max="20"
-                   value="<?= (int)($r['coulance_min_jaar'] ?? 2) ?>">
-            <p class="hint">Vanaf X jaar oud</p>
-          </div>
-          <div class="field">
-            <label>Max. leeftijd TV (jaren)</label>
-            <input type="number" name="coulance_max_jaar" min="1" max="20"
-                   value="<?= (int)($r['coulance_max_jaar'] ?? 5) ?>">
-            <p class="hint">Tot en met X jaar oud</p>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Klachten uitgesloten van coulance</label>
-          <textarea name="coulance_uitsluiten_klachten" rows="3"
-          ><?= h(jsPretty($r['coulance_uitsluiten_klachten'] ?? ['gebarsten_scherm'])) ?></textarea>
-          <p class="hint">JSON-array met klachtcodes die nooit in aanmerking komen voor coulance.</p>
-        </div>
-
-        <?php
-          $cMerken = selectedMerken($r['coulance_merken'] ?? []);
-          $cAlles  = empty($cMerken);
-        ?>
-        <div class="field">
-          <label>Merken in aanmerking voor coulance</label>
-          <?php if ($cAlles): ?>
-            <span class="merken-hint-all">&#10003; Alle merken toegestaan</span>
-          <?php endif; ?>
-          <input type="hidden" name="coulance_merken" id="coulance_merken_json"
-                 value="<?= h(json_encode($cMerken)) ?>">
-          <div class="merken-grid" id="coulance_merken_grid">
-            <?php if (empty($alleMerken)): ?>
-              <span style="font-size:.8rem;color:#9ca3af;font-style:italic;">Geen merken gevonden in database.</span>
-            <?php else: foreach ($alleMerken as $m): ?>
-            <label>
-              <input type="checkbox" class="merk-cb" data-group="coulance_merken"
-                     value="<?= h($m) ?>" <?= in_array($m, $cMerken) ? 'checked' : '' ?>>
-              <?= h($m) ?>
-            </label>
-            <?php endforeach; endif; ?>
-          </div>
-          <p class="hint">Laat leeg = alle merken. Aanvinken = alleen die merken.</p>
-        </div>
-
-        <!-- Kansmatrix -->
-        <div class="field">
-          <label>Kansmatrix coulance per prijsklasse</label>
-          <p class="hint" style="margin-bottom:.4rem;">
-            Basiskans minus (aftrek &times; jaren boven de minimum leeftijd).
-            Kans wordt altijd geclipt op 5%&ndash;95%.
-          </p>
-          <table class="matrix-table">
-            <thead>
-              <tr>
-                <th>Prijsklasse</th>
-                <th>Basiskans&nbsp;(%)</th>
-                <th>Aftrek per jaar&nbsp;(%)</th>
-              </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($prijsklassenLabels as $pk => $label):
-              $mr = $matrixIdx[$pk] ?? ['basis_kans' => 50, 'per_jaar_aftrek' => 6];
-            ?>
-            <tr>
-              <td><?= $label ?></td>
-              <td>
-                <input type="number" name="matrix_basis[<?= h($pk) ?>]" min="0" max="100"
-                       value="<?= (int)($mr['basis_kans'] ?? 50) ?>">
-              </td>
-              <td>
-                <input type="number" name="matrix_aftrek[<?= h($pk) ?>]" min="0" max="50"
-                       value="<?= (int)($mr['per_jaar_aftrek'] ?? 6) ?>">
-              </td>
-            </tr>
-            <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="two-col">
-          <div class="field">
-            <label>Kansaftrek bij buitenland-aankoop&nbsp;(%)</label>
-            <input type="number" name="coulance_aftrek_buitenland" min="0" max="100"
-                   value="<?= (int)($r['coulance_aftrek_buitenland'] ?? 30) ?>">
-          </div>
-          <div class="field">
-            <label>Kansaftrek bij failliet verkoper&nbsp;(%)</label>
-            <input type="number" name="coulance_aftrek_failliet" min="0" max="100"
-                   value="<?= (int)($r['coulance_aftrek_failliet'] ?? 40) ?>">
-          </div>
-        </div>
-      </div>
-
-      <!-- ====================================================== -->
-      <!-- REPARATIE                                              -->
-      <!-- ====================================================== -->
-      <div class="rule-section">
-        <h3>&#128295; Reparatie <span class="rule-badge badge-reparatie">Reparatie</span></h3>
-
-        <div class="two-col">
-          <div class="field">
-            <label>Min. leeftijd TV (jaren)</label>
-            <input type="number" name="reparatie_min_jaar" min="0" max="20"
-                   value="<?= (int)($r['reparatie_min_jaar'] ?? 2) ?>">
-          </div>
-          <div class="field">
-            <label>Max. leeftijd TV (jaren)</label>
-            <input type="number" name="reparatie_max_jaar" min="1" max="30"
-                   value="<?= (int)($r['reparatie_max_jaar'] ?? 10) ?>">
-          </div>
-        </div>
-
-        <div class="field">
-          <div class="cb-field">
-            <input type="checkbox" id="repdb" name="reparatie_vereist_repareerbaar" value="1"
-                   <?= !empty($r['reparatie_vereist_repareerbaar']) ? 'checked' : '' ?>>
-            <label for="repdb">
-              Reparatieroute vereist <strong>repareerbaar&nbsp;=&nbsp;1</strong> in de TV-database
-            </label>
-          </div>
-          <p class="hint">
-            Als ingeschakeld: alleen modellen met het vinkje &ldquo;Repareerbaar&rdquo;
-            in <a href="<?= BASE_URL ?>/admin/modellen.php" style="color:#287864;font-weight:600;">TV&nbsp;Modellen</a>
-            komen in aanmerking. Overige gaan automatisch naar Recycling.
-          </p>
-        </div>
-
-        <?php
-          $rMerken = selectedMerken($r['reparatie_merken'] ?? []);
-          $rAlles  = empty($rMerken);
-        ?>
-        <div class="field">
-          <label>Merken toegestaan voor reparatieroute</label>
-          <?php if ($rAlles): ?>
-            <span class="merken-hint-all">&#10003; Alle repareerbare modellen toegestaan</span>
-          <?php endif; ?>
-          <input type="hidden" name="reparatie_merken" id="reparatie_merken_json"
-                 value="<?= h(json_encode($rMerken)) ?>">
-          <div class="merken-grid" id="reparatie_merken_grid">
-            <?php if (empty($alleMerken)): ?>
-              <span style="font-size:.8rem;color:#9ca3af;font-style:italic;">Geen merken gevonden in database.</span>
-            <?php else: foreach ($alleMerken as $m): ?>
-            <label>
-              <input type="checkbox" class="merk-cb" data-group="reparatie_merken"
-                     value="<?= h($m) ?>" <?= in_array($m, $rMerken) ? 'checked' : '' ?>>
-              <?= h($m) ?>
-            </label>
-            <?php endforeach; endif; ?>
-          </div>
-          <p class="hint">
-            Gecombineerd met de DB-vlag hierboven. Laat leeg = alle repareerbare modellen.
-          </p>
-        </div>
-
-        <div class="info-box">
-          &#128270; Stel per model in via
-          <a href="<?= BASE_URL ?>/admin/modellen.php">TV Modellen &rarr;</a>
-          door het vinkje &ldquo;Repareerbaar&rdquo; aan/uit te zetten.
-          Momenteel zijn <strong><?= $statsRep ?> van de <?= $statsTotal ?> modellen</strong> repareerbaar.
-        </div>
-      </div>
-
-      <!-- ====================================================== -->
-      <!-- RECYCLING                                              -->
-      <!-- ====================================================== -->
-      <div class="rule-section">
-        <h3>&#9851; Recycling <span class="rule-badge badge-recycling">Recycling</span></h3>
-
-        <div class="field">
-          <label>Minimale leeftijd voor recyclingroute (jaren)</label>
-          <input type="number" name="recycling_min_jaar" min="1" max="30"
-                 value="<?= (int)($r['recycling_min_jaar'] ?? 10) ?>">
-          <p class="hint">
-            TV ouder dan X jaar &rarr; recycling als geen andere route van toepassing is.
-          </p>
-        </div>
-
-        <div class="recycling-rules">
-          <strong>Automatisch naar Recycling bij:</strong>
-          <ul>
-            <li>TV ouder dan <strong><?= (int)($r['recycling_min_jaar'] ?? 10) ?> jaar</strong> (geen reparatie meer kosteneffici&euml;nt)</li>
-            <li>Model heeft <code>repareerbaar&nbsp;=&nbsp;0</code> in de database <em>(en reparatie DB-check staat aan)</em></li>
-            <li>Merk valt buiten de toegestane reparatielijst <em>(indien ingesteld)</em></li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- ====================================================== -->
-      <!-- TAXATIE (full-width)                                   -->
-      <!-- ====================================================== -->
-      <div class="rule-section full-width">
-        <h3>&#128203; Taxatie <span class="rule-badge badge-taxatie">Taxatie</span></h3>
-        <div class="two-col">
-          <div class="field">
-            <div class="cb-field">
-              <input type="checkbox" id="taxsch" name="taxatie_bij_schade" value="1"
-                     <?= !empty($r['taxatie_bij_schade']) ? 'checked' : '' ?>>
-              <label for="taxsch">
-                Taxatieroute automatisch bij <strong>externe schade</strong>
-                (stroom, brand, inbraak, valschade)
-              </label>
+        <div id="stappen-container">
+          <?php foreach ($stappenConfig as $si => $stap): ?>
+          <div class="stap-editor-rij" id="stap-rij-<?= $si ?>">
+            <div class="stap-editor-header">
+              <div style="display:flex;align-items:center;gap:.6rem;">
+                <span class="stap-nr-badge"><?= $stap['nummer'] ?></span>
+                <strong style="font-size:.875rem;color:var(--adm-ink);">Stap <?= $stap['nummer'] ?></strong>
+              </div>
+              <?php if (count($stappenConfig) > 2): ?>
+              <button type="button" class="btn-danger-sm" onclick="verwijderStap(<?= $si ?>)">&#10005; Verwijder</button>
+              <?php endif; ?>
             </div>
-            <p class="hint">
-              Als ingeschakeld: klanten die &ldquo;Externe schade&rdquo; selecteren
-              in het adviesformulier worden altijd doorgestuurd naar de taxatieroute.
-            </p>
-          </div>
-
-          <?php
-            $tMerken = selectedMerken($r['taxatie_merken'] ?? []);
-            $tAlles  = empty($tMerken);
-          ?>
-          <div class="field">
-            <label>Merken waarvoor taxatie mogelijk is</label>
-            <?php if ($tAlles): ?>
-              <span class="merken-hint-all">&#10003; Alle merken toegestaan</span>
-            <?php endif; ?>
-            <input type="hidden" name="taxatie_merken" id="taxatie_merken_json"
-                   value="<?= h(json_encode($tMerken)) ?>">
-            <div class="merken-grid" id="taxatie_merken_grid">
-              <?php if (empty($alleMerken)): ?>
-                <span style="font-size:.8rem;color:#9ca3af;font-style:italic;">Geen merken gevonden in database.</span>
-              <?php else: foreach ($alleMerken as $m): ?>
-              <label>
-                <input type="checkbox" class="merk-cb" data-group="taxatie_merken"
-                       value="<?= h($m) ?>" <?= in_array($m, $tMerken) ? 'checked' : '' ?>>
-                <?= h($m) ?>
-              </label>
-              <?php endforeach; endif; ?>
+            <div class="two-col">
+              <div>
+                <label class="field-label">Label (voortgangsbalk)</label>
+                <input type="text" name="stap_<?= $stap['nummer'] ?>_label"
+                       value="<?= h($stap['label']) ?>" placeholder="Bijv. Situatie" maxlength="25">
               </div>
-            <p class="hint">
-              Laat leeg = alle merken. Momenteel <strong><?= $statsTax ?> modellen</strong>
-              hebben taxatie ingesteld in de database.
-            </p>
+              <div>
+                <label class="field-label">Staptitel (in het formulier)</label>
+                <input type="text" name="stap_<?= $stap['nummer'] ?>_titel"
+                       value="<?= h($stap['titel']) ?>" placeholder="Bijv. Wat is er aan de hand?" maxlength="80">
+              </div>
+            </div>
+            <div>
+              <label class="field-label">Lead-tekst (subtitel onder de staptitel)</label>
+              <textarea class="field-ta" name="stap_<?= $stap['nummer'] ?>_lead"
+                        placeholder="Bijv. Dit bepaalt direct welke route het meest geschikt is."><?= h($stap['lead']) ?></textarea>
+            </div>
           </div>
+          <?php endforeach; ?>
         </div>
-      </div>
 
-      <!-- ====================================================== -->
-      <!-- UITZONDERINGEN (synced met TV Modellen)              -->
-      <!-- ====================================================== -->
-      <div class="rule-section full-width">
-        <h3>&#9888; Model-uitzonderingen
-          <span class="rule-badge" style="background:#fef9c3;color:#78350f;">Sync</span>
-        </h3>
-        <p style="font-size:.82rem;color:#6b7280;margin:-.25rem 0 .75rem;">
-          Modellen die afwijken van de merk-standaard voor reparatie of taxatie.
-          Aanpassen kan via <a href="<?= BASE_URL ?>/admin/modellen.php" style="color:#287864;font-weight:600;">TV Modellen &rarr;</a>
-          &mdash; wijzigingen zijn hier direct zichtbaar.
-        </p>
-        <div class="two-col">
-
-          <!-- Reparatie uitzonderingen -->
-          <div>
-            <p class="uitz-col-title">
-              &#128295; Reparatie-uitzonderingen
-              <span class="uitz-count"><?= count($uitzRep) ?></span>
-            </p>
-            <?php if (empty($uitzRep)): ?>
-              <p class="uitzondering-leeg">Geen uitzonderingen &mdash; alle modellen volgen de merk-standaard.</p>
-            <?php else: ?>
-              <div class="uitzondering-lijst">
-                <?php foreach ($uitzRep as $u): ?>
-                <div class="uitzondering-item uitz-<?= $u['_type'] ?>">
-                  <strong><?= h($u['merk']) ?> &nbsp;<?= h($u['modelnummer']) ?></strong>
-                  <span>
-                    <?php if ($u['_type'] === 'positief'): ?>
-                      Merk: standaard <em>niet</em> repareerbaar &rarr; dit model: <strong>wél</strong> repareerbaar
-                    <?php else: ?>
-                      Merk: standaard repareerbaar &rarr; dit model: <strong>niet</strong> repareerbaar
-                    <?php endif; ?>
-                  </span>
-                </div>
-                <?php endforeach; ?>
-              </div>
-            <?php endif; ?>
-          </div>
-
-          <!-- Taxatie uitzonderingen -->
-          <div>
-            <p class="uitz-col-title">
-              &#128203; Taxatie-uitzonderingen
-              <span class="uitz-count"><?= count($uitzTax) ?></span>
-            </p>
-            <?php if (empty($uitzTax)): ?>
-              <p class="uitzondering-leeg">Geen uitzonderingen &mdash; alle modellen volgen de merk-standaard.</p>
-            <?php else: ?>
-              <div class="uitzondering-lijst">
-                <?php foreach ($uitzTax as $u): ?>
-                <div class="uitzondering-item uitz-<?= $u['_type'] ?>">
-                  <strong><?= h($u['merk']) ?> &nbsp;<?= h($u['modelnummer']) ?></strong>
-                  <span>
-                    <?php if ($u['_type'] === 'positief'): ?>
-                      Merk: standaard <em>geen</em> taxatie &rarr; dit model: <strong>wél</strong> taxatie
-                    <?php else: ?>
-                      Merk: standaard taxatie &rarr; dit model: <strong>geen</strong> taxatie
-                    <?php endif; ?>
-                  </span>
-                </div>
-                <?php endforeach; ?>
-              </div>
-            <?php endif; ?>
-          </div>
-
+        <div style="display:flex;align-items:center;gap:.75rem;margin-top:.5rem;">
+          <button type="button" class="btn-outline">&#43; Stap toevoegen</button>
+          <button type="submit" class="btn btn-primary">&#128190; Stappenplan opslaan</button>
         </div>
-      </div>
-
-    </div><!-- /.rules-grid -->
-
-    <div class="save-bar">
-      <button type="submit" class="btn-save">&#10003; Instellingen opslaan</button>
-      <span style="font-size:.82rem;color:#9ca3af;">
-        Wijzigingen zijn direct actief in het adviesformulier.
-      </span>
+      </form>
     </div>
-    </form>
-
   </div>
-</div>
-</div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       TAB 2 – LEEFTIJD & ALGEMEEN
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="ai-panel" id="tab-leeftijd">
+    <div class="rule-section">
+      <h2>&#128197; Leeftijdsgrenzen &amp; algemene routelogica</h2>
+      <p>Stel de termijnen en vlaggen in die de routeberekening in advies.php aanstuurt.</p>
+
+      <form method="POST">
+        <input type="hidden" name="action" value="save_leeftijd">
+        <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+
+        <h3 style="font-size:.85rem;font-weight:700;color:var(--adm-text);margin-bottom:.6rem;">&#9989; Garantie</h3>
+        <div class="two-col" style="margin-bottom:1rem;">
+          <div>
+            <label class="field-label">Garantietermijn (jaar)</label>
+            <input type="number" name="garantie_termijn_jaar" min="0" max="20" value="<?= $garantieTermijn ?>">
+            <p style="font-size:.73rem;color:var(--adm-faint);margin:.25rem 0 0;">Wettelijk 2 jaar. TV-merken hanteren soms 3–5 jaar.</p>
+          </div>
+          <div style="display:flex;flex-direction:column;justify-content:center;">
+            <label class="toggle-row">
+              <input type="checkbox" name="garantie_alleen_nl" <?= $garantieAlleenNl ? 'checked' : '' ?>>
+              <span>Garantie alleen geldig bij aankoop in Nederland</span>
+            </label>
+          </div>
+        </div>
+
+        <hr class="section-divider">
+        <h3 style="font-size:.85rem;font-weight:700;color:var(--adm-text);margin-bottom:.6rem;">&#129309; Coulance</h3>
+        <div class="three-col" style="margin-bottom:.5rem;">
+          <div>
+            <label class="field-label">Coulance — min leeftijd (jaar)</label>
+            <input type="number" name="coulance_min_jaar" min="0" max="20" value="<?= $coulanceMinJaar ?>">
+          </div>
+          <div>
+            <label class="field-label">Coulance — max leeftijd (jaar)</label>
+            <input type="number" name="coulance_max_jaar" min="0" max="20" value="<?= $coulanceMaxJaar ?>">
+          </div>
+          <div>
+            <label class="field-label">Aftrek bij aankoop buitenland (%)</label>
+            <input type="number" name="coulance_aftrek_buitenland" min="0" max="100" value="<?= $coulanceAftrekBl ?>">
+          </div>
+        </div>
+
+        <hr class="section-divider">
+        <h3 style="font-size:.85rem;font-weight:700;color:var(--adm-text);margin-bottom:.6rem;">&#128295; Reparatie</h3>
+        <div class="three-col" style="margin-bottom:.5rem;">
+          <div>
+            <label class="field-label">Reparatie — min leeftijd (jaar)</label>
+            <input type="number" name="reparatie_min_jaar" min="0" max="20" value="<?= $reparatieMinJaar ?>">
+          </div>
+          <div>
+            <label class="field-label">Reparatie — max leeftijd (jaar)</label>
+            <input type="number" name="reparatie_max_jaar" min="0" max="30" value="<?= $reparatieMaxJaar ?>">
+          </div>
+          <div style="display:flex;flex-direction:column;justify-content:center;">
+            <label class="toggle-row">
+              <input type="checkbox" name="reparatie_vereist_repareerbaar" <?= $repVereistRepbr ? 'checked' : '' ?>>
+              <span>Vereist dat model als "repareerbaar" staat in de database</span>
+            </label>
+          </div>
+        </div>
+
+        <hr class="section-divider">
+        <h3 style="font-size:.85rem;font-weight:700;color:var(--adm-text);margin-bottom:.6rem;">&#128203; Taxatie</h3>
+        <div style="margin-bottom:.5rem;">
+          <label class="toggle-row">
+            <input type="checkbox" name="taxatie_bij_schade" <?= $taxatieBijSchade ? 'checked' : '' ?>>
+            <span>Taxatieroute activeren bij "schade door externe oorzaak"</span>
+          </label>
+        </div>
+
+        <hr class="section-divider">
+        <h3 style="font-size:.85rem;font-weight:700;color:var(--adm-text);margin-bottom:.6rem;">&#9851; Recycling</h3>
+        <div class="two-col" style="margin-bottom:1rem;">
+          <div>
+            <label class="field-label">Recycling — min leeftijd (jaar)</label>
+            <input type="number" name="recycling_min_jaar" min="1" max="30" value="<?= $recyclingMinJaar ?>">
+            <p style="font-size:.73rem;color:var(--adm-faint);margin:.25rem 0 0;">TV ouder dan dit jaar → altijd recyclingadvies.</p>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">&#128190; Opslaan</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       TAB 3 – COULANCE PRIJSRANGES
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="ai-panel" id="tab-coulance">
+    <div class="rule-section">
+      <h2>&#129309; Coulance termijnen per prijsbereik</h2>
+      <p>
+        Bepaal per <strong>aankoopwaarde</strong> (prijs) hoeveel jaar coulance <strong>schappelijk/redelijk</strong> is.<br>
+        Dit bepaalt in advies.php of coulance nog een redelijke optie is. Je kunt ongeveer 4 tot 6 ranges instellen.
+      </p>
+
+      <form method="POST" id="form-matrix">
+        <input type="hidden" name="action" value="save_coulance_matrix">
+        <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+        <input type="hidden" name="matrix_count" id="matrix_count" value="<?= count($coulanceMatrix) ?>">
+
+        <div id="matrix-container">
+          <?php foreach ($coulanceMatrix as $mi => $rij): ?>
+          <div class="matrix-rij" id="matrix-rij-<?= $mi ?>">
+            <div class="matrix-rij-header">
+              <strong style="font-size:.85rem;color:var(--adm-ink);">
+                €<?= number_format($rij['min_prijs'], 0, ',', '.') ?> –
+                <?= $rij['max_prijs'] !== null ? '€'.number_format($rij['max_prijs'], 0, ',', '.') : 'hoger' ?>
+              </strong>
+              <div style="display:flex;align-items:center;gap:.5rem;">
+                <span class="matrix-kans-preview" id="preview-<?= $mi ?>">
+                  <?= $rij['coulance_jaren'] ?> jaar coulance
+                </span>
+                <button type="button" class="btn-danger-sm" onclick="verwijderMatrixRij(<?= $mi ?>)">&#10005;</button>
+              </div>
+            </div>
+            <div class="three-col">
+              <div>
+                <label class="field-label">Van prijs (€)</label>
+                <input type="number" name="matrix_<?= $mi ?>_min_prijs" min="0" value="<?= $rij['min_prijs'] ?>">
+              </div>
+              <div>
+                <label class="field-label">Tot prijs (€) <small>(leeg = en hoger)</small></label>
+                <input type="number" name="matrix_<?= $mi ?>_max_prijs" value="<?= $rij['max_prijs'] ?? '' ?>" placeholder="leeg = hoger">
+              </div>
+              <div>
+                <label class="field-label">Redelijke coulance (jaren)</label>
+                <input type="number" name="matrix_<?= $mi ?>_coulance_jaren" min="1" max="15" value="<?= $rij['coulance_jaren'] ?>">
+              </div>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        </div>
+
+        <div style="margin-bottom:1rem;">
+          <button type="button" class="btn-outline" onclick="voegMatrixRijToe()">&#43; Nieuw prijsbereik toevoegen</button>
+        </div>
+        <button type="submit" class="btn btn-primary">&#128190; Prijsranges opslaan</button>
+      </form>
+    </div>
+
+    <div class="alert alert-warning">
+      <strong>&#9888; Voorbeeld:</strong><br>
+      Een TV van €1.250 valt in de range €1.000 – €1.999 → <strong>4 jaar</strong> coulance.<br>
+      Is de TV ouder dan 4 jaar? Dan wordt coulance in advies.php waarschijnlijk niet meer als redelijk voorgesteld.
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       TAB 4 – DEFECTEN ROUTING
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="ai-panel" id="tab-defecten">
+    <div class="rule-section">
+      <h2>&#9889; Defect &amp; schade routing</h2>
+      <p>
+        Bepaal per defect/klachttype welke routes worden <strong>uitgesloten</strong> of <strong>verplicht doorgestuurd</strong>.
+        Hou rekening met de merkfilters en de database-instellingen (repareerbaar / taxatie per model).
+      </p>
+
+      <form method="POST">
+        <input type="hidden" name="action" value="save_defecten">
+        <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+
+        <!-- Reparatie uitsluiten -->
+        <h3 style="font-size:.87rem;font-weight:700;color:#1e40af;margin-bottom:.4rem;">
+          &#128295; Niet in aanmerking voor reparatie (uitgesloten)
+        </h3>
+        <p style="font-size:.78rem;color:var(--adm-muted);margin-bottom:.6rem;">
+          Defecten die aangevinkt zijn, worden <strong>nooit</strong> naar de reparatieroute gestuurd
+          (zelfs als het model repareerbaar is in de database).
+        </p>
+        <div class="klacht-grid">
+          <?php foreach ($alleKlachten as $kv => $kl): ?>
+          <label class="klacht-label">
+            <input type="checkbox" name="reparatie_uitsluiten[]" value="<?= h($kv) ?>"
+                   <?= in_array($kv, $reparatieUitsluit, true) ? 'checked' : '' ?>>
+            <span><?= h($kl) ?></span>
+          </label>
+          <?php endforeach; ?>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- Taxatie verplicht bij -->
+        <h3 style="font-size:.87rem;font-weight:700;color:#92400e;margin-bottom:.4rem;">
+          &#128203; Verplicht naar taxatie (schadetaxatie)
+        </h3>
+        <p style="font-size:.78rem;color:var(--adm-muted);margin-bottom:.6rem;">
+          Defecten die aangevinkt zijn, worden <strong>altijd</strong> naar de taxatieroute gestuurd
+          — mits het merk/model in aanmerking komt voor taxatie.
+        </p>
+        <div class="klacht-grid">
+          <?php foreach ($alleKlachten as $kv => $kl): ?>
+          <label class="klacht-label taxatie-incl">
+            <input type="checkbox" name="taxatie_include[]" value="<?= h($kv) ?>"
+                   <?= in_array($kv, $taxatieInclude, true) ? 'checked' : '' ?>>
+            <span><?= h($kl) ?></span>
+          </label>
+          <?php endforeach; ?>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- Garantie uitsluiten -->
+        <h3 style="font-size:.87rem;font-weight:700;color:#15803d;margin-bottom:.4rem;">
+          &#9989; Niet in aanmerking voor garantie (uitgesloten)
+        </h3>
+        <p style="font-size:.78rem;color:var(--adm-muted);margin-bottom:.6rem;">
+          Defecten die aangevinkt zijn, worden <strong>nooit</strong> naar de garantieroute gestuurd.
+        </p>
+        <div class="klacht-grid">
+          <?php foreach ($alleKlachten as $kv => $kl): ?>
+          <label class="klacht-label">
+            <input type="checkbox" name="garantie_uitsluiten[]" value="<?= h($kv) ?>"
+                   <?= in_array($kv, $garantieUitsluit, true) ? 'checked' : '' ?>>
+            <span><?= h($kl) ?></span>
+          </label>
+          <?php endforeach; ?>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- Coulance uitsluiten -->
+        <h3 style="font-size:.87rem;font-weight:700;color:#9d174d;margin-bottom:.4rem;">
+          &#129309; Niet in aanmerking voor coulance (uitgesloten)
+        </h3>
+        <p style="font-size:.78rem;color:var(--adm-muted);margin-bottom:.6rem;">
+          Defecten die aangevinkt zijn, worden <strong>nooit</strong> naar de coulanceroute gestuurd.
+        </p>
+        <div class="klacht-grid">
+          <?php foreach ($alleKlachten as $kv => $kl): ?>
+          <label class="klacht-label">
+            <input type="checkbox" name="coulance_uitsluiten[]" value="<?= h($kv) ?>"
+                   <?= in_array($kv, $coulanceUitsluit, true) ? 'checked' : '' ?>>
+            <span><?= h($kl) ?></span>
+          </label>
+          <?php endforeach; ?>
+        </div>
+
+        <hr class="section-divider">
+
+        <!-- Taxatie uitsluiten -->
+        <h3 style="font-size:.87rem;font-weight:700;color:#92400e;margin-bottom:.4rem;">
+          &#128203; Niet in aanmerking voor taxatie (uitgesloten)
+        </h3>
+        <p style="font-size:.78rem;color:var(--adm-muted);margin-bottom:.6rem;">
+          Defecten die <em>nooit</em> naar de taxatieroute mogen, ook al is het merk/model taxeerbaar.
+        </p>
+        <div class="klacht-grid">
+          <?php foreach ($alleKlachten as $kv => $kl): ?>
+          <label class="klacht-label">
+            <input type="checkbox" name="taxatie_uitsluiten[]" value="<?= h($kv) ?>"
+                   <?= in_array($kv, $taxatieUitsluit, true) ? 'checked' : '' ?>>
+            <span><?= h($kl) ?></span>
+          </label>
+          <?php endforeach; ?>
+        </div>
+
+        <hr class="section-divider">
+        <button type="submit" class="btn btn-primary">&#128190; Defecten routing opslaan</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       TAB 5 – MERKFILTERS
+       ════════════════════════════════════════════════════════════════════════ -->
+  <div class="ai-panel" id="tab-merken">
+    <div class="rule-section">
+      <h2>&#127981; Merkfilters</h2>
+      <p>
+        Laat leeg = <strong>alle merken</strong>. Vink merken aan om uitsluitend
+        die te activeren voor de betreffende route. De database-instellingen per model
+        (repareerbaar / taxatie aangevinkt) hebben altijd prioriteit boven deze merkfilter.
+      </p>
+      <form method="POST">
+        <input type="hidden" name="action" value="save_merken">
+        <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+        <?php
+        $merkGroepen = [
+            ['key'=>'garantie_merken',  'label'=>'&#9989; Garantie-merken',   'chip'=>'chip-garantie',  'selected'=>$garantieMerken],
+            ['key'=>'coulance_merken',  'label'=>'&#129309; Coulance-merken',  'chip'=>'chip-coulance',  'selected'=>$coulanceMerken],
+            ['key'=>'reparatie_merken', 'label'=>'&#128295; Reparatie-merken', 'chip'=>'chip-reparatie', 'selected'=>$reparatieMerken],
+            ['key'=>'taxatie_merken',   'label'=>'&#128203; Taxatie-merken',   'chip'=>'chip-taxatie',   'selected'=>$taxatieMerken],
+        ];
+        foreach ($merkGroepen as $grp): ?>
+        <div style="margin-bottom:1.5rem;">
+          <label class="field-label" style="font-size:.85rem;">
+            <span class="route-chip <?= $grp['chip'] ?>" style="margin-right:.3rem;"><?= $grp['label'] ?></span>
+          </label>
+          <input type="hidden" id="<?= $grp['key'] ?>_json" name="<?= $grp['key'] ?>_json"
+                 value="<?= h(json_encode($grp['selected'], JSON_UNESCAPED_UNICODE)) ?>">
+          <span class="merken-hint-all" id="<?= $grp['key'] ?>_hint"
+                style="<?= empty($grp['selected']) ? '' : 'display:none' ?>">Alle merken (geen filter)</span>
+          <div class="merken-grid" id="<?= $grp['key'] ?>_grid">
+            <?php foreach ($beschikbareMerken as $merk): ?>
+            <label class="merk-label">
+              <input type="checkbox" class="merk-cb" data-group="<?= $grp['key'] ?>"
+                     value="<?= h($merk) ?>"
+                     <?= in_array($merk, $grp['selected'], true) ? 'checked' : '' ?> style="display:none">
+              <span><?= h($merk) ?></span>
+            </label>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php endforeach; ?>
+        <button type="submit" class="btn btn-primary">&#128190; Merkfilters opslaan</button>
+      </form>
+    </div>
+  </div>
+
+</div><!-- /.adm-page -->
 
 <script>
-// ── Merk-checkboxen → hidden JSON-veld sync ────────────────────────
+// ── Tabs ─────────────────────────────────────────────────────────────────
+function toonTab(id) {
+  document.querySelectorAll('.ai-tab').forEach((t) => {
+    t.classList.toggle('active', t.getAttribute('onclick').includes("'" + id + "'"));
+  });
+  document.querySelectorAll('.ai-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'tab-' + id);
+  });
+}
+
+// ── Stappenplan: stap toevoegen/verwijderen ───────────────────────────────
+let stapCount = <?= count($stappenConfig) ?>;
+
+function voegStapToe() {
+  stapCount++;
+  document.getElementById('stap_count').value = stapCount;
+  const container = document.getElementById('stappen-container');
+  const idx       = stapCount - 1;
+  const div       = document.createElement('div');
+  div.className   = 'stap-editor-rij';
+  div.id          = 'stap-rij-' + idx;
+  div.innerHTML   = `
+    <div class="stap-editor-header">
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <span class="stap-nr-badge">${stapCount}</span>
+        <strong style="font-size:.875rem;">Stap ${stapCount}</strong>
+      </div>
+      <button type="button" class="btn-danger-sm" onclick="verwijderStap(${idx})">&#10005; Verwijder</button>
+    </div>
+    <div class="two-col">
+      <div>
+        <label class="field-label">Label (voortgangsbalk)</label>
+        <input type="text" name="stap_${stapCount}_label" placeholder="Bijv. Extra stap" maxlength="25">
+      </div>
+      <div>
+        <label class="field-label">Staptitel (in het formulier)</label>
+        <input type="text" name="stap_${stapCount}_titel" placeholder="Bijv. Aanvullende informatie" maxlength="80">
+      </div>
+    </div>
+    <div>
+      <label class="field-label">Lead-tekst</label>
+      <textarea class="field-ta" name="stap_${stapCount}_lead" placeholder="Bijv. Vul aanvullende gegevens in."></textarea>
+    </div>`;
+  container.appendChild(div);
+}
+
+function verwijderStap(idx) {
+  const el = document.getElementById('stap-rij-' + idx);
+  if (el) el.remove();
+  stapCount = Math.max(0, stapCount - 1);
+  document.getElementById('stap_count').value = stapCount;
+}
+
+// ── Coulance prijsranges: rij toevoegen/verwijderen ──────────────────────
+let matrixCount = <?= count($coulanceMatrix) ?>;
+
+function voegMatrixRijToe() {
+  const idx = matrixCount;
+  matrixCount++;
+  document.getElementById('matrix_count').value = matrixCount;
+  const container = document.getElementById('matrix-container');
+  const div       = document.createElement('div');
+  div.className   = 'matrix-rij';
+  div.id          = 'matrix-rij-' + idx;
+  div.innerHTML   = `
+    <div class="matrix-rij-header">
+      <strong style="font-size:.85rem;">Nieuw prijsbereik</strong>
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <span class="matrix-kans-preview">3 jaar coulance</span>
+        <button type="button" class="btn-danger-sm" onclick="verwijderMatrixRij(${idx})">&#10005;</button>
+      </div>
+    </div>
+    <div class="three-col">
+      <div>
+        <label class="field-label">Van prijs (€)</label>
+        <input type="number" name="matrix_${idx}_min_prijs" min="0" value="2000">
+      </div>
+      <div>
+        <label class="field-label">Tot prijs (€) <small>(leeg = hoger)</small></label>
+        <input type="number" name="matrix_${idx}_max_prijs" value="" placeholder="leeg = hoger">
+      </div>
+      <div>
+        <label class="field-label">Redelijke coulance (jaren)</label>
+        <input type="number" name="matrix_${idx}_coulance_jaren" min="1" max="15" value="3">
+      </div>
+    </div>`;
+  container.appendChild(div);
+}
+
+function verwijderMatrixRij(idx) {
+  const el = document.getElementById('matrix-rij-' + idx);
+  if (el) el.remove();
+}
+
+// ── Merken checkboxen → hidden JSON ──────────────────────────────────────
 document.querySelectorAll('.merk-cb').forEach(cb => {
   cb.addEventListener('change', () => syncMerkenJson(cb.dataset.group));
 });
 function syncMerkenJson(group) {
-  const checked = [...document.querySelectorAll(
-    `.merk-cb[data-group="${group}"]:checked`
-  )].map(c => c.value);
+  const checked = [...document.querySelectorAll(`.merk-cb[data-group="${group}"]:checked`)].map(c => c.value);
   const hid = document.getElementById(group + '_json');
   if (hid) hid.value = JSON.stringify(checked);
-  // Toon/verberg 'alle merken' hint
-  const wrap = document.getElementById(group + '_grid');
-  if (!wrap) return;
-  const prev = wrap.previousElementSibling;
-  if (prev && prev.classList.contains('merken-hint-all')) {
-    prev.style.display = checked.length === 0 ? 'inline-block' : 'none';
-  }
+  const hint = document.getElementById(group + '_hint');
+  if (hint) hint.style.display = checked.length === 0 ? 'inline-block' : 'none';
 }
-// Init: sync alle hidden velden op paginalaad
 ['garantie_merken','coulance_merken','reparatie_merken','taxatie_merken'].forEach(syncMerkenJson);
 </script>
 </body>

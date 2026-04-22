@@ -1,0 +1,136 @@
+<?php
+// Sub-component: portal-form-taxatie.php
+// Variabelen vereist: $inzending (array)
+?>
+<div class="portal-action-card">
+  <div class="portal-action-header">
+    <div class="portal-action-icon">📋</div>
+    <div>
+      <h3>Taxatieaanvraag</h3>
+      <p>Vul uw gegevens aan om de taxatieaanvraag te voltooien.</p>
+    </div>
+  </div>
+  <form class="portal-form" method="POST" action="<?= BASE_URL ?>/api/aanvulling.php" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token"  value="<?= csrf() ?>" />
+    <input type="hidden" name="aanvraag_id" value="<?= (int)$inzending['id'] ?>" />
+    <input type="hidden" name="casenummer"  value="<?= htmlspecialchars($inzending['casenummer'], ENT_QUOTES, 'UTF-8') ?>" />
+    <input type="hidden" name="type"        value="taxatie" />
+
+    <div class="portal-form-section">Contactgegevens</div>
+    <div class="portal-field">
+      <label>Voor- en achternaam *</label>
+      <input type="text" name="naam" required value="<?= htmlspecialchars($inzending['naam'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+    </div>
+    <div class="portal-field">
+      <label>Adres *</label>
+      <input type="text" name="adres" required placeholder="Straat + huisnummer" value="<?= htmlspecialchars($inzending['adres'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+    </div>
+    <div class="portal-fields-row">
+      <div class="portal-field">
+        <label>Postcode *</label>
+        <input type="text" name="postcode" required value="<?= htmlspecialchars($inzending['postcode'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+      </div>
+      <div class="portal-field">
+        <label>Plaats *</label>
+        <input type="text" name="plaats" required value="<?= htmlspecialchars($inzending['plaats'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+      </div>
+    </div>
+    <div class="portal-fields-row">
+      <div class="portal-field">
+        <label>E-mail</label>
+        <?= lockedField($inzending['email'], 'email') ?>
+      </div>
+      <div class="portal-field">
+        <label>Telefoonnummer *</label>
+        <input type="tel" name="telefoon" required value="<?= htmlspecialchars($inzending['telefoon'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+      </div>
+    </div>
+
+    <div class="portal-form-section">Televisie</div>
+    <div class="portal-fields-row">
+      <div class="portal-field">
+        <label>Merk TV</label>
+        <?= lockedField($inzending['merk']) ?>
+      </div>
+      <div class="portal-field">
+        <label>Modelnummer</label>
+        <?= lockedField($inzending['modelnummer']) ?>
+      </div>
+    </div>
+    <div class="portal-field">
+      <label>Serienummer *</label>
+      <input type="text" name="serienummer" required value="<?= htmlspecialchars($inzending['serienummer'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+    </div>
+
+    <div class="portal-form-section">Schade</div>
+    <div class="portal-field">
+      <label>Reden schade *</label>
+      <div class="portal-radio-group">
+        <?php foreach (['Iets tegen scherm gekomen','De TV is gevallen','Water/vochtschade','Anders'] as $opt): ?>
+          <label class="portal-radio-label">
+            <input type="radio" name="reden_schade" value="<?= htmlspecialchars($opt, ENT_QUOTES, 'UTF-8') ?>" required
+                   <?= ($inzending['reden_schade'] ?? '') === $opt ? 'checked' : '' ?> />
+            <?= htmlspecialchars($opt, ENT_QUOTES, 'UTF-8') ?>
+          </label>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <div class="portal-field">
+      <label>Beschrijving <em class="portal-form-optional">(optioneel)</em></label>
+      <textarea name="beschrijving" rows="3"><?= htmlspecialchars($inzending['omschrijving'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+    </div>
+
+    <div class="portal-form-section">Aankoop &amp; Verzekering</div>
+    <div class="portal-fields-row">
+      <div class="portal-field">
+        <label>Aankoopbedrag *</label>
+        <input type="text" name="aankoopbedrag" required placeholder="Bijv. 799,00" value="<?= htmlspecialchars($inzending['aankoopbedrag'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+      </div>
+      <div class="portal-field">
+        <label>Aankoopdatum *</label>
+        <input type="date" name="aankoopdatum" required value="<?= htmlspecialchars($inzending['aankoopdatum'] ?? date('Y-m-d'), ENT_QUOTES, 'UTF-8') ?>" />
+      </div>
+    </div>
+    <div class="portal-field portal-field-check">
+      <label class="portal-checkbox-label">
+        <input type="checkbox" name="heeft_bon" value="1" <?= !empty($inzending['heeft_bon']) ? 'checked' : '' ?> />
+        Ik heb een bon / aankoopbewijs
+      </label>
+    </div>
+    <div class="portal-fields-row">
+      <div class="portal-field">
+        <label>Naam verzekeringsmaatschappij *</label>
+        <input type="text" name="naam_verzekeraar" required value="<?= htmlspecialchars($inzending['naam_verzekeraar'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+      </div>
+      <div class="portal-field">
+        <label>Polisnummer *</label>
+        <input type="text" name="polisnummer" required value="<?= htmlspecialchars($inzending['polisnummer'] ?? '', ENT_QUOTES, 'UTF-8') ?>" />
+      </div>
+    </div>
+
+    <div class="portal-form-section">Foto's</div>
+    <div class="portal-fields-row">
+      <div class="portal-field">
+        <label>Foto van het gehele toestel *</label>
+        <input type="file" name="foto_toestel" accept="image/*" required />
+      </div>
+      <div class="portal-field">
+        <label>Foto van de schade *</label>
+        <input type="file" name="foto_defect" accept="image/*" required />
+      </div>
+    </div>
+    <div class="portal-fields-row">
+      <div class="portal-field">
+        <label>Foto achterkant (modelnummersticker afleesbaar) *</label>
+        <input type="file" name="foto_label" accept="image/*" required />
+      </div>
+      <div class="portal-field">
+        <label>Extra foto <em class="portal-form-optional">(optioneel)</em></label>
+        <input type="file" name="foto_extra" accept="image/*" />
+      </div>
+    </div>
+    <p class="portal-upload-hint">Maximaal 10 MB per foto. Toegestane formaten: JPG, PNG, WebP.</p>
+
+    <button type="submit" class="portal-submit-btn">Taxatieaanvraag indienen &rarr;</button>
+  </form>
+</div>
