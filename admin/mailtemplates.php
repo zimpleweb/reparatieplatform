@@ -32,6 +32,7 @@ $defaults = [
     ['slug' => 'inzender_advies',            'label' => 'Inzender: Advies klaar',             'richting' => 'inzender'],
     ['slug' => 'admin_nieuwe_inzending',     'label' => 'Admin: Nieuwe inzending',            'richting' => 'admin'],
     ['slug' => 'admin_nieuw_chatbericht',    'label' => 'Admin: Nieuw chatbericht',           'richting' => 'admin'],
+    ['slug' => 'admin_formulier_ingevuld',   'label' => 'Admin: Formulier ingevuld door klant','richting' => 'admin'],
     ['slug' => 'inzender_nieuw_chatbericht', 'label' => 'Inzender: Nieuw chatbericht',        'richting' => 'inzender'],
     ['slug' => 'inzender_status_gewijzigd',  'label' => 'Inzender: Status gewijzigd',         'richting' => 'inzender'],
 ];

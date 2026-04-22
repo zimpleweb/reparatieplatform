@@ -1580,6 +1580,7 @@ iframe.preview-frame {
   font-size: .9rem;
 }
 .tab-pane { display: none; }
+.tab-pane.active { display: block; }
 /* ─────────────────────────────────────────────────────────────────
    ADMINS — hulpklassen
    ───────────────────────────────────────────────────────────────── */
