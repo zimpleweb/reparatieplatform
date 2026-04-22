@@ -310,7 +310,7 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         } catch (\PDOException $e) { $detail['log'] = []; }
 
         $uploadBase = realpath(__DIR__ . '/../uploads');
-        foreach (['foto_defect', 'foto_label', 'foto_bon'] as $fotoKey) {
+        foreach (['foto_defect', 'foto_label', 'foto_bon', 'foto_toestel', 'foto_extra'] as $fotoKey) {
             if (!empty($detail[$fotoKey])) {
                 $absPath = realpath(__DIR__ . '/../' . $detail[$fotoKey]);
                 if ($absPath === false || strpos($absPath, $uploadBase) !== 0) {
@@ -602,17 +602,28 @@ $adminActivePage = 'aanvragen';
     </div>
 
     <!-- Foto's -->
-    <?php if (!empty($detail['foto_defect']) || !empty($detail['foto_label']) || !empty($detail['foto_bon'])): ?>
+    <?php
+    $fotoWeergave = [
+        'foto_defect'  => 'Defect',
+        'foto_label'   => 'Label/modelnummer',
+        'foto_bon'     => 'Aankoopbon',
+        'foto_toestel' => 'Gehele toestel',
+        'foto_extra'   => 'Extra foto',
+    ];
+    $heeftFotos = array_filter($fotoWeergave, fn($k) => !empty($detail[$k]), ARRAY_FILTER_USE_KEY);
+    ?>
+    <?php if ($heeftFotos): ?>
     <div class="detail-section">
       <h4>Foto's</h4>
       <div class="fotos-wrap">
-        <?php foreach (['foto_defect' => 'Defect', 'foto_label' => 'Label', 'foto_bon' => 'Aankoopbon'] as $fk => $fl): ?>
+        <?php foreach ($fotoWeergave as $fk => $fl): ?>
           <?php if (!empty($detail[$fk])): ?>
           <div class="foto-item">
-            <a href="<?= BASE_URL ?>/<?= h($detail[$fk]) ?>" target="_blank">
-              <img src="<?= BASE_URL ?>/<?= h($detail[$fk]) ?>" alt="<?= $fl ?>" class="foto-img" loading="lazy">
+            <a href="<?= BASE_URL ?>/api/foto.php?pad=<?= urlencode($detail[$fk]) ?>" target="_blank">
+              <img src="<?= BASE_URL ?>/api/foto.php?pad=<?= urlencode($detail[$fk]) ?>"
+                   alt="<?= h($fl) ?>" class="foto-img" loading="lazy">
             </a>
-            <div class="foto-lbl"><?= $fl ?></div>
+            <div class="foto-lbl"><?= h($fl) ?></div>
           </div>
           <?php endif; ?>
         <?php endforeach; ?>
@@ -846,6 +857,13 @@ $adminActivePage = 'aanvragen';
           <input type="hidden" name="nieuw_status" value="archief">
           <button type="submit" class="btn-actie btn-archief">Archiveren</button>
         </form>
+        <form method="POST" action="<?= BASE_URL ?>/api/admin-actie.php" style="margin:0;"
+              onsubmit="return confirm('Aanvraag definitief verwijderen incl. foto\'s? Dit kan niet ongedaan worden gemaakt.')">
+          <input type="hidden" name="csrf"  value="<?= csrf() ?>">
+          <input type="hidden" name="id"    value="<?= (int)$detail['id'] ?>">
+          <input type="hidden" name="actie" value="verwijderen">
+          <button type="submit" class="btn-actie" style="background:#dc2626;color:#fff;">&#128465; Verwijderen</button>
+        </form>
       </div>
     </div>
 
@@ -997,6 +1015,14 @@ $adminActivePage = 'aanvragen';
                 </button>
               </form>
               <?php endforeach; ?>
+              <hr class="optiemenu-divider">
+              <form method="POST" action="<?= BASE_URL ?>/api/admin-actie.php" style="margin:0;"
+                    onsubmit="return confirm('Aanvraag definitief verwijderen? Dit kan niet ongedaan worden gemaakt.')">
+                <input type="hidden" name="csrf"  value="<?= csrf() ?>">
+                <input type="hidden" name="id"    value="<?= (int)$r['id'] ?>">
+                <input type="hidden" name="actie" value="verwijderen">
+                <button type="submit" class="optiemenu-item danger">&#128465; Verwijderen</button>
+              </form>
             </div>
           </div>
         </td>

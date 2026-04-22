@@ -8,7 +8,8 @@ includes/config.php
 Thumbs.db
 
 # Uploads / cache
-uploads/
+uploads/**
+!uploads/aanvragen/.htaccess
 cache/
 
 # SQLite database

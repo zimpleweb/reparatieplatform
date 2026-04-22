@@ -70,7 +70,20 @@
                                 'garantie_ingevuld','coulance_ingevuld','recycling_ingevuld'];
       ?>
       <?php if (in_array($status, $afwachtingStatussen)): ?>
-        <?php require __DIR__ . '/portal-form-reparatie.php'; ?>
+        <?php
+        // Toon formulier op basis van advies-type
+        $adviesVormType = $inzending['gekozen_advies'] ?? $inzending['aanvraag_type'] ?? $inzending['advies_type'] ?? '';
+        if ($status === 'taxatie_afwachting' || $adviesVormType === 'taxatie') {
+            require __DIR__ . '/../includes/components/taxatie-form.php';
+        } elseif ($status === 'coulance_afwachting' || $adviesVormType === 'coulance') {
+            require __DIR__ . '/../includes/components/coulance-form.php';
+        } elseif ($status === 'recycling_afwachting' || $adviesVormType === 'recycling') {
+            require __DIR__ . '/../includes/components/recycling-form.php';
+        } else {
+            // reparatie (default) of legacy doorgestuurd
+            require __DIR__ . '/portal-form-reparatie.php';
+        }
+        ?>
 
       <?php elseif (in_array($status, $ingevuldStatussen)): ?>
         <div class="portal-info-card info-green">
