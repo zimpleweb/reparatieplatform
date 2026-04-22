@@ -1,12 +1,13 @@
-Update CLAUDE.md met extra regels voor nieuwe features.
+Update CLAUDE.md met extra feature regels.
 
-Voeg onderaan (na de bestaande Security Audit regels) dit nieuwe blok toe:
+Voeg onderaan (na de bestaande feature sectie) dit nieuwe blok toe:
 
-## Extra regels voor nieuwe features (contact & advies.php)
+## Extra regels voor index.php contactformulier
 
-* index.php algemeen formulier: maak het een directe mailactie naar info@zimpleweb.nl met Reply-To = ingevoerde e-mailadres. Stuur alle velden duidelijk in de mail. Maak bij voorkeur een eigen component (bijv. includes/components/contact-form.php). Houd veilig (geen injecties).
-* advies.php: maak het stappenplan formulier prominenter (verplaats hoger op de pagina, geef meer visuele nadruk als belangrijkste CTA). Houd rest van de pagina intact.
-* Gebruik altijd atomic changes, unified diff, één commit per kleine stap.
-* Volg ook de bestaande Security Audit en aanvragen refactor regels waar relevant.
+* Na succesvolle verzending: toon een success melding op dezelfde pagina (op de plek van het formulier) met tekst: "Bedankt voor je bericht. We kijken het zo snel mogelijk door."
+* Redirect NIET naar reparatieplatform.nl, maar blijf op de huidige pagina (de URL waar index.php op staat).
+* Los het probleem op dat de mailactie niet werkt.
+* Houd alle wijzigingen atomic, unified diff, één commit per kleine stap.
+* Volg ook de eerdere regels voor directe mail naar info@zimpleweb.nl met Reply-To.
 
-Maak dit als één atomic commit met een duidelijke commit message. Gebruik unified diff voor de wijziging in CLAUDE.md.
+Maak dit als één atomic commit met unified diff.
