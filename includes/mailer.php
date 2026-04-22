@@ -27,7 +27,8 @@ function sendMail(string $to, string $templateKey, array $vars = []): bool {
 
 function mailSend(string $to, string $subject, string $bodyHtml, string $replyTo = ''): bool {
     if (getSetting('brevo_enabled') === '1') {
-        return _mailSendBrevo($to, $subject, $bodyHtml, $replyTo);
+        if (_mailSendBrevo($to, $subject, $bodyHtml, $replyTo)) return true;
+        // Brevo failed; fall back to PHP mail so delivery is not lost
     }
     return _mailSendPhp($to, $subject, $bodyHtml, $replyTo);
 }
