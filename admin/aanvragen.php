@@ -6,6 +6,7 @@ header('Referrer-Policy: no-referrer');
 header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/mailer.php';
 requireAdmin();
 
 $msg  = '';
@@ -53,6 +54,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'beric
             } catch (\PDOException $e) {
                 $fout = 'Kon bericht niet opslaan: ' . h($e->getMessage());
             }
+            try {
+                $av = db()->prepare('SELECT casenummer, email, merk, modelnummer FROM aanvragen WHERE id=?');
+                $av->execute([$aanvraagId]);
+                $avRow = $av->fetch();
+                if ($avRow && !empty($avRow['email'])) {
+                    @sendMail($avRow['email'], 'inzender_nieuw_chatbericht', [
+                        'casenummer'  => $avRow['casenummer'] ?? '',
+                        'merk'        => $avRow['merk'] ?? '',
+                        'modelnummer' => $avRow['modelnummer'] ?? '',
+                        'chatbericht' => $berichtTxt,
+                    ]);
+                }
+            } catch (\PDOException $e) {}
         } else {
             $fout = 'Bericht mag niet leeg zijn.';
         }
@@ -77,6 +91,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'statu
         $nieuwStatus = trim($_POST['nieuw_status'] ?? '');
         $toegestaan  = array_keys($statusLabels);
         if ($aanvraagId && in_array($nieuwStatus, $toegestaan, true)) {
+            $avBefore = null;
+            try {
+                $avQ = db()->prepare('SELECT casenummer, email, merk, modelnummer, status FROM aanvragen WHERE id=?');
+                $avQ->execute([$aanvraagId]);
+                $avBefore = $avQ->fetch() ?: null;
+            } catch (\PDOException $e) {}
             db()->prepare('UPDATE aanvragen SET status=? WHERE id=?')
                ->execute([$nieuwStatus, $aanvraagId]);
             try {
@@ -86,6 +106,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'statu
                 );
                 $ins->execute([$aanvraagId, 'Status gewijzigd naar: ' . ($statusLabels[$nieuwStatus]['tekst'] ?? $nieuwStatus)]);
             } catch (\PDOException $e) {}
+            if ($avBefore && !empty($avBefore['email'])) {
+                @sendMail($avBefore['email'], 'inzender_status_gewijzigd', [
+                    'casenummer'  => $avBefore['casenummer'] ?? '',
+                    'merk'        => $avBefore['merk'] ?? '',
+                    'modelnummer' => $avBefore['modelnummer'] ?? '',
+                    'status_oud'  => $statusLabels[$avBefore['status']]['tekst'] ?? $avBefore['status'],
+                    'status_nieuw'=> $statusLabels[$nieuwStatus]['tekst'] ?? $nieuwStatus,
+                ]);
+            }
             $qs = http_build_query(array_filter([
                 'id'     => $aanvraagId,
                 'status' => $filterStatus,

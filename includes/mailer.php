@@ -56,6 +56,12 @@ function mailSend(string $to, string $subject, string $bodyHtml): bool {
 }
 
 function mailMerge(string $text, array $vars): string {
+    // Handle {{#key}}...{{/key}} conditional blocks (show block only if var is non-empty)
+    $text = preg_replace_callback(
+        '/\{\{#(\w+)\}\}(.*?)\{\{\/\1\}\}/s',
+        function ($m) use ($vars) { return !empty($vars[$m[1]]) ? $m[2] : ''; },
+        $text
+    );
     foreach ($vars as $k => $v) {
         $text = str_replace('{{' . $k . '}}', htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'), $text);
     }
@@ -226,6 +232,24 @@ function mailTemplateDefault(string $key): array {
             ),
         ],
 
+        'admin_formulier_ingevuld' => [
+            'subject' => '[Admin] Formulier ingevuld – {{casenummer}}',
+            'body_html' => mailWrap(
+                'Formulier ingevuld door klant',
+                '<p>De klant heeft het aanvraagformulier ingevuld voor inzending <strong>{{casenummer}}</strong>.</p>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border:1.5px solid #e5e4e0;border-radius:12px;overflow:hidden;">
+                  <tr style="background:#0d0f14;"><td style="padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#287864;">Aanvraagdetails</td></tr>
+                  <tr><td style="padding:8px 16px 4px;"><strong>Zaaknummer:</strong> {{casenummer}}</td></tr>
+                  <tr><td style="padding:4px 16px;"><strong>E-mail inzender:</strong> {{email}}</td></tr>
+                  <tr><td style="padding:4px 16px;"><strong>Televisie:</strong> {{merk}} {{modelnummer}}</td></tr>
+                  <tr><td style="padding:4px 16px 12px;"><strong>Type aanvraag:</strong> {{aanvraag_type}}</td></tr>
+                </table>
+                <p style="font-size:13px;color:#6b7280;">Bekijk de volledige aanvraag in het adminpaneel.</p>',
+                'Bekijken in admin',
+                'https://reparatieplatform.nl/admin/aanvragen.php'
+            ),
+        ],
+
         default => ['subject' => 'Bericht van ReparatiePlatform.nl', 'body_html' => mailWrap('Bericht', '<p>{{bericht}}</p>')],
     };
 }
@@ -237,6 +261,7 @@ function getAllMailTemplates(): array {
         'inzender_advies'            => ['label' => 'Inzender: Advies klaar',                  'richting' => 'inzender'],
         'admin_nieuwe_inzending'     => ['label' => 'Admin: Nieuwe inzending',                 'richting' => 'admin'],
         'admin_nieuw_chatbericht'    => ['label' => 'Admin: Nieuw chatbericht',                'richting' => 'admin'],
+        'admin_formulier_ingevuld'   => ['label' => 'Admin: Formulier ingevuld door klant',   'richting' => 'admin'],
         'inzender_nieuw_chatbericht' => ['label' => 'Inzender: Nieuw chatbericht',             'richting' => 'inzender'],
         'inzender_status_gewijzigd'  => ['label' => 'Inzender: Status gewijzigd',             'richting' => 'inzender'],
     ];
