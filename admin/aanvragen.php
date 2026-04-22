@@ -185,15 +185,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_t
         $toegestaan = array_keys($aanvraagTypes);
         if ($aanvraagId && in_array($nieuwType, $toegestaan, true)) {
             $pdo = db();
-            // Bepaal of de status mee moet wijzigen (alleen als huidige status een *_afwachting is)
+            // Bepaal of de status mee moet wijzigen:
+            // *_afwachting → nieuwType_afwachting
+            // *_ingevuld   → nieuwType_ingevuld
+            // inzending    → nieuwType_afwachting
             $huidigRow = $pdo->prepare('SELECT status FROM aanvragen WHERE id=?');
             $huidigRow->execute([$aanvraagId]);
             $huidigStatus = $huidigRow->fetchColumn() ?: '';
             $afwachtingStatussen = ['reparatie_afwachting','taxatie_afwachting','garantie_afwachting',
                                     'coulance_afwachting','recycling_afwachting'];
-            $nieuweStatus = in_array($huidigStatus, $afwachtingStatussen, true)
-                ? $nieuwType . '_afwachting'
-                : null;
+            $ingevuldStatussen   = ['reparatie_ingevuld','taxatie_ingevuld','garantie_ingevuld',
+                                    'coulance_ingevuld','recycling_ingevuld'];
+            if (in_array($huidigStatus, $afwachtingStatussen, true) || $huidigStatus === 'inzending') {
+                $nieuweStatus = $nieuwType . '_afwachting';
+            } elseif (in_array($huidigStatus, $ingevuldStatussen, true)) {
+                $nieuweStatus = $nieuwType . '_ingevuld';
+            } else {
+                $nieuweStatus = null;
+            }
             try {
                 if ($nieuweStatus) {
                     $pdo->prepare('UPDATE aanvragen SET aanvraag_type=?, gekozen_advies=?, status=? WHERE id=?')
@@ -255,15 +264,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_t
         $toegestaan = array_keys($aanvraagTypes);
         if ($aanvraagId && in_array($nieuwType, $toegestaan, true)) {
             $pdo = db();
-            // Bepaal of de status mee moet wijzigen (alleen als huidige status een *_afwachting is)
             $huidigRow = $pdo->prepare('SELECT status FROM aanvragen WHERE id=?');
             $huidigRow->execute([$aanvraagId]);
             $huidigStatus = $huidigRow->fetchColumn() ?: '';
             $afwachtingStatussen = ['reparatie_afwachting','taxatie_afwachting','garantie_afwachting',
                                     'coulance_afwachting','recycling_afwachting'];
-            $nieuweStatus = in_array($huidigStatus, $afwachtingStatussen, true)
-                ? $nieuwType . '_afwachting'
-                : null;
+            $ingevuldStatussen   = ['reparatie_ingevuld','taxatie_ingevuld','garantie_ingevuld',
+                                    'coulance_ingevuld','recycling_ingevuld'];
+            // inzending of *_afwachting → nieuwType_afwachting; *_ingevuld → nieuwType_ingevuld
+            if (in_array($huidigStatus, $afwachtingStatussen, true) || $huidigStatus === 'inzending') {
+                $nieuweStatus = $nieuwType . '_afwachting';
+            } elseif (in_array($huidigStatus, $ingevuldStatussen, true)) {
+                $nieuweStatus = $nieuwType . '_ingevuld';
+            } else {
+                $nieuweStatus = null;
+            }
             try {
                 if ($nieuweStatus) {
                     $pdo->prepare('UPDATE aanvragen SET aanvraag_type=?, gekozen_advies=?, status=? WHERE id=?')
@@ -754,6 +769,36 @@ $adminActivePage = 'aanvragen';
       </div>
     </div>
 
+    <!-- Foto's (afwachting & ingevuld) -->
+    <?php
+    $fotoWeergaveNietInz = [
+        'foto_defect'  => 'Defect',
+        'foto_label'   => 'Label/modelnummer',
+        'foto_bon'     => 'Aankoopbon',
+        'foto_toestel' => 'Gehele toestel',
+        'foto_extra'   => 'Extra foto',
+    ];
+    $heeftFotosNietInz = array_filter($fotoWeergaveNietInz, fn($k) => !empty($detail[$k]), ARRAY_FILTER_USE_KEY);
+    ?>
+    <?php if ($heeftFotosNietInz): ?>
+    <div class="detail-section">
+      <h4>Foto's</h4>
+      <div class="fotos-wrap">
+        <?php foreach ($fotoWeergaveNietInz as $fk => $fl): ?>
+          <?php if (!empty($detail[$fk])): ?>
+          <div class="foto-item">
+            <a href="<?= BASE_URL ?>/api/foto.php?pad=<?= urlencode($detail[$fk]) ?>" target="_blank">
+              <img src="<?= BASE_URL ?>/api/foto.php?pad=<?= urlencode($detail[$fk]) ?>"
+                   alt="<?= h($fl) ?>" class="foto-img" loading="lazy">
+            </a>
+            <div class="foto-lbl"><?= h($fl) ?></div>
+          </div>
+          <?php endif; ?>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <?php endif; ?>
+
     <?php if ($isAfwachting): ?>
     <!-- ── STAP 5: Wacht op formulier van klant ────────────────────────── -->
     <div class="detail-section">
@@ -977,16 +1022,24 @@ $adminActivePage = 'aanvragen';
         </tr>
       </thead>
       <tbody>
+      <?php
+        $ingevuldStatussen_lijst = ['reparatie_ingevuld','taxatie_ingevuld','garantie_ingevuld',
+                                    'coulance_ingevuld','recycling_ingevuld'];
+      ?>
       <?php foreach ($aanvragen as $r):
-        $sl        = $statusLabels[$r['status']] ?? ['tekst' => $r['status'], 'badge' => 'badge-gray'];
-        $rType     = $r['aanvraag_type'] ?? $r['advies_type'] ?? '';
-        $rTypeInfo = $aanvraagTypes[$rType] ?? null;
-        $qs        = http_build_query(array_filter(['status' => $filterStatus, 'route' => $filterRoute, 'zoek' => $filterZoek]));
+        $sl          = $statusLabels[$r['status']] ?? ['tekst' => $r['status'], 'badge' => 'badge-gray'];
+        $rType       = $r['aanvraag_type'] ?? $r['advies_type'] ?? '';
+        $rTypeInfo   = $aanvraagTypes[$rType] ?? null;
+        $qs          = http_build_query(array_filter(['status' => $filterStatus, 'route' => $filterRoute, 'zoek' => $filterZoek]));
+        $heeftNieuws = in_array($r['status'], $ingevuldStatussen_lijst, true);
       ?>
       <tr>
         <td class="casenr-col">
-          <a href="?id=<?= $r['id'] ?><?= $qs ? '&'.$qs : '' ?>">
+          <a href="?id=<?= $r['id'] ?><?= $qs ? '&'.$qs : '' ?>" style="display:inline-flex;align-items:center;gap:.4rem;">
             <?= h($r['casenummer'] ?? '#'.$r['id']) ?>
+            <?php if ($heeftNieuws): ?>
+              <span title="Klant heeft formulier ingevuld" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#16a34a;flex-shrink:0;"></span>
+            <?php endif; ?>
           </a>
         </td>
         <td style="font-size:.85rem;"><?= h($r['email'] ?? '—') ?></td>
@@ -1003,7 +1056,12 @@ $adminActivePage = 'aanvragen';
             <span style="font-size:.78rem;color:var(--adm-faint);">—</span>
           <?php endif; ?>
         </td>
-        <td><span class="badge <?= $sl['badge'] ?>"><?= h($sl['tekst']) ?></span></td>
+        <td>
+          <span class="badge <?= $sl['badge'] ?>"><?= h($sl['tekst']) ?></span>
+          <?php if ($heeftNieuws): ?>
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;margin-left:.35rem;vertical-align:middle;" title="Nieuw formulier ingevuld"></span>
+          <?php endif; ?>
+        </td>
         <td style="font-size:.8rem;color:var(--adm-faint);"><?= h($r[$datumKolom] ?? '—') ?></td>
         <td>
           <div class="optiemenu-wrap">

@@ -112,21 +112,25 @@
     <div class="portal-fields-row">
       <div class="portal-field">
         <label>Foto van het gehele toestel *</label>
-        <input type="file" name="foto_toestel" accept="image/*" required />
+        <input type="file" name="foto_toestel" accept="image/*" required onchange="fotoPreview(this,'prev_toestel_tax')" />
+        <img id="prev_toestel_tax" src="" alt="Preview" style="display:none;max-width:100%;max-height:160px;margin-top:.5rem;border-radius:6px;border:1px solid #e5e4e0;">
       </div>
       <div class="portal-field">
         <label>Foto van de schade *</label>
-        <input type="file" name="foto_defect" accept="image/*" required />
+        <input type="file" name="foto_defect" accept="image/*" required onchange="fotoPreview(this,'prev_defect_tax')" />
+        <img id="prev_defect_tax" src="" alt="Preview" style="display:none;max-width:100%;max-height:160px;margin-top:.5rem;border-radius:6px;border:1px solid #e5e4e0;">
       </div>
     </div>
     <div class="portal-fields-row">
       <div class="portal-field">
         <label>Foto achterkant (modelnummersticker afleesbaar) *</label>
-        <input type="file" name="foto_label" accept="image/*" required />
+        <input type="file" name="foto_label" accept="image/*" required onchange="fotoPreview(this,'prev_label_tax')" />
+        <img id="prev_label_tax" src="" alt="Preview" style="display:none;max-width:100%;max-height:160px;margin-top:.5rem;border-radius:6px;border:1px solid #e5e4e0;">
       </div>
       <div class="portal-field">
         <label>Extra foto <em class="portal-form-optional">(optioneel)</em></label>
-        <input type="file" name="foto_extra" accept="image/*" />
+        <input type="file" name="foto_extra" accept="image/*" onchange="fotoPreview(this,'prev_extra_tax')" />
+        <img id="prev_extra_tax" src="" alt="Preview" style="display:none;max-width:100%;max-height:160px;margin-top:.5rem;border-radius:6px;border:1px solid #e5e4e0;">
       </div>
     </div>
     <p class="portal-upload-hint">Maximaal 10 MB per foto. Toegestane formaten: JPG, PNG, WebP.</p>
@@ -134,3 +138,16 @@
     <button type="submit" class="portal-submit-btn">Taxatieaanvraag indienen &rarr;</button>
   </form>
 </div>
+<script>
+function fotoPreview(input, previewId) {
+  var img = document.getElementById(previewId);
+  if (!img) return;
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();
+    reader.onload = function(e) { img.src = e.target.result; img.style.display = 'block'; };
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    img.style.display = 'none';
+  }
+}
+</script>

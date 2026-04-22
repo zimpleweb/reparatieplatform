@@ -52,12 +52,8 @@ if (strpos($adminUsername, ' ') !== false) {
 
     <!-- Logo -->
     <a href="<?= BASE_URL ?>/admin/dashboard.php" class="adm-logo" aria-label="Reparatieplatform Admin">
-      <svg class="adm-logo-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-        <rect width="28" height="28" rx="7" fill="#01696f"/>
-        <path d="M8 14c0-3.314 2.686-6 6-6s6 2.686 6 6-2.686 6-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="14" cy="14" r="2" fill="#fff"/>
-      </svg>
-      <span class="adm-logo-text"><strong>Reparatie</strong>platform</span>
+      <img src="https://reparatieplatform.nl/wp-content/uploads/2025/06/REPARATIEPLATFORM-LOGO-WEBSITE-1200x336.png"
+           alt="Reparatieplatform" height="32" style="max-width:200px;object-fit:contain;display:block;">
     </a>
 
     <!-- Navigatie -->

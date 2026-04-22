@@ -61,12 +61,14 @@
       <div class="portal-field">
         <label>Foto van de klacht</label>
         <span class="portal-field-hint">Foto van het defect (optioneel).</span>
-        <input type="file" name="foto_defect" accept="image/*" />
+        <input type="file" name="foto_defect" accept="image/*" onchange="fotoPreview(this,'prev_defect_rep')" />
+        <img id="prev_defect_rep" src="" alt="Preview" style="display:none;max-width:100%;max-height:160px;margin-top:.5rem;border-radius:6px;border:1px solid #e5e4e0;">
       </div>
       <div class="portal-field">
         <label>Foto van het modelnummer</label>
         <span class="portal-field-hint">Foto van het modelnummersticker (optioneel).</span>
-        <input type="file" name="foto_label" accept="image/*" />
+        <input type="file" name="foto_label" accept="image/*" onchange="fotoPreview(this,'prev_label_rep')" />
+        <img id="prev_label_rep" src="" alt="Preview" style="display:none;max-width:100%;max-height:160px;margin-top:.5rem;border-radius:6px;border:1px solid #e5e4e0;">
       </div>
     </div>
     <p class="portal-upload-hint">Maximaal 10 MB per foto. Toegestane formaten: JPG, PNG, WebP.</p>
@@ -74,3 +76,16 @@
     <button type="submit" class="portal-submit-btn">Reparatieaanvraag indienen &rarr;</button>
   </form>
 </div>
+<script>
+function fotoPreview(input, previewId) {
+  var img = document.getElementById(previewId);
+  if (!img) return;
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();
+    reader.onload = function(e) { img.src = e.target.result; img.style.display = 'block'; };
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    img.style.display = 'none';
+  }
+}
+</script>

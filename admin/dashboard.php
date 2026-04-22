@@ -94,13 +94,16 @@ $adminActivePage = 'dashboard';
 
       <div class="recent-grid" id="recentGrid">
         <?php
+        $ingevuldStatussen_dash = ['reparatie_ingevuld','taxatie_ingevuld','garantie_ingevuld',
+                                   'coulance_ingevuld','recycling_ingevuld'];
         foreach ($recentAanvragen as $i => $a):
-          $merk   = htmlspecialchars($a['merk']               ?? '', ENT_QUOTES);
-          $email  = htmlspecialchars($a['email']              ?? '', ENT_QUOTES);
-          $model  = htmlspecialchars($a['modelnummer']        ?? $a['model'] ?? '', ENT_QUOTES);
-          $route  = htmlspecialchars($a['geadviseerde_route'] ?? $a['route'] ?? '', ENT_QUOTES);
-          $datum  = htmlspecialchars($a[$datumKolom]          ?? '', ENT_QUOTES);
-          $status = strtolower(trim($a['status'] ?? 'nieuw'));
+          $merk        = htmlspecialchars($a['merk']               ?? '', ENT_QUOTES);
+          $email       = htmlspecialchars($a['email']              ?? '', ENT_QUOTES);
+          $model       = htmlspecialchars($a['modelnummer']        ?? $a['model'] ?? '', ENT_QUOTES);
+          $route       = htmlspecialchars($a['geadviseerde_route'] ?? $a['route'] ?? '', ENT_QUOTES);
+          $datum       = htmlspecialchars($a[$datumKolom]          ?? '', ENT_QUOTES);
+          $status      = strtolower(trim($a['status'] ?? 'nieuw'));
+          $heeftNieuws = in_array($a['status'] ?? '', $ingevuldStatussen_dash, true);
 
           $datumFormatted = $datum;
           if ($datum && strtotime($datum)) {
@@ -117,7 +120,12 @@ $adminActivePage = 'dashboard';
         <a href="<?= BASE_URL ?>/admin/aanvragen.php?id=<?= (int)($a['id'] ?? 0) ?>"
            class="recent-card<?= $hidden ?>"
            data-index="<?= $i ?>">
-          <div class="recent-card-merk"><?= $merk ?: '—' ?></div>
+          <div style="display:flex;align-items:center;gap:.4rem;">
+            <div class="recent-card-merk"><?= $merk ?: '—' ?></div>
+            <?php if ($heeftNieuws): ?>
+              <span title="Klant heeft formulier ingevuld" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;flex-shrink:0;margin-bottom:.05rem;"></span>
+            <?php endif; ?>
+          </div>
           <div class="recent-card-model"><?= $model ?: '<span style="color:var(--adm-faint)">Onbekend model</span>' ?></div>
           <div class="recent-card-email"><?= $email ?: '—' ?></div>
           <div class="recent-card-meta">
