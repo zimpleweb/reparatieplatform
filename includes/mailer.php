@@ -25,13 +25,61 @@ function sendMail(string $to, string $templateKey, array $vars = []): bool {
     return mailSend($to, $subject, $body);
 }
 
-function mailSend(string $to, string $subject, string $bodyHtml): bool {
+function mailSend(string $to, string $subject, string $bodyHtml, string $replyTo = ''): bool {
+    if (getSetting('brevo_enabled') === '1') {
+        return _mailSendBrevo($to, $subject, $bodyHtml, $replyTo);
+    }
+    return _mailSendPhp($to, $subject, $bodyHtml, $replyTo);
+}
+
+function _mailSendBrevo(string $to, string $subject, string $bodyHtml, string $replyTo = ''): bool {
+    $apiKey      = getSetting('brevo_api_key');
+    $senderName  = getSetting('brevo_sender_name',  'ReparatiePlatform.nl');
+    $senderEmail = getSetting('brevo_sender_email',  'noreply@reparatieplatform.nl');
+
+    if (empty($apiKey)) return false;
+
+    $bodyText = strip_tags(preg_replace('#<br\s*/?>|</p>|</div>|</li>#i', "\n", $bodyHtml));
+    $bodyText = html_entity_decode($bodyText, ENT_QUOTES, 'UTF-8');
+    $bodyText = preg_replace("/\n{3,}/", "\n\n", trim($bodyText));
+
+    $payload = [
+        'sender'      => ['name' => $senderName, 'email' => $senderEmail],
+        'to'          => [['email' => $to]],
+        'subject'     => $subject,
+        'htmlContent' => $bodyHtml,
+        'textContent' => $bodyText,
+    ];
+    if ($replyTo) {
+        $payload['replyTo'] = ['email' => $replyTo];
+    }
+
+    $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($payload),
+        CURLOPT_HTTPHEADER     => [
+            'api-key: ' . $apiKey,
+            'Content-Type: application/json',
+            'Accept: application/json',
+        ],
+        CURLOPT_TIMEOUT        => 10,
+    ]);
+    curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return $httpCode >= 200 && $httpCode < 300;
+}
+
+function _mailSendPhp(string $to, string $subject, string $bodyHtml, string $replyTo = ''): bool {
     $fromName  = 'ReparatiePlatform.nl';
     $fromEmail = 'noreply@reparatieplatform.nl';
     $boundary  = '----=_Part_' . md5(uniqid());
 
     $headers  = "From: {$fromName} <{$fromEmail}>\r\n";
-    $headers .= "Reply-To: {$fromEmail}\r\n";
+    $headers .= "Reply-To: " . ($replyTo ?: $fromEmail) . "\r\n";
     $headers .= "MIME-Version: 1.0\r\n";
     $headers .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
     $headers .= "X-Mailer: ReparatiePlatform/1.0\r\n";

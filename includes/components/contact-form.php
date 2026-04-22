@@ -2,13 +2,13 @@
 // Contact form component – homepage (index.php)
 // Vereist: csrf() en h() uit functions.php (geladen door de pagina)
 ?>
-<?php if (isset($_GET['verzonden'])): ?>
-  <div class="alert alert-success" style="margin-bottom:1.5rem;">&#10003; Bedankt voor je bericht. We kijken het zo snel mogelijk door.</div>
-<?php else: ?>
-<?php if (isset($_GET['error'])): ?>
-  <div class="alert alert-error" style="margin-bottom:1.5rem;">Er is iets misgegaan. Controleer uw gegevens en probeer het opnieuw.</div>
-<?php endif; ?>
-<form action="/api/send-contact.php" method="POST">
+<div id="contact-success" style="display:none;margin-bottom:1.5rem;" class="alert alert-success">
+  &#10003; Bedankt voor je bericht. We kijken het zo snel mogelijk door.
+</div>
+<div id="contact-error" style="display:none;margin-bottom:1.5rem;" class="alert alert-error">
+  Er is iets misgegaan. Controleer uw gegevens en probeer het opnieuw.
+</div>
+<form id="contact-form" action="/api/send-contact.php" method="POST">
   <input type="hidden" name="csrf_token" value="<?= csrf() ?>" />
   <div class="field-row">
     <div class="field">
@@ -68,4 +68,30 @@
   </div>
   <button type="submit" class="submit-btn">Verstuur en ontvang gratis advies &rarr;</button>
 </form>
-<?php endif; ?>
+<script>
+(function () {
+  var form    = document.getElementById('contact-form');
+  var success = document.getElementById('contact-success');
+  var error   = document.getElementById('contact-error');
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    error.style.display = 'none';
+
+    fetch('/api/send-contact.php', { method: 'POST', body: new FormData(form) })
+      .then(function (r) { return r.json(); })
+      .then(function (json) {
+        if (json.ok) {
+          form.style.display = 'none';
+          success.style.display = '';
+          success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          error.style.display = '';
+        }
+      })
+      .catch(function () {
+        error.style.display = '';
+      });
+  });
+}());
+</script>
