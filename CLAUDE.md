@@ -1,41 +1,23 @@
-## Extra regels voor formulieren in mijn-aanvraag.php (per advies-type)
+## Extra regels voor status "Gesloten" en verbeteringen aanvragen.php + formulieren
 
-* In mijn-aanvraag.php moet iedere advies-status in behandeling (afwachting) een eigen specifiek formulier tonen:
-  - Reparatie → behoud het bestaande reparatieformulier
-  - Taxatie → toon een eigen Taxatieformulier (zie velden hieronder)
-  - Coulance → toon een eigen Coulance-formulier (zie beschrijving hieronder)
-  - Recycling → toon een eigen Recycling-formulier (gerelateerd aan reparatieformulier + recycling-vraag)
+* Voeg een nieuwe status toe: "Gesloten". Deze status is bedoeld voor oninteressante inzendingen en voor gevallen waarbij coulance bij winkel of fabrikant is gelukt, of wanneer een TV niet repareerbaar is.
 
-* Maak ieder formulier bij voorkeur een apart component in `includes/components/` (bijv. `taxatie-form.php`, `coulance-form.php`, `recycling-form.php`) zodat mijn-aanvraag.php overzichtelijk blijft en geen duplicatie ontstaat.
+* Los het probleem op dat wisselen naar status "Recycling" niet werkt in admin/aanvragen.php (status wordt niet bijgewerkt).
 
-**Taxatie formulier velden:**
-- Taxatieaanvraag
-- Voor- en achternaam *, Adres *, Postcode *, Plaats *, E-mail *, Telefoonnummer *
-- Merk TV *, Modelnummer *, Serienummer *
-- Reden schade * (radio/opties: Iets tegen scherm gekomen, De TV is gevallen, Water/vochtschade, Anders namelijk...)
-- Beschrijving (optioneel)
-- Aankoopbedrag *, Aankoopdatum *
-- Heeft u een bon/aankoopbewijs? (Ja/Nee/Drie)
-- Naam verzekeringsmaatschappij *, Polisnummer *
-- Foto van het gehele toestel *, Foto van de schade *, Foto achterkant (modelnummer zichtbaar) *, Extra foto (bijv. aankoopfactuur)
+* Pas het Coulance-formulier aan:
+  - Verwijder de vraag "Heeft u de aankoopbon nog?"
+  - Bij keuze van een winkel: toon een tekst met link/knop naar de support- of contactpagina van die winkel.
+  - Bij vervolgstap fabrikant: doe hetzelfde met een link/knop naar de supportpagina van de vooraf ingevulde fabrikant.
+  - Als het merk/model niet repareerbaar is (volgens database/instellingen): geef melding dat reparatie door ons niet mogelijk is, maar een andere gespecialiseerde reparateur wellicht wel. Geen optie voor reparatieadvies.
+  - Als het merk/model wel repareerbaar is:
+    - Bij "Nee" coulance bij shop of fabrikant: vraag of een reparatieadvies kan worden gestart.
+    - Bij Ja → zet status om naar "Reparatie in afwachting" + melding in admin.
+    - Bij Nee → zet status op "Gesloten".
 
-* Na invullen Taxatie: toon tekst: "Na het invullen van het formulier sturen wij u een factuur van 60 euro inclusief btw voor product onderzoek, registratie- en administratiekosten en eventuele recyclingkosten. Na betaling maken wij het rapport op."
-
-**Coulance formulier:**
-- Vraag naar exacte verkoopprijs en of bon nog in bezit is (geen foto)
-- Vraag naar winkel/shop waar TV gekocht is (dropdown met 15 populaire shops + "Anders")
-- Vraag: "Is het met de winkel gelukt voor coulance?" (Ja → optie om inzending te sluiten | Nee → vraag naar fabrikant)
-- Bij Nee fabrikant: vraag of coulance bij fabrikant gelukt is (Ja → sluiten | Nee → status wijzigen naar "Aanvraag reparatie in afwachting" indien model repareerbaar is)
-
-**Recycling formulier:**
-- Vraag of interesse in verduurzaming/recycling (Ja/Nee)
-- Bij Nee → optie om inzending af te sluiten
-- Bij Ja → toon formulier gerelateerd aan reparatieformulier + extra recycling-vragen + foto's
-
-* Foto-uploads moeten VEILIG gebeuren:
-  - Opslaan in een beveiligde map (alleen toegankelijk voor admins en ingelogde inzenders)
-  - Bij verwijderen van een inzending → automatisch alle bijbehorende foto's verwijderen
-  - Sorteer foto's in mappen: jaar/maand/dag/laatste-4-cijfers-casenummer
+* Recycling formulier:
+  - Vraag of er interesse is in verduurzaming/recycling van de televisie.
+  - Bij Nee → optie om inzending af te sluiten (status "Gesloten").
+  - Bij Ja → toon formulier gerelateerd aan reparatieformulier, inclusief foto's, in de trant van recycling.
 
 * Alle wijzigingen mogen in één commit.
 * Volg ook de bestaande “aanvragen refactor” en security audit regels.
