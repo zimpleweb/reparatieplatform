@@ -168,6 +168,12 @@
           <?php foreach ($inzending['log'] as $logRegel): ?>
             <li class="portal-log-item">
               <span class="portal-log-date"><?= date('d-m-Y H:i', strtotime($logRegel['aangemaakt'])) ?></span>
+              <span class="portal-log-msg">
+                <?= htmlspecialchars($logRegel['actie'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                <?php if (!empty($logRegel['opmerking'])): ?>
+                  <small><?= htmlspecialchars($logRegel['opmerking'], ENT_QUOTES, 'UTF-8') ?></small>
+                <?php endif; ?>
+              </span>
               <span class="portal-log-msg"><?= htmlspecialchars($logRegel['bericht'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
             </li>
           <?php endforeach; ?>
