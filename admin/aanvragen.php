@@ -466,6 +466,12 @@ try {
 } catch (\Exception $e) {}
 if (!in_array($datumKolom, $TOEGESTANE_KOLOMMEN, true)) $datumKolom = 'id';
 
+// ── Standaardberichten voor dropdown ─────────────────────────────
+$standaardBerichten = [];
+try {
+    $standaardBerichten = db()->query('SELECT id, titel, tekst FROM standaard_berichten ORDER BY id ASC')->fetchAll();
+} catch (\PDOException $e) {}
+
 $adminActivePage = 'aanvragen';
 ?>
 <!DOCTYPE html>
@@ -1091,15 +1097,34 @@ $adminActivePage = 'aanvragen';
         </div>
         <div class="bericht-sturen">
           <h4>Bericht sturen aan klant</h4>
+          <?php if (!empty($standaardBerichten)): ?>
+          <div style="margin-bottom:.6rem;">
+            <label style="font-size:.72rem;font-weight:600;color:var(--adm-muted);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:.3rem;">Standaardbericht kiezen</label>
+            <select id="standaardbericht-select" onchange="vulStandaardbericht(this)"
+                    style="width:100%;padding:.45rem .75rem;border:1.5px solid var(--adm-border);border-radius:7px;font-size:.84rem;font-family:inherit;background:var(--adm-surface);color:var(--adm-ink);">
+              <option value="">— Kies een standaardbericht —</option>
+              <?php foreach ($standaardBerichten as $sb): ?>
+              <option value="<?= htmlspecialchars($sb['tekst'], ENT_QUOTES, 'UTF-8') ?>">
+                <?= h($sb['titel']) ?>
+              </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <?php endif; ?>
           <form method="POST">
             <input type="hidden" name="csrf"        value="<?= csrf() ?>">
             <input type="hidden" name="action"      value="bericht">
             <input type="hidden" name="aanvraag_id" value="<?= (int)$detail['id'] ?>">
-            <textarea name="bericht" class="opmerking-field" placeholder="Typ hier uw bericht aan de klant…"></textarea>
+            <textarea name="bericht" id="bericht-textarea" class="opmerking-field" placeholder="Typ hier uw bericht aan de klant…"></textarea>
             <div class="bericht-footer">
               <button type="submit" class="btn btn-primary btn-sm">Verzenden</button>
             </div>
           </form>
+          <?php if (!empty($standaardBerichten)): ?>
+          <p style="font-size:.72rem;color:var(--adm-faint);margin-top:.4rem;">
+            Standaardberichten beheren via <a href="<?= BASE_URL ?>/admin/mailtemplates.php#standaardberichten" style="color:var(--adm-accent);">Mailtemplates</a>.
+          </p>
+          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -1269,6 +1294,17 @@ function sluitLightbox() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') sluitLightbox();
 });
+</script>
+
+<script>
+function vulStandaardbericht(sel) {
+  var ta = document.getElementById('bericht-textarea');
+  if (ta && sel.value) {
+    ta.value = sel.value;
+    sel.value = '';
+    ta.focus();
+  }
+}
 </script>
 
 <script>

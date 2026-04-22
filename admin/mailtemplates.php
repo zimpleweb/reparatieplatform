@@ -12,7 +12,7 @@ requireAdmin();
 $successMsg = '';
 $errorMsg   = '';
 
-// ── Zorg dat de tabel bestaat ─────────────────────────────────────
+// ── Zorg dat de tabellen bestaan ──────────────────────────────────
 try {
     db()->exec("CREATE TABLE IF NOT EXISTS mail_templates (
         id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -23,6 +23,15 @@ try {
         body_html   MEDIUMTEXT   NOT NULL,
         actief      TINYINT(1)   NOT NULL DEFAULT 1,
         bijgewerkt  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+} catch (\PDOException $e) { /* tabel bestaat al of rechten ontbreken */ }
+
+try {
+    db()->exec("CREATE TABLE IF NOT EXISTS standaard_berichten (
+        id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        titel      VARCHAR(120) NOT NULL,
+        tekst      TEXT NOT NULL,
+        aangemaakt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 } catch (\PDOException $e) { /* tabel bestaat al of rechten ontbreken */ }
 
@@ -132,8 +141,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'testm
     }
 }
 
+// ── Standaardberichten: opslaan ───────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sb_save') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        $errorMsg = 'Ongeldig verzoek.';
+    } else {
+        $sbId    = (int)($_POST['sb_id'] ?? 0);
+        $sbTitel = trim($_POST['sb_titel'] ?? '');
+        $sbTekst = trim($_POST['sb_tekst'] ?? '');
+        if (!$sbTitel || !$sbTekst) {
+            $errorMsg = 'Titel en tekst zijn verplicht.';
+        } elseif ($sbId > 0) {
+            db()->prepare('UPDATE standaard_berichten SET titel=?, tekst=? WHERE id=?')
+               ->execute([$sbTitel, $sbTekst, $sbId]);
+            $successMsg = 'Standaardbericht bijgewerkt.';
+        } else {
+            db()->prepare('INSERT INTO standaard_berichten (titel, tekst) VALUES (?, ?)')
+               ->execute([$sbTitel, $sbTekst]);
+            $successMsg = 'Standaardbericht toegevoegd.';
+        }
+    }
+}
+
+// ── Standaardberichten: verwijderen ───────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'sb_delete') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        $errorMsg = 'Ongeldig verzoek.';
+    } else {
+        $sbId = (int)($_POST['sb_id'] ?? 0);
+        if ($sbId > 0) {
+            db()->prepare('DELETE FROM standaard_berichten WHERE id=?')->execute([$sbId]);
+            $successMsg = 'Standaardbericht verwijderd.';
+        }
+    }
+}
+
 // ── Templates ophalen ─────────────────────────────────────────────
 $templates = db()->query('SELECT * FROM mail_templates ORDER BY richting, slug')->fetchAll();
+
+// ── Standaardberichten ophalen ────────────────────────────────────
+$standaardBerichten = [];
+try {
+    $standaardBerichten = db()->query('SELECT * FROM standaard_berichten ORDER BY id ASC')->fetchAll();
+} catch (\PDOException $e) {}
+$editSbId = (int)($_GET['editbericht'] ?? 0);
+$editSb   = null;
+foreach ($standaardBerichten as $sb) {
+    if ((int)$sb['id'] === $editSbId) { $editSb = $sb; break; }
+}
 
 // Actieve template voor bewerking
 $editSlug = $_GET['edit'] ?? ($templates[0]['slug'] ?? '');
@@ -311,6 +366,78 @@ require_once __DIR__ . '/includes/admin-header.php';
     <?php endif; ?>
 
   </div><!-- /.tpl-layout -->
+
+  <!-- ── Standaardberichten ────────────────────────────────────────── -->
+  <h2 class="adm-page-title" style="margin-top:2rem;">&#128172; Standaardberichten</h2>
+  <p class="adm-page-subtitle">Snel-antwoorden die admins kunnen kiezen bij het sturen van een bericht aan de klant.</p>
+
+  <div class="tpl-layout">
+
+    <!-- Formulier: toevoegen / bewerken -->
+    <div class="admin-card" style="padding:1.25rem;">
+      <p class="tpl-list-title"><?= $editSb ? 'Bewerk bericht' : 'Nieuw bericht' ?></p>
+      <form method="POST">
+        <input type="hidden" name="csrf"    value="<?= csrf() ?>">
+        <input type="hidden" name="action"  value="sb_save">
+        <input type="hidden" name="sb_id"   value="<?= $editSb ? (int)$editSb['id'] : 0 ?>">
+        <div class="field">
+          <label>Titel *</label>
+          <input type="text" name="sb_titel"
+                 value="<?= h($editSb['titel'] ?? '') ?>"
+                 placeholder="Bijv. Garantieverzoek ontvangen" required>
+        </div>
+        <div class="field">
+          <label>Berichttekst *</label>
+          <textarea name="sb_tekst" style="min-height:100px;" required
+                    placeholder="De volledige tekst die in het berichtveld wordt geplaatst..."><?= h($editSb['tekst'] ?? '') ?></textarea>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center;">
+          <button type="submit" class="btn btn-primary btn-sm">
+            <?= $editSb ? '&#128190; Opslaan' : '+ Toevoegen' ?>
+          </button>
+          <?php if ($editSb): ?>
+            <a href="?#standaardberichten" class="btn btn-secondary btn-sm">Annuleren</a>
+          <?php endif; ?>
+        </div>
+      </form>
+    </div>
+
+    <!-- Lijst -->
+    <div class="admin-card" style="padding:1rem;">
+      <p class="tpl-list-title"><?= count($standaardBerichten) ?> berichten</p>
+      <?php if (empty($standaardBerichten)): ?>
+        <p style="font-size:.85rem;color:var(--adm-faint);">Nog geen standaardberichten aangemaakt.</p>
+      <?php else: ?>
+      <table class="admin-table">
+        <thead>
+          <tr><th>Titel</th><th>Tekst (preview)</th><th></th></tr>
+        </thead>
+        <tbody>
+        <?php foreach ($standaardBerichten as $sb): ?>
+        <tr>
+          <td style="font-weight:600;white-space:nowrap;"><?= h($sb['titel']) ?></td>
+          <td style="font-size:.8rem;color:var(--adm-muted);">
+            <?= h(mb_strimwidth($sb['tekst'], 0, 80, '…')) ?>
+          </td>
+          <td style="white-space:nowrap;">
+            <a href="?editbericht=<?= (int)$sb['id'] ?>#standaardberichten"
+               class="btn btn-secondary btn-sm">&#9998; Bewerk</a>
+            <form method="POST" style="display:inline;margin:0;"
+                  onsubmit="return confirm('Standaardbericht verwijderen?')">
+              <input type="hidden" name="csrf"   value="<?= csrf() ?>">
+              <input type="hidden" name="action" value="sb_delete">
+              <input type="hidden" name="sb_id"  value="<?= (int)$sb['id'] ?>">
+              <button type="submit" class="btn btn-danger btn-sm">&#128465;</button>
+            </form>
+          </td>
+        </tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+      <?php endif; ?>
+    </div>
+
+  </div><!-- /.tpl-layout standaardberichten -->
 
 </div><!-- /.adm-page -->
 
