@@ -4,10 +4,12 @@ session_start();
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-if (!isAdmin()) {
-    header('Location: /admin/login.php');
-    exit;
-}
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+
+requireAdmin();
 
 $pad = trim($_GET['pad'] ?? '');
 if (!$pad) { http_response_code(400); exit('Pad ontbreekt.'); }
@@ -33,6 +35,6 @@ if (!in_array($mime, $allowedMimes, true)) {
 
 header('Content-Type: ' . $mime);
 header('Content-Length: ' . filesize($absPath));
-header('Cache-Control: private, max-age=3600');
-header('X-Content-Type-Options: nosniff');
+header('Content-Disposition: inline; filename="' . basename($absPath) . '"');
+header('Cache-Control: private, no-store');
 readfile($absPath);

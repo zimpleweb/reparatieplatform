@@ -13,6 +13,24 @@ $merken          = getMerken();
 $r   = getAdviesRegels();
 $rJs = json_encode($r, JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
 
+// ── Shops & merk-urls voor garantie/coulance panel ────────────────────────
+$garantieShops = [];
+try {
+    $garantieShops = db()->query("SELECT naam, support_url FROM coulance_shops WHERE actief=1 ORDER BY volgorde, naam LIMIT 30")->fetchAll(PDO::FETCH_ASSOC);
+} catch (\Exception $e) {}
+
+$garantieMerkUrls = [];
+try {
+    $colCheck = db()->query("SHOW COLUMNS FROM tv_modellen LIKE 'support_url'")->fetchAll();
+    if (!empty($colCheck)) {
+        $mrows = db()->query("SELECT DISTINCT merk, MAX(support_url) AS support_url FROM tv_modellen WHERE support_url != '' AND actief=1 GROUP BY merk ORDER BY merk")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($mrows as $mr) { $garantieMerkUrls[$mr['merk']] = $mr['support_url']; }
+    }
+} catch (\Exception $e) {}
+
+$garantieShopsJs    = json_encode(array_values($garantieShops), JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
+$garantieMerkUrlsJs = json_encode($garantieMerkUrls,            JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
+
 $stappenConfig = [];
 if (!empty($r['stappen_config']) && is_array($r['stappen_config'])) {
     $stappenConfig = $r['stappen_config'];

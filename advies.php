@@ -11,6 +11,24 @@ $canonicalUrl    = '/advies.php';
 $r   = getAdviesRegels();
 $rJs = json_encode($r, JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
 
+// ── Shops & merk-urls voor garantie/coulance panel ────────────────────────
+$garantieShops = [];
+try {
+    $garantieShops = db()->query("SELECT naam, support_url FROM coulance_shops WHERE actief=1 ORDER BY volgorde, naam LIMIT 30")->fetchAll(PDO::FETCH_ASSOC);
+} catch (\Exception $e) {}
+
+$garantieMerkUrls = [];
+try {
+    $colCheck = db()->query("SHOW COLUMNS FROM tv_modellen LIKE 'support_url'")->fetchAll();
+    if (!empty($colCheck)) {
+        $mrows = db()->query("SELECT DISTINCT merk, MAX(support_url) AS support_url FROM tv_modellen WHERE support_url != '' AND actief=1 GROUP BY merk ORDER BY merk")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($mrows as $mr) { $garantieMerkUrls[$mr['merk']] = $mr['support_url']; }
+    }
+} catch (\Exception $e) {}
+
+$garantieShopsJs    = json_encode(array_values($garantieShops), JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
+$garantieMerkUrlsJs = json_encode($garantieMerkUrls,            JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
+
 // ── Stappenplan configuratie uit DB ────────────────────────────────────────
 $stappenConfig = [];
 if (!empty($r['stappen_config']) && is_array($r['stappen_config'])) {
@@ -216,6 +234,48 @@ include __DIR__ . '/includes/header.php';
   .zowerkhet-steps-licht { grid-template-columns: 1fr; }
   .zowerkhet-step-licht { padding: 1.5rem 1.25rem; }
 }
+
+/* ── Garantie direct-advies panel ── */
+.garantie-panel { padding:.25rem 0; }
+.garantie-panel-header { margin-bottom:1.25rem; }
+.garantie-panel-badge {
+  display:inline-flex; align-items:center; gap:.4rem;
+  background:rgba(40,120,100,.1); border:1px solid rgba(40,120,100,.3);
+  border-radius:999px; padding:.3rem 1rem; font-size:.78rem; font-weight:700;
+  color:#287864; letter-spacing:.04em; margin-bottom:.75rem;
+}
+.garantie-panel-header h3 { font-size:1.1rem; font-weight:800; color:#1a2332; margin:0 0 .4rem; }
+.garantie-panel-header p  { font-size:.875rem; color:#475569; line-height:1.65; margin:0; }
+.garantie-keuze-wrap h4   { font-size:.82rem; font-weight:700; color:#374151; margin:0 0 .6rem; text-transform:uppercase; letter-spacing:.05em; }
+.garantie-shops-grid {
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:.45rem;
+}
+.garantie-shop-btn {
+  display:flex; align-items:center; justify-content:space-between;
+  background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px;
+  padding:.6rem .9rem; font-size:.85rem; font-weight:600; color:#1a2332;
+  text-decoration:none; transition:border-color .15s, background .15s;
+}
+.garantie-shop-btn:hover { border-color:#287864; background:#f0f9f5; color:#287864; }
+.garantie-shop-btn-no-url { cursor:default; color:#64748b; }
+.garantie-merk-btn {
+  display:inline-flex; align-items:center; gap:.4rem;
+  background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:10px;
+  padding:.6rem 1rem; font-size:.85rem; font-weight:600; color:#1e40af;
+  text-decoration:none; transition:border-color .15s, background .15s;
+}
+.garantie-merk-btn:hover { background:#dbeafe; border-color:#93c5fd; }
+.garantie-info-box {
+  background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:10px;
+  padding:.85rem 1rem; font-size:.82rem; color:#14532d; line-height:1.65;
+  margin:1.1rem 0;
+}
+.garantie-terug-btn {
+  background:none; border:1.5px solid #e2e8f0; border-radius:8px;
+  padding:.45rem 1rem; font-size:.82rem; font-weight:600; color:#475569;
+  cursor:pointer; font-family:inherit; transition:border-color .15s, color .15s;
+}
+.garantie-terug-btn:hover { border-color:#287864; color:#287864; }
 
 /* ── Formulier: primaire CTA nadruk ── */
 .form-wrap--featured {
@@ -453,7 +513,7 @@ include __DIR__ . '/includes/header.php';
               <?php endif; ?>
               <?php if (!$isLast): ?>
                 <?php if ($nr === 2): ?>
-                <button type="button" class="stap-volgende" onclick="naarStapMetCheck(<?= $nextNr ?>)">Volgende &rarr;</button>
+                <button type="button" class="stap-volgende" onclick="naarStapMetGarantieCheck(<?= $nextNr ?>)">Volgende &rarr;</button>
                 <?php else: ?>
                 <button type="button" class="stap-volgende" onclick="naarStap(<?= $nextNr ?>)">Volgende &rarr;</button>
                 <?php endif; ?>
@@ -465,6 +525,33 @@ include __DIR__ . '/includes/header.php';
           <?php endforeach; ?>
 
         </form>
+
+        <!-- Garantie direct-advies panel (toont in plaats van het formulier) -->
+        <div id="garantie-advies-panel" style="display:none;" class="garantie-panel">
+          <div class="garantie-panel-header">
+            <div class="garantie-panel-badge">&#9989; Wettelijke garantie</div>
+            <h3>Uw televisie valt (mogelijk) onder garantie</h3>
+            <p>Op basis van het aanschafjaar valt uw televisie waarschijnlijk nog binnen de wettelijke garantietermijn.
+               U heeft het recht om contact op te nemen met de winkel of het merk.</p>
+          </div>
+          <div class="garantie-keuze-wrap">
+            <h4>&#128722; Neem contact op via:</h4>
+            <div id="garantie-shops-list" class="garantie-shops-grid"></div>
+            <div id="garantie-merk-wrap" style="display:none;margin-top:.85rem;">
+              <h4 style="margin-bottom:.5rem;">&#127981; Of direct bij het merk:</h4>
+              <div id="garantie-merk-link"></div>
+            </div>
+          </div>
+          <div class="garantie-info-box">
+            <strong>Uw rechten:</strong> Bij een defect binnen de garantietermijn heeft u recht op gratis reparatie,
+            vervanging of terugbetaling. De verkoper (winkel) is primair verantwoordelijk.<br>
+            Werkt de verkoper niet mee? Dan kunt u alsnog een aanvraag indienen en helpen wij u verder.
+          </div>
+          <button type="button" class="garantie-terug-btn" onclick="garantieTerug()">
+            &#8592; Terug naar het formulier
+          </button>
+        </div>
+
       </div>
     </div>
   </div>
@@ -521,10 +608,12 @@ include __DIR__ . '/includes/header.php';
 
 <script>
 // ── Configuratie vanuit DB (via PHP) ──────────────────────────────────────
-const REGELS         = <?= $rJs ?>;
-const KLACHT_ROUTING = <?= $klachtRoutingJs ?>;
-const HUIDIG_JAAR    = <?= date('Y') ?>;
-const AANTAL_STAPPEN = <?= $aantalStappen ?>;
+const REGELS              = <?= $rJs ?>;
+const KLACHT_ROUTING      = <?= $klachtRoutingJs ?>;
+const HUIDIG_JAAR         = <?= date('Y') ?>;
+const AANTAL_STAPPEN      = <?= $aantalStappen ?>;
+const GARANTIE_SHOPS      = <?= $garantieShopsJs ?>;
+const GARANTIE_MERK_URLS  = <?= $garantieMerkUrlsJs ?>;
 
 // ── Helper: is merk toegestaan binnen een merkenlijst? ────────────────────
 function merkToegestaan(merkLijst, merk) {
@@ -600,6 +689,65 @@ function naarStapMetCheck(nr) {
   }
   if (!_rep.geladen) checkRepareerbaar();
   _toonStap(nr);
+}
+
+function naarStapMetGarantieCheck(nr) {
+  const huidig = document.querySelector('.form-stap:not([style*="display:none"])');
+  for (const el of (huidig?.querySelectorAll('[required]') || [])) {
+    if (!el.value) { el.focus(); el.reportValidity(); return; }
+  }
+  if (!_rep.geladen) checkRepareerbaar();
+  const route = document.getElementById('geadviseerde_route')?.value || berekenRouteWaarde();
+  if (route === 'garantie') {
+    toonGarantiePanel();
+    return;
+  }
+  _toonStap(nr);
+}
+
+function berekenRouteWaarde() {
+  return document.getElementById('geadviseerde_route')?.value || '';
+}
+
+function toonGarantiePanel() {
+  const panel = document.getElementById('garantie-advies-panel');
+  if (!panel) return;
+  document.querySelectorAll('.form-stap').forEach(s => s.style.display = 'none');
+  _vulGarantiePanel();
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function garantieTerug() {
+  const panel = document.getElementById('garantie-advies-panel');
+  if (panel) panel.style.display = 'none';
+  document.querySelectorAll('.form-stap').forEach(s => s.style.display = 'none');
+  const stap2 = document.getElementById('stap-2');
+  if (stap2) { stap2.style.display = 'block'; stap2.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
+
+function _vulGarantiePanel() {
+  const merk     = document.getElementById('merk')?.value || '';
+  const shopsList = document.getElementById('garantie-shops-list');
+  if (shopsList) {
+    if (GARANTIE_SHOPS.length > 0) {
+      shopsList.innerHTML = GARANTIE_SHOPS.map(s =>
+        s.support_url
+          ? `<a href="${s.support_url}" target="_blank" rel="noopener noreferrer" class="garantie-shop-btn">${s.naam} <span style="font-size:.85em;opacity:.7;">&#8599;</span></a>`
+          : `<span class="garantie-shop-btn garantie-shop-btn-no-url">${s.naam}</span>`
+      ).join('');
+    } else {
+      shopsList.innerHTML = '<p style="font-size:.82rem;color:#64748b;">Neem contact op met de winkel waar u de televisie heeft gekocht.</p>';
+    }
+  }
+  const merkWrap = document.getElementById('garantie-merk-wrap');
+  const merkLink = document.getElementById('garantie-merk-link');
+  if (merk && GARANTIE_MERK_URLS[merk] && merkWrap && merkLink) {
+    merkLink.innerHTML = `<a href="${GARANTIE_MERK_URLS[merk]}" target="_blank" rel="noopener noreferrer" class="garantie-merk-btn">&#127981; ${merk} ondersteuning <span style="font-size:.85em;opacity:.7;">&#8599;</span></a>`;
+    merkWrap.style.display = 'block';
+  } else if (merkWrap) {
+    merkWrap.style.display = 'none';
+  }
 }
 
 function _toonStap(nr) {
@@ -817,6 +965,17 @@ function berekenRoute() {
     document.getElementById('coulance_kans').value      = kans || '';
   } else if (ind) {
     ind.style.display = 'none';
+  }
+
+  // Garantie-panel live bijwerken als het al zichtbaar is
+  const gPanel = document.getElementById('garantie-advies-panel');
+  if (gPanel && gPanel.style.display !== 'none') {
+    if (route !== 'garantie') {
+      // Route veranderd → verberg panel, toon stap 2
+      garantieTerug();
+    } else {
+      _vulGarantiePanel();
+    }
   }
 }
 

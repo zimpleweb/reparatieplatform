@@ -19,6 +19,48 @@ try {
     }
 } catch (\Exception $e) {}
 
+// ── Mail log tabel aanmaken indien nodig ──────────────────────────
+try {
+    db()->exec("CREATE TABLE IF NOT EXISTS mail_log (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        ontvanger  VARCHAR(320) NOT NULL,
+        onderwerp  VARCHAR(500) NOT NULL,
+        inhoud     MEDIUMTEXT,
+        template   VARCHAR(100) DEFAULT NULL,
+        verzonden  TINYINT(1) NOT NULL DEFAULT 0,
+        aangemaakt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_aangemaakt (aangemaakt),
+        INDEX idx_ontvanger (ontvanger(100))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+} catch (\Exception $e) {}
+
+// ── Actieve tab ───────────────────────────────────────────────────
+$activeTab = ($_GET['tab'] ?? '') === 'maillog' ? 'maillog' : 'meldingen';
+
+// ── Mail log query & filter (alleen als tab actief is) ────────────
+$mailLogs       = [];
+$mailLogTotaal  = 0;
+$mailLogZoek    = trim($_GET['mlzoek'] ?? '');
+$mailLogStatus  = trim($_GET['mlstatus'] ?? '');
+if ($activeTab === 'maillog') {
+    $mlWhere  = ['1=1'];
+    $mlParams = [];
+    if ($mailLogStatus === '1')       { $mlWhere[] = 'verzonden = 1'; }
+    elseif ($mailLogStatus === '0')   { $mlWhere[] = 'verzonden = 0'; }
+    if ($mailLogZoek) {
+        $mlWhere[]  = '(ontvanger LIKE ? OR onderwerp LIKE ? OR template LIKE ?)';
+        $like        = '%' . $mailLogZoek . '%';
+        $mlParams    = array_merge($mlParams, [$like, $like, $like]);
+    }
+    $mlSql = 'SELECT * FROM mail_log WHERE ' . implode(' AND ', $mlWhere) . ' ORDER BY aangemaakt DESC LIMIT 500';
+    try {
+        $mlStmt = db()->prepare($mlSql);
+        $mlStmt->execute($mlParams);
+        $mailLogs      = $mlStmt->fetchAll();
+        $mailLogTotaal = (int) db()->query('SELECT COUNT(*) FROM mail_log')->fetchColumn();
+    } catch (\Exception $e) {}
+}
+
 // ── Archief-instellingen ──────────────────────────────────────────
 $archief_dagen = 21;
 try {
@@ -539,6 +581,7 @@ $adminActivePage = 'meldingen';
 
   <!-- Type-tabs -->
   <div class="m-tabs">
+    <?php if ($activeTab === 'meldingen'): ?>
     <?php
     $tabs = [
         ''             => ['label' => 'Alle',                'count' => $aantallen['alle']],
@@ -561,7 +604,80 @@ $adminActivePage = 'meldingen';
       &#128193; Archief
       <?php if ($archief_totaal > 0): ?><span class="m-tab-count"><?= $archief_totaal ?></span><?php endif; ?>
     </a>
+    <?php endif; ?>
+    <a href="?tab=maillog" class="m-tab m-tab-archief <?= $activeTab === 'maillog' ? 'active' : '' ?>"
+       style="<?= $activeTab === 'meldingen' ? '' : 'margin-left:0;' ?>">
+      &#128231; Mail Log
+      <?php if ($mailLogTotaal > 0): ?><span class="m-tab-count"><?= $mailLogTotaal ?></span><?php endif; ?>
+    </a>
   </div>
+
+  <?php if ($activeTab === 'maillog'): ?>
+  <!-- ══ MAIL LOG PANEL ══════════════════════════════════════════════ -->
+  <form method="GET" class="m-filterbar">
+    <input type="hidden" name="tab" value="maillog">
+    <select name="mlstatus" onchange="this.form.submit()">
+      <option value="">Alle e-mails</option>
+      <option value="1" <?= $mailLogStatus === '1' ? 'selected' : '' ?>>Verzonden</option>
+      <option value="0" <?= $mailLogStatus === '0' ? 'selected' : '' ?>>Mislukt</option>
+    </select>
+    <input type="text" name="mlzoek" value="<?= h($mailLogZoek) ?>" placeholder="Zoek op ontvanger, onderwerp, template…">
+    <button type="submit">Zoeken</button>
+    <?php if ($mailLogZoek || $mailLogStatus !== ''): ?>
+      <a href="?tab=maillog" class="m-reset">&#10005; Wissen</a>
+    <?php endif; ?>
+  </form>
+
+  <div class="m-table-wrap">
+    <?php if (empty($mailLogs)): ?>
+      <div class="m-leeg">
+        <div class="m-leeg-icon">&#128231;</div>
+        <h3>Geen maillog-items</h3>
+        <p>Er zijn nog geen e-mails gelogd. Logs verschijnen hier zodra de mailer actief is.</p>
+      </div>
+    <?php else: ?>
+    <table class="m-table">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Ontvanger</th>
+          <th>Onderwerp</th>
+          <th>Template</th>
+          <th>Inhoud (samenvatting)</th>
+          <th>Datum</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($mailLogs as $ml): ?>
+        <tr>
+          <td>
+            <?php if ($ml['verzonden']): ?>
+              <span class="mt-badge mt-inzending">Verzonden</span>
+            <?php else: ?>
+              <span class="mt-badge mt-status" style="background:#fef2f2;color:#dc2626;">Mislukt</span>
+            <?php endif; ?>
+          </td>
+          <td style="font-size:.82rem;max-width:160px;word-break:break-all;"><?= h($ml['ontvanger']) ?></td>
+          <td style="font-size:.82rem;max-width:200px;"><?= h(mb_substr($ml['onderwerp'], 0, 80)) ?><?= mb_strlen($ml['onderwerp']) > 80 ? '…' : '' ?></td>
+          <td>
+            <?php if ($ml['template']): ?>
+              <code style="font-size:.72rem;background:#f1f5f9;padding:.1rem .35rem;border-radius:4px;"><?= h($ml['template']) ?></code>
+            <?php else: ?>
+              <span class="m-datum">—</span>
+            <?php endif; ?>
+          </td>
+          <td class="m-opmerking" style="max-width:260px;font-size:.78rem;">
+            <?= h(mb_substr($ml['inhoud'] ?? '', 0, 150)) ?><?= mb_strlen($ml['inhoud'] ?? '') > 150 ? '…' : '' ?>
+          </td>
+          <td class="m-datum"><?= date('d-m-Y H:i', strtotime($ml['aangemaakt'])) ?></td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+    <?php endif; ?>
+  </div>
+  <?php else: ?>
+  <!-- ══ NORMALE MELDINGEN ════════════════════════════════════════════ -->
 
   <!-- Filterbar -->
   <form method="GET" class="m-filterbar">
@@ -671,6 +787,8 @@ $adminActivePage = 'meldingen';
       <?php endif; ?>
     </div>
   </form>
+
+  <?php endif; // end activeTab !== maillog ?>
 
 </div><!-- /.adm-page -->
 </div><!-- /.admin-wrap -->
