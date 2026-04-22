@@ -5,7 +5,7 @@ require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/mailer.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCsrf($_POST['csrf_token'] ?? '')) {
-    redirect(BASE_URL . '/?error=csrf');
+    redirect('/?error=csrf');
 }
 
 $merk         = strip_tags(trim($_POST['merk']         ?? ''));
@@ -16,7 +16,7 @@ $omschrijving = strip_tags(trim($_POST['omschrijving']  ?? ''));
 $email        = filter_var(trim($_POST['email']         ?? ''), FILTER_VALIDATE_EMAIL);
 
 if (!$email || !$merk || !$modelnummer || !$klacht_type) {
-    redirect(BASE_URL . '/?error=1');
+    redirect('/?error=1');
 }
 
 $bodyHtml = mailWrap(
@@ -78,6 +78,6 @@ $message .= quoted_printable_encode($bodyHtml) . "\r\n";
 $message .= "--{$boundary}--";
 
 $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-$sent = @mail('info@zimpleweb.nl', $encodedSubject, $message, $headers);
+$sent = mail('info@zimpleweb.nl', $encodedSubject, $message, $headers, '-f ' . $fromEmail);
 
-redirect(BASE_URL . ($sent ? '/?verzonden=1' : '/?error=1'));
+redirect($sent ? '/?verzonden=1' : '/?error=1');
