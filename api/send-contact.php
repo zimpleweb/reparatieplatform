@@ -59,6 +59,22 @@ $bodyHtml = mailWrap(
     </table>'
 );
 
-$sent = mailSend('info@zimpleweb.nl', $subject, $bodyHtml, $email);
+// Fetch admin recipients from DB (same approach as send-advies.php)
+$recipients = ['info@zimpleweb.nl'];
+try {
+    $adminEmails = db()->query(
+        "SELECT email FROM admins WHERE email IS NOT NULL AND email != ''"
+    )->fetchAll(PDO::FETCH_COLUMN);
+    if (!empty($adminEmails)) {
+        $recipients = $adminEmails;
+    }
+} catch (\PDOException $e) { /* admins-tabel of email-kolom ontbreekt */ }
+
+$sent = false;
+foreach ($recipients as $recipient) {
+    if (mailSend($recipient, $subject, $bodyHtml, $email)) {
+        $sent = true;
+    }
+}
 
 echo json_encode(['ok' => $sent]);
