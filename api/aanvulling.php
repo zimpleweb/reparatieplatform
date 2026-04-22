@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/mailer.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCsrf($_POST['csrf_token'] ?? '')) {
     redirect(BASE_URL . '/mijn-aanvraag.php?error=csrf');
@@ -26,6 +27,25 @@ if ($actie === 'bericht') {
         try {
             db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, opmerking, gedaan_door) VALUES (?,?,?,?)')
                ->execute([$id, 'Bericht klant', $tekst, 'klant']);
+        } catch (\PDOException $e) {}
+        try {
+            $aanvraag = db()->prepare('SELECT casenummer, email, merk, modelnummer FROM aanvragen WHERE id=?');
+            $aanvraag->execute([$id]);
+            $av = $aanvraag->fetch();
+            if ($av) {
+                $mailVars = [
+                    'casenummer'   => $av['casenummer'] ?? $cn,
+                    'email'        => $av['email'] ?? '',
+                    'merk'         => $av['merk'] ?? '',
+                    'modelnummer'  => $av['modelnummer'] ?? '',
+                    'datum_bericht'=> date('d-m-Y H:i'),
+                    'chatbericht'  => $tekst,
+                ];
+                $adminEmails = db()->query("SELECT email FROM admins WHERE email IS NOT NULL AND email != ''")->fetchAll(PDO::FETCH_COLUMN);
+                foreach ($adminEmails as $adminEmail) {
+                    @sendMail($adminEmail, 'admin_nieuw_chatbericht', $mailVars);
+                }
+            }
         } catch (\PDOException $e) {}
     }
     redirect(BASE_URL . '/mijn-aanvraag.php');
@@ -68,6 +88,26 @@ $type      = trim($_POST['type'] ?? '');
 $uploadDir = __DIR__ . '/../uploads/aanvragen/' . $id . '/';
 if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
 
+function stuurAdminFormulierMail(int $id, string $aanvraagType): void {
+    try {
+        $s = db()->prepare('SELECT casenummer, email, merk, modelnummer FROM aanvragen WHERE id=?');
+        $s->execute([$id]);
+        $av = $s->fetch();
+        if (!$av) return;
+        $mailVars = [
+            'casenummer'   => $av['casenummer'] ?? '',
+            'email'        => $av['email'] ?? '',
+            'merk'         => $av['merk'] ?? '',
+            'modelnummer'  => $av['modelnummer'] ?? '',
+            'aanvraag_type'=> ucfirst($aanvraagType),
+        ];
+        $adminEmails = db()->query("SELECT email FROM admins WHERE email IS NOT NULL AND email != ''")->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($adminEmails as $adminEmail) {
+            @sendMail($adminEmail, 'admin_formulier_ingevuld', $mailVars);
+        }
+    } catch (\PDOException $e) {}
+}
+
 function uploadFoto(string $veld, string $uploadDir, int $id): ?string {
     if (!isset($_FILES[$veld]) || $_FILES[$veld]['error'] !== UPLOAD_ERR_OK) return null;
     $mime = mime_content_type($_FILES[$veld]['tmp_name']);
@@ -103,6 +143,7 @@ if ($type === 'reparatie') {
         db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, gedaan_door) VALUES (?,?,?)')
            ->execute([$id, 'Reparatieaanvraag ingediend door klant', 'klant']);
     } catch (\PDOException $e) {}
+    stuurAdminFormulierMail($id, 'reparatie');
     redirect(BASE_URL . '/mijn-aanvraag.php?verzonden=2');
 }
 
@@ -154,6 +195,7 @@ if ($type === 'taxatie') {
         db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, gedaan_door) VALUES (?,?,?)')
            ->execute([$id, 'Taxatieaanvraag ingediend door klant', 'klant']);
     } catch (\PDOException $e) {}
+    stuurAdminFormulierMail($id, 'taxatie');
     redirect(BASE_URL . '/mijn-aanvraag.php?verzonden=2');
 }
 
@@ -182,5 +224,5 @@ try {
     db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, gedaan_door) VALUES (?,?,?)')
        ->execute([$id, $logActie, 'klant']);
 } catch (\PDOException $e) {}
-
+stuurAdminFormulierMail($id, $rij['advies_type'] ?? 'aanvraag');
 redirect(BASE_URL . '/mijn-aanvraag.php?verzonden=2');
