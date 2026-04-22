@@ -86,9 +86,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'credent
 
 // ── POST: stap 2 – TOTP-code verifiëren ─────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === '2fa') {
+    $totpRlKey = '2fa_' . $rawIp;
+    $totpRl    = rateLimitBekijk($totpRlKey);
 
     if (!verifyCsrf($_POST['csrf'] ?? '')) {
         $errorMsg = 'Ongeldig verzoek.';
+    } elseif ($totpRl['geblokkeerd']) {
+        $min      = max(1, (int) ceil(($totpRl['locked_until'] - time()) / 60));
+        $errorMsg = "Te veel ongeldige codes. Probeer over {$min} minuut" . ($min === 1 ? '' : 'en') . " opnieuw.";
+        $fase     = '2fa';
     } elseif (empty($_SESSION['login_2fa_pending'])) {
         $errorMsg = 'Sessie verlopen. Log opnieuw in.';
         $fase = 'login';
@@ -100,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === '2fa') {
 
         $code = preg_replace('/\s+/', '', $_POST['totp_code'] ?? '');
         if ($admin2 && totpVerify($admin2['totp_secret'], $code)) {
+            rateLimitReset($totpRlKey);
             unset($_SESSION['login_2fa_pending'], $_SESSION['login_2fa_admin_id']);
             session_regenerate_id(true);
             $_SESSION['admin']          = true;
@@ -108,6 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === '2fa') {
             header('Location: ' . BASE_URL . '/admin/dashboard.php');
             exit;
         } else {
+            rateLimitMislukt($totpRlKey, 5, 300);
             $errorMsg = 'Ongeldige authenticatiecode. Controleer uw app en probeer opnieuw.';
             $fase = '2fa';
         }
