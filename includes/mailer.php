@@ -22,15 +22,44 @@ function sendMail(string $to, string $templateKey, array $vars = []): bool {
     $tpl = getMailTemplate($templateKey);
     $subject = mailMerge($tpl['subject'], $vars);
     $body    = mailMerge($tpl['body_html'], $vars);
-    return mailSend($to, $subject, $body);
+    return mailSend($to, $subject, $body, '', $templateKey);
 }
 
-function mailSend(string $to, string $subject, string $bodyHtml, string $replyTo = ''): bool {
+function mailSend(string $to, string $subject, string $bodyHtml, string $replyTo = '', string $template = ''): bool {
+    $success = false;
     if (getSetting('brevo_enabled') === '1') {
-        if (_mailSendBrevo($to, $subject, $bodyHtml, $replyTo)) return true;
+        if (_mailSendBrevo($to, $subject, $bodyHtml, $replyTo)) {
+            $success = true;
+        }
         // Brevo failed; fall back to PHP mail so delivery is not lost
     }
-    return _mailSendPhp($to, $subject, $bodyHtml, $replyTo);
+    if (!$success) {
+        $success = _mailSendPhp($to, $subject, $bodyHtml, $replyTo);
+    }
+    _logMail($to, $subject, $bodyHtml, $template, $success);
+    return $success;
+}
+
+function _logMail(string $to, string $subject, string $bodyHtml, string $template, bool $success): void {
+    static $migreerd = false;
+    try {
+        if (!$migreerd) {
+            db()->exec("CREATE TABLE IF NOT EXISTS mail_log (
+                id         INT AUTO_INCREMENT PRIMARY KEY,
+                ontvanger  VARCHAR(320) NOT NULL,
+                onderwerp  VARCHAR(500) NOT NULL,
+                inhoud     MEDIUMTEXT,
+                template   VARCHAR(100) DEFAULT NULL,
+                verzonden  TINYINT(1) NOT NULL DEFAULT 0,
+                aangemaakt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_aangemaakt (aangemaakt),
+                INDEX idx_ontvanger (ontvanger(100))
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $migreerd = true;
+        }
+        db()->prepare("INSERT INTO mail_log (ontvanger, onderwerp, inhoud, template, verzonden) VALUES (?,?,?,?,?)")
+            ->execute([$to, $subject, mb_substr(strip_tags($bodyHtml), 0, 8000), $template ?: null, $success ? 1 : 0]);
+    } catch (\Exception $e) {}
 }
 
 function _mailSendBrevo(string $to, string $subject, string $bodyHtml, string $replyTo = ''): bool {

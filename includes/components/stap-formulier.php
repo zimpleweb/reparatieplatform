@@ -188,7 +188,7 @@
       <?php endif; ?>
       <?php if (!$isLast): ?>
         <?php if ($nr === 2): ?>
-        <button type="button" class="stap-volgende" onclick="naarStapMetCheck(<?= $nextNr ?>)">Volgende &rarr;</button>
+        <button type="button" class="stap-volgende" onclick="naarStapMetGarantieCheck(<?= $nextNr ?>)">Volgende &rarr;</button>
         <?php else: ?>
         <button type="button" class="stap-volgende" onclick="naarStap(<?= $nextNr ?>)">Volgende &rarr;</button>
         <?php endif; ?>
@@ -201,11 +201,34 @@
 
 </form>
 
+<!-- Garantie direct-advies panel -->
+<div id="garantie-advies-panel" style="display:none;padding:.25rem 0;">
+  <div style="margin-bottom:1rem;">
+    <div style="display:inline-flex;align-items:center;gap:.4rem;background:rgba(40,120,100,.1);border:1px solid rgba(40,120,100,.3);border-radius:999px;padding:.28rem .9rem;font-size:.75rem;font-weight:700;color:#287864;letter-spacing:.04em;margin-bottom:.65rem;">&#9989; Wettelijke garantie</div>
+    <h3 style="font-size:1rem;font-weight:800;color:#1a2332;margin:0 0 .35rem;">Uw televisie valt (mogelijk) onder garantie</h3>
+    <p style="font-size:.84rem;color:#475569;line-height:1.6;margin:0;">Op basis van het aanschafjaar valt uw televisie waarschijnlijk nog binnen de wettelijke garantietermijn. Neem contact op met de winkel of het merk.</p>
+  </div>
+  <div style="margin-bottom:.75rem;">
+    <div style="font-size:.75rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem;">&#128722; Neem contact op via:</div>
+    <div id="garantie-shops-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.4rem;"></div>
+    <div id="garantie-merk-wrap" style="display:none;margin-top:.7rem;">
+      <div style="font-size:.75rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.45rem;">&#127981; Of direct bij het merk:</div>
+      <div id="garantie-merk-link"></div>
+    </div>
+  </div>
+  <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:.75rem .9rem;font-size:.8rem;color:#14532d;line-height:1.6;margin-bottom:.85rem;">
+    <strong>Uw rechten:</strong> Bij een defect binnen de garantietermijn heeft u recht op gratis reparatie, vervanging of terugbetaling. De verkoper is primair verantwoordelijk.
+  </div>
+  <button type="button" onclick="garantieTerug()" style="background:none;border:1.5px solid #e2e8f0;border-radius:8px;padding:.4rem .9rem;font-size:.8rem;font-weight:600;color:#475569;cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s;" onmouseover="this.style.borderColor='#287864';this.style.color='#287864';" onmouseout="this.style.borderColor='#e2e8f0';this.style.color='#475569';">&#8592; Terug</button>
+</div>
+
 <script>
-const REGELS         = <?= $rJs ?>;
-const KLACHT_ROUTING = <?= $klachtRoutingJs ?>;
-const HUIDIG_JAAR    = <?= date('Y') ?>;
-const AANTAL_STAPPEN = <?= $aantalStappen ?>;
+const REGELS              = <?= $rJs ?>;
+const KLACHT_ROUTING      = <?= $klachtRoutingJs ?>;
+const HUIDIG_JAAR         = <?= date('Y') ?>;
+const AANTAL_STAPPEN      = <?= $aantalStappen ?>;
+const GARANTIE_SHOPS      = <?= $garantieShopsJs ?? '[]' ?>;
+const GARANTIE_MERK_URLS  = <?= $garantieMerkUrlsJs ?? '{}' ?>;
 
 function merkToegestaan(merkLijst, merk) {
   if (!merkLijst || merkLijst.length === 0) return true;
@@ -268,6 +291,50 @@ function naarStapMetCheck(nr) {
   }
   if (!_rep.geladen) checkRepareerbaar();
   _toonStap(nr);
+}
+function naarStapMetGarantieCheck(nr) {
+  const huidig = document.querySelector('.form-stap:not([style*="display:none"])');
+  for (const el of (huidig?.querySelectorAll('[required]') || [])) {
+    if (!el.value) { el.focus(); el.reportValidity(); return; }
+  }
+  if (!_rep.geladen) checkRepareerbaar();
+  if ((document.getElementById('geadviseerde_route')?.value || '') === 'garantie') {
+    toonGarantiePanel(); return;
+  }
+  _toonStap(nr);
+}
+function toonGarantiePanel() {
+  const panel = document.getElementById('garantie-advies-panel');
+  if (!panel) return;
+  document.querySelectorAll('.form-stap').forEach(s => s.style.display = 'none');
+  _vulGarantiePanel();
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function garantieTerug() {
+  const panel = document.getElementById('garantie-advies-panel');
+  if (panel) panel.style.display = 'none';
+  document.querySelectorAll('.form-stap').forEach(s => s.style.display = 'none');
+  const stap2 = document.getElementById('stap-2');
+  if (stap2) { stap2.style.display = 'block'; stap2.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
+function _vulGarantiePanel() {
+  const merk      = document.getElementById('merk')?.value || '';
+  const shopsList = document.getElementById('garantie-shops-list');
+  if (shopsList) {
+    shopsList.innerHTML = GARANTIE_SHOPS.length > 0
+      ? GARANTIE_SHOPS.map(s => s.support_url
+          ? `<a href="${s.support_url}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:.5rem .8rem;font-size:.82rem;font-weight:600;color:#1a2332;text-decoration:none;">${s.naam} <span style="opacity:.6;font-size:.8em;">&#8599;</span></a>`
+          : `<span style="display:flex;align-items:center;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:.5rem .8rem;font-size:.82rem;font-weight:600;color:#64748b;">${s.naam}</span>`
+        ).join('')
+      : '<p style="font-size:.82rem;color:#64748b;">Neem contact op met de winkel waar u de televisie heeft gekocht.</p>';
+  }
+  const merkWrap = document.getElementById('garantie-merk-wrap');
+  const merkLink = document.getElementById('garantie-merk-link');
+  if (merk && GARANTIE_MERK_URLS[merk] && merkWrap && merkLink) {
+    merkLink.innerHTML = `<a href="${GARANTIE_MERK_URLS[merk]}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:.4rem;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:9px;padding:.5rem .9rem;font-size:.82rem;font-weight:600;color:#1e40af;text-decoration:none;">&#127981; ${merk} ondersteuning <span style="opacity:.7;font-size:.8em;">&#8599;</span></a>`;
+    merkWrap.style.display = 'block';
+  } else if (merkWrap) { merkWrap.style.display = 'none'; }
 }
 function _toonStap(nr) {
   document.querySelectorAll('.form-stap').forEach(s => s.style.display = 'none');
@@ -353,6 +420,12 @@ function berekenRoute() {
   const ind=document.getElementById('routing-indicator'), bdg=document.getElementById('routing-badge'), tl=document.getElementById('routing-toelichting');
   if (route && ind) { bdg.innerHTML=badge; tl.innerHTML=toel; ind.style.display='block'; document.getElementById('geadviseerde_route').value=route; document.getElementById('coulance_kans').value=kans||''; }
   else if (ind) { ind.style.display='none'; }
+
+  const gPanel = document.getElementById('garantie-advies-panel');
+  if (gPanel && gPanel.style.display !== 'none') {
+    if (route !== 'garantie') { garantieTerug(); }
+    else { _vulGarantiePanel(); }
+  }
 }
 
 function vulSamenvatting() {
