@@ -62,11 +62,21 @@
   <div class="portal-grid">
     <div class="portal-main">
 
-      <?php if ($status === 'doorgestuurd'): ?>
-        <?php if ($isReparatie): require __DIR__ . '/portal-form-reparatie.php';
-        elseif ($isTaxatie):    require __DIR__ . '/portal-form-taxatie.php';
-        else:                   require __DIR__ . '/portal-form-aanvulling.php';
-        endif; ?>
+      <?php
+        // Alle *_afwachting statussen (inclusief legacy doorgestuurd) tonen het reparatieformulier
+        $afwachtingStatussen = ['doorgestuurd','reparatie_afwachting','taxatie_afwachting',
+                                'garantie_afwachting','coulance_afwachting','recycling_afwachting'];
+        $ingevuldStatussen   = ['aanvraag','reparatie_ingevuld','taxatie_ingevuld',
+                                'garantie_ingevuld','coulance_ingevuld','recycling_ingevuld'];
+      ?>
+      <?php if (in_array($status, $afwachtingStatussen)): ?>
+        <?php require __DIR__ . '/portal-form-reparatie.php'; ?>
+
+      <?php elseif (in_array($status, $ingevuldStatussen)): ?>
+        <div class="portal-info-card info-green">
+          <h3>&#10003; <?= htmlspecialchars($sl['tekst'], ENT_QUOTES, 'UTF-8') ?></h3>
+          <p>Uw aanvulling is ontvangen. Ons team neemt zo spoedig mogelijk contact met u op.</p>
+        </div>
 
       <?php elseif ($status === 'coulance'): ?>
         <div class="portal-action-card card-warning">
@@ -130,6 +140,12 @@
         <div class="portal-info-card info-blue">
           <h3>🔍 Uw aanvraag is ontvangen</h3>
           <p>Ons team beoordeelt uw aanvraag zo spoedig mogelijk. Gemiddelde verwerkingstijd: 1 werkdag.</p>
+        </div>
+
+      <?php elseif ($status === 'afgewezen'): ?>
+        <div class="portal-info-card" style="border-left:4px solid #dc2626;">
+          <h3>&#10007; Aanvraag afgewezen</h3>
+          <p>Helaas kunnen wij uw aanvraag niet verder in behandeling nemen. Bij vragen kunt u contact opnemen via onze contactpagina.</p>
         </div>
 
       <?php elseif (in_array($status, ['aanvraag', 'behandeld', 'archief'])): ?>
