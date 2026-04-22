@@ -146,11 +146,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'kies_
             $pdo = db();
             try {
                 $pdo->prepare(
-                    'UPDATE aanvragen SET gekozen_advies=?, status=? WHERE id=?'
-                )->execute([$isAfwijzen ? null : $gekozenAdvies, $nieuweStatus, $aanvraagId]);
+                    'UPDATE aanvragen SET gekozen_advies=?, aanvraag_type=?, status=? WHERE id=?'
+                )->execute([$isAfwijzen ? null : $gekozenAdvies, $isAfwijzen ? null : $gekozenAdvies, $nieuweStatus, $aanvraagId]);
             } catch (\PDOException $e) {
-                $pdo->prepare('UPDATE aanvragen SET status=? WHERE id=?')
-                   ->execute([$nieuweStatus, $aanvraagId]);
+                try {
+                    $pdo->prepare(
+                        'UPDATE aanvragen SET gekozen_advies=?, advies_type=?, status=? WHERE id=?'
+                    )->execute([$isAfwijzen ? null : $gekozenAdvies, $isAfwijzen ? null : $gekozenAdvies, $nieuweStatus, $aanvraagId]);
+                } catch (\PDOException $e2) {
+                    $pdo->prepare('UPDATE aanvragen SET status=? WHERE id=?')
+                       ->execute([$nieuweStatus, $aanvraagId]);
+                }
             }
 
             try {
@@ -570,6 +576,11 @@ $adminActivePage = 'aanvragen';
       </div>
       <div class="detail-header-right">
         <span class="badge <?= $sl['badge'] ?>"><?= h($sl['tekst']) ?></span>
+        <?php if ($huidigType && isset($aanvraagTypes[$huidigType])): ?>
+          <span style="font-size:.8rem;color:var(--adm-muted);white-space:nowrap;">
+            | Type:&nbsp;<strong style="color:<?= h($aanvraagTypes[$huidigType]['kleur']) ?>;"><?= h($aanvraagTypes[$huidigType]['label']) ?></strong>
+          </span>
+        <?php endif; ?>
         <!-- Tandwiel: handmatige advies-override (altijd beschikbaar) -->
         <div class="optiemenu-wrap">
           <button type="button" class="tandwiel-btn" onclick="toggleOptiemenu(this)" title="Instellingen" aria-label="Instellingen">&#9881;</button>
@@ -854,6 +865,20 @@ $adminActivePage = 'aanvragen';
         <?php if (!empty($detail['polisnummer'])): ?>
         <span class="lbl">Polisnummer</span>   <span class="val"><?= h($detail['polisnummer']) ?></span>
         <?php endif; ?>
+        <?php if (!empty($detail['winkel_naam'])): ?>
+        <span class="lbl">Winkel</span>        <span class="val"><?= h($detail['winkel_naam']) ?></span>
+        <?php endif; ?>
+        <?php if (!empty($detail['verkoopprijs'])): ?>
+        <span class="lbl">Verkoopprijs</span>  <span class="val"><?= h($detail['verkoopprijs']) ?></span>
+        <?php endif; ?>
+        <?php if (isset($detail['coulance_winkel_resultaat']) && $detail['coulance_winkel_resultaat'] !== null && $detail['coulance_winkel_resultaat'] !== ''): ?>
+        <span class="lbl">Resultaat winkel</span>
+        <span class="val"><?= $detail['coulance_winkel_resultaat'] ? '✓ Geslaagd' : '✗ Niet gelukt' ?></span>
+        <?php endif; ?>
+        <?php if (isset($detail['coulance_fabrikant_resultaat']) && $detail['coulance_fabrikant_resultaat'] !== null && $detail['coulance_fabrikant_resultaat'] !== ''): ?>
+        <span class="lbl">Resultaat fabrikant</span>
+        <span class="val"><?= $detail['coulance_fabrikant_resultaat'] ? '✓ Geslaagd' : '✗ Niet gelukt' ?></span>
+        <?php endif; ?>
       </div>
     </div>
 
@@ -1048,7 +1073,7 @@ $adminActivePage = 'aanvragen';
       ?>
       <?php foreach ($aanvragen as $r):
         $sl          = $statusLabels[$r['status']] ?? ['tekst' => $r['status'], 'badge' => 'badge-gray'];
-        $rType       = $r['aanvraag_type'] ?? $r['advies_type'] ?? '';
+        $rType       = $r['gekozen_advies'] ?? $r['aanvraag_type'] ?? $r['advies_type'] ?? '';
         $rTypeInfo   = $aanvraagTypes[$rType] ?? null;
         $qs          = http_build_query(array_filter(['status' => $filterStatus, 'route' => $filterRoute, 'zoek' => $filterZoek]));
         $heeftNieuws = in_array($r['status'], $ingevuldStatussen_lijst, true);
