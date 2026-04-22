@@ -6,6 +6,7 @@ header('Referrer-Policy: no-referrer');
 header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/mailer.php';
 requireAdmin();
 
 $msg  = '';
@@ -78,6 +79,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'beric
             } catch (\PDOException $e) {
                 $fout = 'Kon bericht niet opslaan: ' . h($e->getMessage());
             }
+            // Mail naar inzender
+            try {
+                $av = db()->prepare('SELECT casenummer, email, merk, modelnummer FROM aanvragen WHERE id=?');
+                $av->execute([$aanvraagId]);
+                $avRow = $av->fetch();
+                if ($avRow && !empty($avRow['email'])) {
+                    @sendMail($avRow['email'], 'inzender_nieuw_chatbericht', [
+                        'casenummer'    => $avRow['casenummer']  ?? '',
+                        'merk'          => $avRow['merk']        ?? '',
+                        'modelnummer'   => $avRow['modelnummer'] ?? '',
+                        'chatbericht'   => $berichtTxt,
+                        'datum_bericht' => date('d-m-Y H:i'),
+                    ]);
+                }
+            } catch (\PDOException $e) {}
         } else {
             $fout = 'Bericht mag niet leeg zijn.';
         }
@@ -102,6 +118,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'statu
         $nieuwStatus = trim($_POST['nieuw_status'] ?? '');
         $toegestaan  = array_keys($statusLabels);
         if ($aanvraagId && in_array($nieuwStatus, $toegestaan, true)) {
+            // Haal oude status + inzendergegevens op vóór de update
+            $avQ = db()->prepare('SELECT casenummer, email, merk, modelnummer, status FROM aanvragen WHERE id=?');
+            $avQ->execute([$aanvraagId]);
+            $avRow = $avQ->fetch() ?: null;
             db()->prepare('UPDATE aanvragen SET status=? WHERE id=?')
                ->execute([$nieuwStatus, $aanvraagId]);
             try {
@@ -111,6 +131,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'statu
                 );
                 $ins->execute([$aanvraagId, 'Status gewijzigd naar: ' . ($statusLabels[$nieuwStatus]['tekst'] ?? $nieuwStatus)]);
             } catch (\PDOException $e) {}
+            // Mail naar inzender over statuswijziging
+            if ($avRow && !empty($avRow['email'])) {
+                @sendMail($avRow['email'], 'inzender_status_gewijzigd', [
+                    'casenummer'   => $avRow['casenummer']  ?? '',
+                    'merk'         => $avRow['merk']        ?? '',
+                    'modelnummer'  => $avRow['modelnummer'] ?? '',
+                    'status_oud'   => $statusLabels[$avRow['status']]['tekst']  ?? $avRow['status'],
+                    'status_nieuw' => $statusLabels[$nieuwStatus]['tekst'] ?? $nieuwStatus,
+                ]);
+            }
             $qs = http_build_query(array_filter([
                 'id'     => $aanvraagId,
                 'status' => $filterStatus,
@@ -144,6 +174,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'kies_
                   . ' → status ' . ($statusLabels[$nieuweStatus]['tekst'] ?? $nieuweStatus);
 
             $pdo = db();
+            // Haal inzendergegevens + oude status op vóór de update
+            $avQ2 = $pdo->prepare('SELECT casenummer, email, merk, modelnummer, status FROM aanvragen WHERE id=?');
+            $avQ2->execute([$aanvraagId]);
+            $avRow2 = $avQ2->fetch() ?: null;
             try {
                 $pdo->prepare(
                     'UPDATE aanvragen SET gekozen_advies=?, aanvraag_type=?, status=? WHERE id=?'
@@ -165,6 +199,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'kies_
                      VALUES (?, ?, NOW())'
                 )->execute([$aanvraagId, $logTekst]);
             } catch (\PDOException $e) {}
+
+            // Mail naar inzender over statuswijziging
+            if ($avRow2 && !empty($avRow2['email'])) {
+                @sendMail($avRow2['email'], 'inzender_status_gewijzigd', [
+                    'casenummer'   => $avRow2['casenummer']  ?? '',
+                    'merk'         => $avRow2['merk']        ?? '',
+                    'modelnummer'  => $avRow2['modelnummer'] ?? '',
+                    'status_oud'   => $statusLabels[$avRow2['status']]['tekst']  ?? $avRow2['status'],
+                    'status_nieuw' => $statusLabels[$nieuweStatus]['tekst'] ?? $nieuweStatus,
+                ]);
+            }
 
             $qs = http_build_query(array_filter([
                 'id'     => $aanvraagId,
@@ -245,6 +290,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_t
                      VALUES (?, ?, NOW())'
                 )->execute([$aanvraagId, $logTekst]);
             } catch (\PDOException $e) {}
+            // Mail naar inzender als status is gewijzigd
+            if ($nieuweStatus && $nieuweStatus !== $huidigStatus) {
+                try {
+                    $avSt = $pdo->prepare('SELECT casenummer, email, merk, modelnummer FROM aanvragen WHERE id=?');
+                    $avSt->execute([$aanvraagId]);
+                    $avRowSt = $avSt->fetch();
+                    if ($avRowSt && !empty($avRowSt['email'])) {
+                        @sendMail($avRowSt['email'], 'inzender_status_gewijzigd', [
+                            'casenummer'   => $avRowSt['casenummer']  ?? '',
+                            'merk'         => $avRowSt['merk']        ?? '',
+                            'modelnummer'  => $avRowSt['modelnummer'] ?? '',
+                            'status_oud'   => $statusLabels[$huidigStatus]['tekst']  ?? $huidigStatus,
+                            'status_nieuw' => $statusLabels[$nieuweStatus]['tekst'] ?? $nieuweStatus,
+                        ]);
+                    }
+                } catch (\PDOException $e) {}
+            }
             $qs = http_build_query(array_filter([
                 'id'     => $aanvraagId,
                 'status' => $filterStatus,
@@ -321,6 +383,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_t
                      VALUES (?, ?, NOW())'
                 )->execute([$aanvraagId, $logTekst]);
             } catch (\PDOException $e) {}
+            // Mail naar inzender als status is gewijzigd
+            if ($nieuweStatus && $nieuweStatus !== $huidigStatus) {
+                try {
+                    $avStL = $pdo->prepare('SELECT casenummer, email, merk, modelnummer FROM aanvragen WHERE id=?');
+                    $avStL->execute([$aanvraagId]);
+                    $avRowStL = $avStL->fetch();
+                    if ($avRowStL && !empty($avRowStL['email'])) {
+                        @sendMail($avRowStL['email'], 'inzender_status_gewijzigd', [
+                            'casenummer'   => $avRowStL['casenummer']  ?? '',
+                            'merk'         => $avRowStL['merk']        ?? '',
+                            'modelnummer'  => $avRowStL['modelnummer'] ?? '',
+                            'status_oud'   => $statusLabels[$huidigStatus]['tekst']  ?? $huidigStatus,
+                            'status_nieuw' => $statusLabels[$nieuweStatus]['tekst'] ?? $nieuweStatus,
+                        ]);
+                    }
+                } catch (\PDOException $e) {}
+            }
             $qs = http_build_query(array_filter([
                 'status' => $filterStatus,
                 'route'  => $filterRoute,
