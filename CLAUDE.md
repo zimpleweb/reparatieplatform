@@ -1,23 +1,25 @@
-## Extra regels voor status "Gesloten" en verbeteringen aanvragen.php + formulieren
+## Extra regels voor admin/aanvragen.php fixes, logo, error 500, uploads en overige verbeteringen
 
-* Voeg een nieuwe status toe: "Gesloten". Deze status is bedoeld voor oninteressante inzendingen en voor gevallen waarbij coulance bij winkel of fabrikant is gelukt, of wanneer een TV niet repareerbaar is.
+* In een individuele inzending (aanvragen.php?id=XX) werkt het tandwieltje / "Advies handmatig wijzigen" niet correct. Bij wijzigen van bijv. Coulance naar Reparatie moet de status en indeling ook daadwerkelijk naar Reparatie (of de juiste nieuwe status) worden gezet. Los dit op.
 
-* Los het probleem op dat wisselen naar status "Recycling" niet werkt in admin/aanvragen.php (status wordt niet bijgewerkt).
+* Het wijzigen naar status "Recycling" werkt niet in het algemene overzicht van aanvragen.php.
 
-* Pas het Coulance-formulier aan:
-  - Verwijder de vraag "Heeft u de aankoopbon nog?"
-  - Bij keuze van een winkel: toon een tekst met link/knop naar de support- of contactpagina van die winkel.
-  - Bij vervolgstap fabrikant: doe hetzelfde met een link/knop naar de supportpagina van de vooraf ingevulde fabrikant.
-  - Als het merk/model niet repareerbaar is (volgens database/instellingen): geef melding dat reparatie door ons niet mogelijk is, maar een andere gespecialiseerde reparateur wellicht wel. Geen optie voor reparatieadvies.
-  - Als het merk/model wel repareerbaar is:
-    - Bij "Nee" coulance bij shop of fabrikant: vraag of een reparatieadvies kan worden gestart.
-    - Bij Ja → zet status om naar "Reparatie in afwachting" + melding in admin.
-    - Bij Nee → zet status op "Gesloten".
+* Verander het logo in de admin hoofdmenu (alle admin pagina's) naar:  
+  https://reparatieplatform.nl/wp-content/uploads/2025/06/REPARATIEPLATFORM-LOGO-WEBSITE-1200x336.png  
+  (vervang het huidige adm-logo).
 
-* Recycling formulier:
-  - Vraag of er interesse is in verduurzaming/recycling van de televisie.
-  - Bij Nee → optie om inzending af te sluiten (status "Gesloten").
-  - Bij Ja → toon formulier gerelateerd aan reparatieformulier, inclusief foto's, in de trant van recycling.
+* Los de PHP Fatal errors op in api/aanvulling.php:
+  - Unknown column 'verkoopprijs'
+  - Unknown column 'plaats'
+  Geef indien nodig de exacte SQL ALTER TABLE queries zodat ik ze in phpMyAdmin kan draaien.
+
+* Bij uploaden van foto's in alle formulieren (zowel klant als admin):
+  - Toon een preview van de geüploade foto's voor de inzender.
+  - Toon ook previews in de admin bij het openen van een individuele inzending.
+
+* Maak pagina contact.php aan en vul deze in (met werkend contactformulier).
+
+* Wanneer een inzending in behandeling/afwachting is en de inzender het aanvullende formulier invult, moet dit zichtbaar zijn in het overzicht op dashboard.php en aanvragen.php (bijv. met een groen bolletje of notificatie bij de betreffende inzending).
 
 * Alle wijzigingen mogen in één commit.
-* Volg ook de bestaande “aanvragen refactor” en security audit regels.
+* Volg ook de bestaande “aanvragen refactor”, status-flow en security audit regels.
