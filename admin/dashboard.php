@@ -104,6 +104,7 @@ $adminActivePage = 'dashboard';
           $datum       = htmlspecialchars($a[$datumKolom]          ?? '', ENT_QUOTES);
           $status      = strtolower(trim($a['status'] ?? 'nieuw'));
           $heeftNieuws = in_array($a['status'] ?? '', $ingevuldStatussen_dash, true);
+          $casenummer  = htmlspecialchars($a['casenummer']         ?? '', ENT_QUOTES);
 
           $datumFormatted = $datum;
           if ($datum && strtotime($datum)) {
@@ -120,12 +121,13 @@ $adminActivePage = 'dashboard';
         <a href="<?= BASE_URL ?>/admin/aanvragen.php?id=<?= (int)($a['id'] ?? 0) ?>"
            class="recent-card<?= $hidden ?>"
            data-index="<?= $i ?>">
-          <div style="display:flex;align-items:center;gap:.4rem;">
-            <div class="recent-card-merk"><?= $merk ?: '—' ?></div>
+          <div style="display:flex;align-items:center;gap:.35rem;margin-bottom:.1rem;">
             <?php if ($heeftNieuws): ?>
-              <span title="Klant heeft formulier ingevuld" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;flex-shrink:0;margin-bottom:.05rem;"></span>
+              <span title="Klant heeft formulier ingevuld" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;flex-shrink:0;"></span>
             <?php endif; ?>
+            <div style="font-size:.72rem;font-weight:700;color:#1d4ed8;letter-spacing:.03em;"><?= $casenummer ?: '#'.(int)($a['id']??0) ?></div>
           </div>
+          <div class="recent-card-merk"><?= $merk ?: '—' ?></div>
           <div class="recent-card-model"><?= $model ?: '<span style="color:var(--adm-faint)">Onbekend model</span>' ?></div>
           <div class="recent-card-email"><?= $email ?: '—' ?></div>
           <div class="recent-card-meta">

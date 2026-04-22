@@ -509,6 +509,16 @@ $adminActivePage = 'aanvragen';
     .optiemenu-item.danger:hover { background:#fef2f2; }
     .optiemenu-divider    { border:none;border-top:1px solid var(--adm-border);margin:.25rem 0; }
     .optiemenu-type-dot   { display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:.5rem;vertical-align:middle; }
+
+    /* Lightbox */
+    .lightbox-overlay { display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);align-items:center;justify-content:center;cursor:zoom-out; }
+    .lightbox-overlay.active { display:flex; }
+    .lightbox-img { max-width:90vw;max-height:88vh;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.5);object-fit:contain;cursor:default; }
+    .lightbox-close { position:absolute;top:1.25rem;right:1.5rem;font-size:2rem;color:#fff;cursor:pointer;line-height:1;background:none;border:none;padding:.25rem .5rem;opacity:.8;font-family:inherit; }
+    .lightbox-close:hover { opacity:1; }
+    .lightbox-caption { position:absolute;bottom:1.25rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.85);font-size:.82rem;white-space:nowrap; }
+    .foto-link-extern { display:block;margin-top:.3rem;font-size:.72rem;color:#1d4ed8;text-decoration:none; }
+    .foto-link-extern:hover { text-decoration:underline; }
   </style>
 </head>
 <body>
@@ -655,10 +665,15 @@ $adminActivePage = 'aanvragen';
         <?php foreach ($fotoWeergave as $fk => $fl): ?>
           <?php if (!empty($detail[$fk])): ?>
           <div class="foto-item">
-            <a href="<?= BASE_URL ?>/api/foto.php?pad=<?= urlencode($detail[$fk]) ?>" target="_blank">
+            <a href="<?= BASE_URL ?>/api/foto.php?pad=<?= urlencode($detail[$fk]) ?>"
+               data-caption="<?= h($fl) ?>"
+               onclick="openLightbox(this.href,this.dataset.caption);return false;"
+               style="cursor:zoom-in;">
               <img src="<?= BASE_URL ?>/api/foto.php?pad=<?= urlencode($detail[$fk]) ?>"
                    alt="<?= h($fl) ?>" class="foto-img" loading="lazy">
             </a>
+            <a href="<?= BASE_URL ?>/api/foto.php?pad=<?= urlencode($detail[$fk]) ?>"
+               target="_blank" rel="noopener" class="foto-link-extern">&#8599; Openen in nieuw tabblad</a>
             <div class="foto-lbl"><?= h($fl) ?></div>
           </div>
           <?php endif; ?>
@@ -787,10 +802,15 @@ $adminActivePage = 'aanvragen';
         <?php foreach ($fotoWeergaveNietInz as $fk => $fl): ?>
           <?php if (!empty($detail[$fk])): ?>
           <div class="foto-item">
-            <a href="<?= BASE_URL ?>/api/foto.php?pad=<?= urlencode($detail[$fk]) ?>" target="_blank">
+            <a href="<?= BASE_URL ?>/api/foto.php?pad=<?= urlencode($detail[$fk]) ?>"
+               data-caption="<?= h($fl) ?>"
+               onclick="openLightbox(this.href,this.dataset.caption);return false;"
+               style="cursor:zoom-in;">
               <img src="<?= BASE_URL ?>/api/foto.php?pad=<?= urlencode($detail[$fk]) ?>"
                    alt="<?= h($fl) ?>" class="foto-img" loading="lazy">
             </a>
+            <a href="<?= BASE_URL ?>/api/foto.php?pad=<?= urlencode($detail[$fk]) ?>"
+               target="_blank" rel="noopener" class="foto-link-extern">&#8599; Openen in nieuw tabblad</a>
             <div class="foto-lbl"><?= h($fl) ?></div>
           </div>
           <?php endif; ?>
@@ -1122,6 +1142,30 @@ $adminActivePage = 'aanvragen';
   <?php endif; ?>
 
 </div><!-- /.adm-page -->
+
+<div id="lightboxOverlay" class="lightbox-overlay"
+     onclick="if(event.target===this)sluitLightbox();" role="dialog" aria-modal="true">
+  <button type="button" class="lightbox-close" onclick="sluitLightbox()">&#215;</button>
+  <img class="lightbox-img" id="lightboxImg" src="" alt="">
+  <span class="lightbox-caption" id="lightboxCaption"></span>
+</div>
+
+<script>
+function openLightbox(src, caption) {
+  document.getElementById('lightboxImg').src     = src;
+  document.getElementById('lightboxCaption').textContent = caption || '';
+  document.getElementById('lightboxOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function sluitLightbox() {
+  document.getElementById('lightboxOverlay').classList.remove('active');
+  document.getElementById('lightboxImg').src = '';
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') sluitLightbox();
+});
+</script>
 
 <script>
 function toggleOptiemenu(btn) {
