@@ -1,18 +1,19 @@
-## Extra regels voor foto-beveiliging en mailacties
+## Extra regels voor foto-beveiliging, standaardberichten en klachten-systeem
 
-* Foto-beveiliging:
-  - Alle geüploade foto's mogen NIET publiek toegankelijk zijn.
-  - Zorg dat foto's alleen zichtbaar zijn voor ingelogde admins (en eventueel de betreffende ingelogde inzender).
-  - Blokkeer directe toegang via URL voor niet-geautoriseerde gebruikers (bijv. via .htaccess, auth-check in PHP of bestandsrechten).
+* Foto-beveiliging (kritiek):
+  - Directe links naar foto's (bijv. via /api/foto.php?pad=...) mogen NIET publiek toegankelijk zijn.
+  - Alleen ingelogde admins mogen foto's kunnen openen via directe link. 
+  - Indien nodig: forceer login via admin/login.php of voeg auth-check toe in de foto-handler.
 
-* Mailacties controleren en implementeren:
-  - Bericht van admin naar inzending → mail naar de inzender
-  - Bericht van inzender naar admin → mail naar admin
-  - Statuswijziging (voor alle statussen) → notificatie mail naar de inzender
-  - Melding wanneer een inzender een aanvullend formulier heeft ingevuld → mail naar admin
+* Standaardberichten in mailtemplates.php:
+  - Voeg functionaliteit toe voor standaardberichten (kolom "Standaardberichten").
+  - In aanvragen.php bij "Bericht sturen aan klant" moet boven het tekstveld en onder de verzendknop een dropdown/ keuzemenu komen met standaardantwoorden.
+  - Bij selectie van een standaardbericht wordt de tekst automatisch in het tekstveld geplaatst.
 
-* Maak (of gebruik bestaande) mailtemplates in admin/mailtemplates.php voor bovenstaande mailacties.
-* Zorg voor nette, duidelijke templates met alle relevante informatie (casenummer, status, link naar inzending, etc.).
+* Klachten-systeem uitbreiding (admin/klachten.php):
+  - Het moet mogelijk zijn om klachten in te stellen per Merk, per Serie én per Model.
+  - Een klacht ingesteld op Merk-niveau moet zichtbaar zijn voor alle series en modellen onder dat merk.
+  - Een klacht op Serie-niveau moet zichtbaar zijn voor alle modellen onder die serie.
 
 * Alle wijzigingen mogen in één commit.
-* Volg ook de bestaande security audit regels (vooral bestandsbeveiliging en input/output validatie).
+* Volg ook de bestaande security audit regels (vooral bestandsbeveiliging en toegang tot uploads).
