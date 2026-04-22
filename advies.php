@@ -80,47 +80,6 @@ include __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<!-- ZO WERKT HET: apart blok met lichte achtergrond -->
-<div class="stappen-sectie-licht">
-  <div class="stappen-sectie-inner">
-
-    <h2 class="stappen-titel-licht">Zo werkt het</h2>
-    <p class="stappen-lead-licht">Geen technische kennis nodig. Beschrijf het probleem en wij denken met je mee.</p>
-
-    <div class="zowerkhet-steps-licht">
-      <div class="zowerkhet-step-licht">
-        <span class="zowerkhet-step-num-licht">Stap 01</span>
-        <div class="zowerkhet-step-icon-licht">&#128221;</div>
-        <h3>Formulier invullen</h3>
-        <p>Vul merk, modelnummer en een korte omschrijving in. Duurt minder dan twee minuten en je hebt er geen technische kennis voor nodig.</p>
-        <span class="zowerkhet-step-badge-licht">&#10003; Gratis</span>
-      </div>
-      <div class="zowerkhet-step-licht">
-        <span class="zowerkhet-step-num-licht">Stap 02</span>
-        <div class="zowerkhet-step-icon-licht">&#128269;</div>
-        <h3>Wij bekijken jouw situatie</h3>
-        <p>Een specialist beoordeelt je aanvraag op garantie, coulance, reparatiemogelijkheden en de waarde van het toestel. Garantie en coulance worden als advies getoond. Werkt een verkoper of merk niet mee? Dan helpen wij je alsnog met vrijblijvend reparatieadvies.</p>
-        <span class="zowerkhet-step-badge-licht">&#10003; Persoonlijk advies</span>
-      </div>
-      <div class="zowerkhet-step-licht">
-        <span class="zowerkhet-step-num-licht">Stap 03</span>
-        <div class="zowerkhet-step-icon-licht">&#128233;</div>
-        <h3>Advies binnen 24 uur</h3>
-        <p>Je ontvangt een helder advies per e-mail met concrete vervolgstappen. Of het nu gaat om garantie, coulance, reparatie of taxatie (49 euro), wij wijzen je de beste weg.</p>
-        <span class="zowerkhet-step-badge-licht">&#10003; Binnen 1 werkdag</span>
-      </div>
-    </div>
-
-    <div style="text-align:center;margin-top:2.5rem;">
-      <a href="#advies" class="btn-primary">
-        Gratis advies aanvragen
-        <span class="btn-primary-arrow">&darr;</span>
-      </a>
-    </div>
-
-  </div>
-</div>
-
 <style>
 /* ── Hero only: donker blok ── */
 .page-header-hero-only {
@@ -257,29 +216,35 @@ include __DIR__ . '/includes/header.php';
   .zowerkhet-steps-licht { grid-template-columns: 1fr; }
   .zowerkhet-step-licht { padding: 1.5rem 1.25rem; }
 }
+
+/* ── Formulier: primaire CTA nadruk ── */
+.form-wrap--featured {
+  border-top: 4px solid #287864;
+  background: linear-gradient(180deg, #f0f9f5 0%, #ffffff 80%);
+}
+.form-cta-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  background: rgba(40,120,100,.1);
+  border: 1px solid rgba(40,120,100,.3);
+  border-radius: 999px;
+  padding: .3rem 1rem;
+  font-size: .8rem;
+  font-weight: 700;
+  color: #287864;
+  letter-spacing: .04em;
+  margin-bottom: 1rem;
+}
 </style>
 
-<!-- Klantenomgeving banner -->
-<div class="status-check-wrap">
-  <div class="section" style="max-width:680px;margin:0 auto;padding:0 1.5rem;">
-    <div class="status-check-box" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
-      <div>
-        <h3 style="margin-bottom:.3rem;">&#128274; Al een aanvraag ingediend?</h3>
-        <p class="lead" style="margin:0;">Bekijk de status, upload documenten en volg je traject via je persoonlijke klantenomgeving.</p>
-      </div>
-      <a href="<?= BASE_URL ?>/mijn-aanvraag.php" class="btn-check" style="white-space:nowrap;text-decoration:none;">
-        Mijn aanvraag bekijken &rarr;
-      </a>
-    </div>
-  </div>
-</div>
-
-<!-- Formulier -->
-<div class="form-wrap" id="advies">
+<!-- Formulier: primaire CTA -->
+<div class="form-wrap form-wrap--featured" id="advies">
   <div class="form-inner">
 
     <!-- Links -->
     <div class="form-left">
+      <span class="form-cta-eyebrow">&#128221; Gratis advies &mdash; binnen 24 uur</span>
       <h2 class="section-title">Vraag gratis<br>advies aan</h2>
       <p class="section-lead">Op basis van jouw antwoorden kijken wij automatisch welke route het beste bij je past: garantie, coulance, reparatie of taxatie.</p>
       <div class="outcome-list">
@@ -501,6 +466,55 @@ include __DIR__ . '/includes/header.php';
 
         </form>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Zo werkt het: ondersteunende info na het formulier -->
+<div class="stappen-sectie-licht">
+  <div class="stappen-sectie-inner">
+
+    <h2 class="stappen-titel-licht">Zo werkt het</h2>
+    <p class="stappen-lead-licht">Geen technische kennis nodig. Beschrijf het probleem en wij denken met je mee.</p>
+
+    <div class="zowerkhet-steps-licht">
+      <div class="zowerkhet-step-licht">
+        <span class="zowerkhet-step-num-licht">Stap 01</span>
+        <div class="zowerkhet-step-icon-licht">&#128221;</div>
+        <h3>Formulier invullen</h3>
+        <p>Vul merk, modelnummer en een korte omschrijving in. Duurt minder dan twee minuten en je hebt er geen technische kennis voor nodig.</p>
+        <span class="zowerkhet-step-badge-licht">&#10003; Gratis</span>
+      </div>
+      <div class="zowerkhet-step-licht">
+        <span class="zowerkhet-step-num-licht">Stap 02</span>
+        <div class="zowerkhet-step-icon-licht">&#128269;</div>
+        <h3>Wij bekijken jouw situatie</h3>
+        <p>Een specialist beoordeelt je aanvraag op garantie, coulance, reparatiemogelijkheden en de waarde van het toestel. Garantie en coulance worden als advies getoond. Werkt een verkoper of merk niet mee? Dan helpen wij je alsnog met vrijblijvend reparatieadvies.</p>
+        <span class="zowerkhet-step-badge-licht">&#10003; Persoonlijk advies</span>
+      </div>
+      <div class="zowerkhet-step-licht">
+        <span class="zowerkhet-step-num-licht">Stap 03</span>
+        <div class="zowerkhet-step-icon-licht">&#128233;</div>
+        <h3>Advies binnen 24 uur</h3>
+        <p>Je ontvangt een helder advies per e-mail met concrete vervolgstappen. Of het nu gaat om garantie, coulance, reparatie of taxatie (49 euro), wij wijzen je de beste weg.</p>
+        <span class="zowerkhet-step-badge-licht">&#10003; Binnen 1 werkdag</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Klantenomgeving banner -->
+<div class="status-check-wrap">
+  <div class="section" style="max-width:680px;margin:0 auto;padding:0 1.5rem;">
+    <div class="status-check-box" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+      <div>
+        <h3 style="margin-bottom:.3rem;">&#128274; Al een aanvraag ingediend?</h3>
+        <p class="lead" style="margin:0;">Bekijk de status, upload documenten en volg je traject via je persoonlijke klantenomgeving.</p>
+      </div>
+      <a href="<?= BASE_URL ?>/mijn-aanvraag.php" class="btn-check" style="white-space:nowrap;text-decoration:none;">
+        Mijn aanvraag bekijken &rarr;
+      </a>
     </div>
   </div>
 </div>
