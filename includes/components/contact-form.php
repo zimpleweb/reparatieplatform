@@ -3,8 +3,9 @@
 // Vereist: csrf() en h() uit functions.php (geladen door de pagina)
 ?>
 <?php if (isset($_GET['verzonden'])): ?>
-  <div class="alert alert-success" style="margin-bottom:1.5rem;">&#10003; Uw bericht is verzonden! We nemen zo snel mogelijk contact op.</div>
-<?php elseif (isset($_GET['error'])): ?>
+  <div class="alert alert-success" style="margin-bottom:1.5rem;">&#10003; Bedankt voor je bericht. We kijken het zo snel mogelijk door.</div>
+<?php else: ?>
+<?php if (isset($_GET['error'])): ?>
   <div class="alert alert-error" style="margin-bottom:1.5rem;">Er is iets misgegaan. Controleer uw gegevens en probeer het opnieuw.</div>
 <?php endif; ?>
 <form action="/api/send-contact.php" method="POST">
@@ -67,3 +68,4 @@
   </div>
   <button type="submit" class="submit-btn">Verstuur en ontvang gratis advies &rarr;</button>
 </form>
+<?php endif; ?>
