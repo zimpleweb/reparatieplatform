@@ -21,7 +21,7 @@ $opmerking = trim(  $_POST['opmerking'] ?? '');
 
 if (!$id || !$actie) redirect(BASE_URL . '/admin/aanvragen.php');
 
-$geldig = ['doorzetten_reparatie','doorzetten_taxatie','coulance','recycling','behandeld','archiveren','bericht_admin'];
+$geldig = ['doorzetten_reparatie','doorzetten_taxatie','coulance','recycling','behandeld','archiveren','bericht_admin','verwijderen'];
 if (!in_array($actie, $geldig, true)) redirect(BASE_URL . '/admin/aanvragen.php?id=' . $id);
 
 // ── Laad aanvraag voor mail-variabelen ────────────────────────────
@@ -51,6 +51,40 @@ if ($actie === 'bericht_admin') {
         }
     }
     redirect(BASE_URL . '/admin/aanvragen.php?id=' . $id . '&saved=1');
+}
+
+// ── Verwijderen inclusief foto's ──────────────────────────────────────────────
+if ($actie === 'verwijderen') {
+    $fotoKolommen = ['foto_defect', 'foto_label', 'foto_bon', 'foto_toestel', 'foto_extra'];
+    try {
+        $fQ = db()->prepare(
+            'SELECT ' . implode(',', $fotoKolommen) . ' FROM aanvragen WHERE id=?'
+        );
+        $fQ->execute([$id]);
+        $fotoRij = $fQ->fetch() ?: [];
+        $baseDir    = realpath(__DIR__ . '/../');
+        $uploadBase = $baseDir . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'aanvragen';
+        foreach ($fotoKolommen as $col) {
+            $path = $fotoRij[$col] ?? '';
+            if (!$path) continue;
+            $abs = realpath($baseDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path));
+            if ($abs && strpos($abs, $uploadBase . DIRECTORY_SEPARATOR) === 0 && is_file($abs)) {
+                @unlink($abs);
+                $dir = dirname($abs);
+                while ($dir !== $uploadBase && is_dir($dir) && count(scandir($dir)) === 2) {
+                    @rmdir($dir);
+                    $dir = dirname($dir);
+                }
+            }
+        }
+    } catch (\PDOException $e) {}
+    try {
+        db()->prepare('DELETE FROM aanvragen_log WHERE aanvraag_id=?')->execute([$id]);
+    } catch (\PDOException $e) {}
+    try {
+        db()->prepare('DELETE FROM aanvragen WHERE id=?')->execute([$id]);
+    } catch (\PDOException $e) {}
+    redirect(BASE_URL . '/admin/aanvragen.php?saved=1');
 }
 
 $statusMap = [
