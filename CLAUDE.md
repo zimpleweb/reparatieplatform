@@ -8,4 +8,3 @@
 * Los het huidige probleem op waarbij de melding "Er is iets misgegaan. Controleer uw gegevens en probeer het opnieuw." verschijnt en de mail niet wordt verzonden.
 * Gebruik indien nodig de bestaande Brevo (Sendinblue) functionaliteit uit de admin-sectie (niet wijzigen, alleen hergebruiken).
 * Reply-To moet het ingevoerde e-mailadres zijn en alle velden moeten duidelijk in de mail staan.
-* Houd alle wijzigingen atomic, unified diff, één commit per kleine stap.
