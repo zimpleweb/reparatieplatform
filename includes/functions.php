@@ -47,10 +47,23 @@ function getTv(string $slug): ?array {
     $s->execute([$slug]);
     $tv = $s->fetch();
     if (!$tv) return null;
-    $k = db()->prepare(
-        'SELECT * FROM klachten WHERE tv_model_id=? ORDER BY FIELD(frequentie,"hoog","middel","laag")'
-    );
-    $k->execute([$tv['id']]);
+    try {
+        // Haal klachten op inclusief merk- en serie-niveau (hiërarchisch)
+        $k = db()->prepare(
+            'SELECT * FROM klachten
+             WHERE tv_model_id = ?
+                OR (niveau = "serie" AND merk = ? AND serie = ?)
+                OR (niveau = "merk"  AND merk = ?)
+             ORDER BY FIELD(frequentie,"hoog","middel","laag")'
+        );
+        $k->execute([$tv['id'], $tv['merk'], $tv['serie'] ?? '', $tv['merk']]);
+    } catch (\PDOException $e) {
+        // Fallback voor wanneer niveau-kolom nog niet bestaat
+        $k = db()->prepare(
+            'SELECT * FROM klachten WHERE tv_model_id=? ORDER BY FIELD(frequentie,"hoog","middel","laag")'
+        );
+        $k->execute([$tv['id']]);
+    }
     $tv['klachten'] = $k->fetchAll();
     return $tv;
 }
