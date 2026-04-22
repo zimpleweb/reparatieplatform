@@ -2,11 +2,49 @@
 session_start();
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/advies_regels.php';
 
 $pageTitle       = 'Televisie kapot? Gratis advies op maat | Reparatieplatform.nl';
 $pageDescription = 'Televisie kapot of defect? Ontvang gratis persoonlijk advies: garantie, reparatie aan huis of taxatie voor uw verzekeraar.';
 $canonicalUrl    = '/';
 $merken          = getMerken();
+
+// ── Stappenplan configuratie (zelfde als advies.php) ──────────────────────
+$r   = getAdviesRegels();
+$rJs = json_encode($r, JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
+
+$stappenConfig = [];
+if (!empty($r['stappen_config']) && is_array($r['stappen_config'])) {
+    $stappenConfig = $r['stappen_config'];
+}
+if (empty($stappenConfig)) {
+    $stappenConfig = [
+        ['nummer'=>1,'label'=>'Situatie',    'titel'=>'Wat is er aan de hand?',   'lead'=>'Dit bepaalt direct welke route het meest geschikt is.'],
+        ['nummer'=>2,'label'=>'TV gegevens', 'titel'=>'Over je televisie',         'lead'=>'Merk, model en aankoopinformatie bepalen de route.'],
+        ['nummer'=>3,'label'=>'Defect',      'titel'=>'Beschrijf het defect',      'lead'=>'Hoe specifieker, hoe beter het advies.'],
+        ['nummer'=>4,'label'=>'Contact',     'titel'=>'Je contactgegevens',        'lead'=>'Hier sturen wij je persoonlijk advies naartoe.'],
+    ];
+}
+$aantalStappen = count($stappenConfig);
+
+$reparatieUitsluitKlachten = (!empty($r['reparatie_uitsluiten_klachten']) && is_array($r['reparatie_uitsluiten_klachten']))
+    ? $r['reparatie_uitsluiten_klachten'] : ['gebarsten_scherm'];
+$taxatieIncludeKlachten = (!empty($r['taxatie_include_klachten']) && is_array($r['taxatie_include_klachten']))
+    ? $r['taxatie_include_klachten'] : ['gebarsten_scherm', 'stroomstoot'];
+$garantieUitsluitKlachten = (!empty($r['garantie_uitsluiten_klachten']) && is_array($r['garantie_uitsluiten_klachten']))
+    ? $r['garantie_uitsluiten_klachten'] : ['gebarsten_scherm'];
+$coulanceUitsluitKlachten = (!empty($r['coulance_uitsluiten_klachten']) && is_array($r['coulance_uitsluiten_klachten']))
+    ? $r['coulance_uitsluiten_klachten'] : ['gebarsten_scherm'];
+$taxatieUitsluitKlachten = (!empty($r['taxatie_uitsluiten_klachten']) && is_array($r['taxatie_uitsluiten_klachten']))
+    ? $r['taxatie_uitsluiten_klachten'] : [];
+
+$klachtRoutingJs = json_encode([
+    'reparatie_uitsluiten' => $reparatieUitsluitKlachten,
+    'taxatie_include'      => $taxatieIncludeKlachten,
+    'garantie_uitsluiten'  => $garantieUitsluitKlachten,
+    'coulance_uitsluiten'  => $coulanceUitsluitKlachten,
+    'taxatie_uitsluiten'   => $taxatieUitsluitKlachten,
+], JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
 
 include __DIR__ . '/includes/header.php';
 ?>
@@ -178,27 +216,55 @@ include __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<div class="form-wrap" id="advies">
+<div class="form-wrap form-wrap--featured" id="advies">
   <div class="form-inner">
     <div class="form-left">
-      <h2 class="section-title">Wat is er mis<br>met je televisie?</h2>
-      <p class="section-lead">Vul je gegevens in en ontvang zo snel mogelijk een persoonlijk advies &mdash; gratis en vrijblijvend.</p>
+      <span class="form-cta-eyebrow">&#128221; Gratis advies &mdash; binnen 24 uur</span>
+      <h2 class="section-title">Vraag gratis<br>advies aan</h2>
+      <p class="section-lead">Op basis van jouw antwoorden kijken wij automatisch welke route het beste bij je past: garantie, coulance, reparatie of taxatie.</p>
       <div class="outcome-list">
         <div class="outcome-item"><div class="oi-icon oi-blue">&#128737;</div> Garantie aanspreken bij de winkel of fabrikant</div>
         <div class="outcome-item"><div class="oi-icon oi-yellow">&#129309;</div> Coulanceregeling bespreken met de verkoper</div>
         <div class="outcome-item"><div class="oi-icon oi-orange">&#128295;</div> Reparatie aan huis door gespecialiseerde monteur</div>
         <div class="outcome-item"><div class="oi-icon oi-purple">&#128203;</div> Taxatierapport opstellen voor uw verzekeraar</div>
+        <div class="outcome-item"><div class="oi-icon" style="background:#d1fae5;color:#065f46">&#9851;</div> Recycling: verantwoorde verwerking van je televisie</div>
+      </div>
+      <div id="routing-indicator" style="display:none;" class="routing-indicator">
+        <div class="routing-label">Mogelijke route op basis van je antwoorden:</div>
+        <div id="routing-badge" class="routing-badge"></div>
+        <div id="routing-toelichting" class="routing-toelichting"></div>
       </div>
     </div>
-    <div>
+    <div class="form-right">
       <div class="form-card">
         <h3>Beschrijf het probleem</h3>
-        <p>Vijf velden en je bent klaar. Je ontvangt binnen &eacute;&eacute;n werkdag een reactie.</p>
-        <?php include __DIR__ . '/includes/components/contact-form.php'; ?>
+        <p>Doorloop de stappen en ontvang binnen &eacute;&eacute;n werkdag een reactie.</p>
+        <?php include __DIR__ . '/includes/components/stap-formulier.php'; ?>
       </div>
     </div>
   </div>
 </div>
+
+<style>
+.form-wrap--featured {
+  border-top: 4px solid #287864;
+  background: linear-gradient(180deg, #f0f9f5 0%, #ffffff 80%);
+}
+.form-cta-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  background: rgba(40,120,100,.1);
+  border: 1px solid rgba(40,120,100,.3);
+  border-radius: 999px;
+  padding: .3rem 1rem;
+  font-size: .8rem;
+  font-weight: 700;
+  color: #287864;
+  letter-spacing: .04em;
+  margin-bottom: 1rem;
+}
+</style>
 
 <div class="section">
   <h2 class="section-title">Wat kun je verwachten?</h2>
