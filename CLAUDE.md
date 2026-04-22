@@ -1,25 +1,21 @@
-## Extra regels voor admin/aanvragen.php fixes, logo, error 500, uploads en overige verbeteringen
+## Extra regels voor notificaties, dashboard.php, aanvragen.php en mijn-aanvraag.php
 
-* In een individuele inzending (aanvragen.php?id=XX) werkt het tandwieltje / "Advies handmatig wijzigen" niet correct. Bij wijzigen van bijv. Coulance naar Reparatie moet de status en indeling ook daadwerkelijk naar Reparatie (of de juiste nieuwe status) worden gezet. Los dit op.
+* Wanneer een inzending in behandeling/afwachting is en de inzender het aanvullende formulier invult:
+  - Toon in het overzicht op dashboard.php en aanvragen.php een groen bolletje links van het Casenummer.
+  - Dit groene bolletje moet verschijnen zodra de status naar "Aanvraag ontvangen" gaat (of vergelijkbare status na inzending van aanvullend formulier).
 
-* Het wijzigen naar status "Recycling" werkt niet in het algemene overzicht van aanvragen.php.
+* Verbeter het recente inzendingen overzicht op dashboard.php:
+  - Voeg het Casenummer toe aan de kolommen.
+  - Toon de huidige status van de inzending.
+  - Plaats het groene bolletje links van het Casenummer wanneer de status "Aanvraag ontvangen" is.
 
-* Verander het logo in de admin hoofdmenu (alle admin pagina's) naar:  
-  https://reparatieplatform.nl/wp-content/uploads/2025/06/REPARATIEPLATFORM-LOGO-WEBSITE-1200x336.png  
-  (vervang het huidige adm-logo).
+* In het individuele overzicht van een inzending (aanvragen.php?id=XX):
+  - Toon alle ingezonden foto's met een klikbare link ernaast.
+  - Maak een lightbox-functionaliteit zodat foto's direct vergroot kunnen worden.
 
-* Los de PHP Fatal errors op in api/aanvulling.php:
-  - Unknown column 'verkoopprijs'
-  - Unknown column 'plaats'
-  Geef indien nodig de exacte SQL ALTER TABLE queries zodat ik ze in phpMyAdmin kan draaien.
-
-* Bij uploaden van foto's in alle formulieren (zowel klant als admin):
-  - Toon een preview van de geüploade foto's voor de inzender.
-  - Toon ook previews in de admin bij het openen van een individuele inzending.
-
-* Maak pagina contact.php aan en vul deze in (met werkend contactformulier).
-
-* Wanneer een inzending in behandeling/afwachting is en de inzender het aanvullende formulier invult, moet dit zichtbaar zijn in het overzicht op dashboard.php en aanvragen.php (bijv. met een groen bolletje of notificatie bij de betreffende inzending).
+* In mijn-aanvraag.php:
+  - Wanneer een formulier is ingevuld en de status "Ingediend" is, moet het ingevulde formulier nog steeds zichtbaar zijn.
+  - Het formulier mag dan alleen in leesmodus zijn (geen invoervelden meer bewerkbaar, geen verzendknop).
 
 * Alle wijzigingen mogen in één commit.
 * Volg ook de bestaande “aanvragen refactor”, status-flow en security audit regels.
