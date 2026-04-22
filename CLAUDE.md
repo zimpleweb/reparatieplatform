@@ -1,12 +1,8 @@
-## Extra regels voor index.php contactformulier (bijgewerkt)
+## Extra regels voor index.php - Stappenplan integratie
 
-* De knop 'Verstuur en ontvang gratis advies →' mag GEEN redirect veroorzaken.
-* Bij succesvolle verzending: toon op dezelfde pagina (exact op de plek van het formulier) de melding:
-  "Bedankt voor je bericht. We kijken het zo snel mogelijk door."
-* Bij fout: toon een duidelijke foutmelding, maar los de onderliggende problemen op.
-* De mailactie moet werken en net zo betrouwbaar zijn als de mailactie op advies.php.
-* Los het huidige probleem op waarbij de melding "Er is iets misgegaan. Controleer uw gegevens en probeer het opnieuw." verschijnt en de mail niet wordt verzonden.
-* Gebruik de bestaande Brevo (Sendinblue) functionaliteit uit mailer.php (getSetting + mailSend). Niet wijzigen wat al werkt, alleen hergebruiken.
-* mailSend() moet bij Brevo-falen terugvallen op PHP mail() als fallback, zodat de mail altijd aankomt.
-* send-contact.php haalt admin-e-mailadressen op uit de admins-tabel (net als send-advies.php), met info@zimpleweb.nl als hardcoded fallback.
-* Reply-To moet het ingevoerde e-mailadres zijn en alle velden moeten duidelijk in de mail staan.
+* Verwijder het volledige huidige contactformulier op index.php (inclusief alle bijbehorende HTML, PHP, JavaScript en eventuele gekoppelde bestanden die alleen voor dit formulier bedoeld zijn).
+* Vervang het verwijderde formulier door het stappenplan-formulier dat ook op advies.php staat.
+* Het stappenplan is (vermoedelijk) een component. Verwijs daarom alleen naar dit component op index.php in plaats van code te dupliceren.
+* Na vervanging: op de plek van het oude formulier moet nu het stappenplan-formulier zichtbaar zijn.
+* Zorg dat het stappenplan op index.php exact hetzelfde werkt als op advies.php (inclusief mailactie / inzending).
+* Verwijder na implementatie alle dode code die alleen bij het oude formulier hoorde.
