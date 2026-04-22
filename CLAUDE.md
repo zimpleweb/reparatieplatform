@@ -1,13 +1,18 @@
-## Extra regels voor route-selectie, type-weergave en groene bolletje
+## Extra regels voor foto-beveiliging en mailacties
 
-* Wanneer een nieuwe inzending met status 'Ontvangen' binnenkomt en in admin/aanvragen.php een route (advies-type) wordt gekozen:
-  - Het gekozen type moet correct worden opgeslagen.
-  - Het type mag niet leeg blijven staan in het algemene overzicht van aanvragen.php.
-  - De route die gekozen wordt bepaalt het type (bijv. Reparatie, Taxatie, Coulance, Recycling).
+* Foto-beveiliging:
+  - Alle geüploade foto's mogen NIET publiek toegankelijk zijn.
+  - Zorg dat foto's alleen zichtbaar zijn voor ingelogde admins (en eventueel de betreffende ingelogde inzender).
+  - Blokkeer directe toegang via URL voor niet-geautoriseerde gebruikers (bijv. via .htaccess, auth-check in PHP of bestandsrechten).
 
-* In de afzonderlijke inzending (aanvragen.php?id=XX) moet het type zichtbaar zijn naast de status (bijv. "Status: Ontvangen | Type: Reparatie").
+* Mailacties controleren en implementeren:
+  - Bericht van admin naar inzending → mail naar de inzender
+  - Bericht van inzender naar admin → mail naar admin
+  - Statuswijziging (voor alle statussen) → notificatie mail naar de inzender
+  - Melding wanneer een inzender een aanvullend formulier heeft ingevuld → mail naar admin
 
-* Het groene bolletje (notificatie dat aanvullend formulier is ingevuld) moet ook werken voor Taxatie, Recycling en Coulance wanneer de inzender het betreffende formulier heeft ingevuld. Pas dit aan indien nodig.
+* Maak (of gebruik bestaande) mailtemplates in admin/mailtemplates.php voor bovenstaande mailacties.
+* Zorg voor nette, duidelijke templates met alle relevante informatie (casenummer, status, link naar inzending, etc.).
 
 * Alle wijzigingen mogen in één commit.
-* Volg ook de bestaande “aanvragen refactor”, status-flow en security audit regels.
+* Volg ook de bestaande security audit regels (vooral bestandsbeveiliging en input/output validatie).
