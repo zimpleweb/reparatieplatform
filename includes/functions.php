@@ -68,6 +68,63 @@ function requireAdmin(): void {
     if (!isAdmin()) redirect(BASE_URL . '/admin/login.php');
 }
 
+// ── Database-backed rate limiting ─────────────────────────────────────────
+
+function _rateLimitMaakTabel(): void {
+    static $done = false;
+    if ($done) return;
+    try {
+        db()->exec("CREATE TABLE IF NOT EXISTS login_attempts (
+            sleutel_hash CHAR(64)     NOT NULL PRIMARY KEY,
+            pogingen     TINYINT      NOT NULL DEFAULT 1,
+            locked_until INT UNSIGNED NOT NULL DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $done = true;
+    } catch (\Throwable $e) {}
+}
+
+function rateLimitBekijk(string $sleutel): array {
+    _rateLimitMaakTabel();
+    $hash = hash('sha256', $sleutel);
+    try {
+        $stmt = db()->prepare('SELECT pogingen, locked_until FROM login_attempts WHERE sleutel_hash = ?');
+        $stmt->execute([$hash]);
+        $rij = $stmt->fetch();
+        return [
+            'geblokkeerd'  => $rij && time() < (int)$rij['locked_until'],
+            'locked_until' => $rij ? (int)$rij['locked_until'] : 0,
+            'pogingen'     => $rij ? (int)$rij['pogingen']     : 0,
+        ];
+    } catch (\Throwable $e) {
+        return ['geblokkeerd' => false, 'locked_until' => 0, 'pogingen' => 0];
+    }
+}
+
+function rateLimitMislukt(string $sleutel, int $max = 5, int $lockSecs = 900): void {
+    _rateLimitMaakTabel();
+    $hash = hash('sha256', $sleutel);
+    try {
+        db()->prepare("
+            INSERT INTO login_attempts (sleutel_hash, pogingen, locked_until) VALUES (?, 1, 0)
+            ON DUPLICATE KEY UPDATE pogingen = pogingen + 1
+        ")->execute([$hash]);
+        $row = db()->prepare('SELECT pogingen FROM login_attempts WHERE sleutel_hash = ?');
+        $row->execute([$hash]);
+        if ((int)$row->fetchColumn() >= $max) {
+            db()->prepare(
+                'UPDATE login_attempts SET locked_until = ? WHERE sleutel_hash = ? AND locked_until <= ?'
+            )->execute([time() + $lockSecs, $hash, time()]);
+        }
+    } catch (\Throwable $e) {}
+}
+
+function rateLimitReset(string $sleutel): void {
+    try {
+        db()->prepare('DELETE FROM login_attempts WHERE sleutel_hash = ?')
+           ->execute([hash('sha256', $sleutel)]);
+    } catch (\Throwable $e) {}
+}
+
 /**
  * Haal een waarde op uit de site_settings tabel.
  * Cached na eerste aanroep binnen dezelfde request.

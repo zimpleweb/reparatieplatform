@@ -18,16 +18,16 @@ if (isAdmin()) {
 }
 
 // ── Rate limiting (max 5 pogingen per IP, 15 min blokkering) ─────
-$rawIp       = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-$ip          = md5(filter_var($rawIp, FILTER_VALIDATE_IP) !== false ? $rawIp : 'unknown');
-$atKey       = 'login_attempts_' . $ip;
-$lockKey     = 'login_locked_until_' . $ip;
+$rawIp       = filter_var($_SERVER['REMOTE_ADDR'] ?? '', FILTER_VALIDATE_IP) !== false
+               ? ($_SERVER['REMOTE_ADDR'] ?? 'unknown') : 'unknown';
+$rlKey       = 'login_' . $rawIp;
 $maxPogingen = 5;
 $lockSecs    = 900;
 
-$lockedUntil = $_SESSION[$lockKey] ?? 0;
-$isLocked    = time() < $lockedUntil;
-$pogingen    = $_SESSION[$atKey] ?? 0;
+$rl          = rateLimitBekijk($rlKey);
+$isLocked    = $rl['geblokkeerd'];
+$lockedUntil = $rl['locked_until'];
+$pogingen    = $rl['pogingen'];
 $remainSecs  = max(0, $lockedUntil - time());
 
 $errorMsg = '';
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'credent
         $admin = $row->fetch();
 
         if ($admin && password_verify($_POST['password'] ?? '', $admin['password'])) {
-            unset($_SESSION[$atKey], $_SESSION[$lockKey]);
+            rateLimitReset($rlKey);
 
             if (!empty($admin['totp_enabled']) && !empty($admin['totp_secret'])) {
                 // 2FA vereist: sla tussentijdse staat op
@@ -69,11 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'credent
                 exit;
             }
         } else {
-            $pogingen++;
-            $_SESSION[$atKey] = $pogingen;
-            if ($pogingen >= $maxPogingen) {
-                $_SESSION[$lockKey] = time() + $lockSecs;
-                unset($_SESSION[$atKey]);
+            rateLimitMislukt($rlKey, $maxPogingen, $lockSecs);
+            $rl       = rateLimitBekijk($rlKey);
+            $pogingen = $rl['pogingen'];
+            if ($rl['geblokkeerd']) {
                 $isLocked   = true;
                 $remainSecs = $lockSecs;
                 $errorMsg   = "Te veel mislukte pogingen. Probeer over 15 minuten opnieuw.";
@@ -115,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === '2fa') {
     }
 }
 
-$huidigPogingen = $_SESSION[$atKey] ?? 0;
+$huidigPogingen = $pogingen;
 ?>
 <!DOCTYPE html>
 <html lang="nl">
