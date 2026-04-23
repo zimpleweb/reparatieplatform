@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit') {
     $id = (int)$_POST['id'];
     db()->prepare(
-        'UPDATE tv_modellen SET merk=?,serie=?,modelnummer=?,beschrijving=?,repareerbaar=?,taxatie=? WHERE id=?'
+        'UPDATE tv_modellen SET merk=?,serie=?,modelnummer=?,beschrijving=?,repareerbaar=?,taxatie=?,reparatie_titel=?,reparatie_tekst=?,taxatie_titel=?,taxatie_tekst=? WHERE id=?'
     )->execute([
         trim($_POST['merk'] ?? ''),
         trim($_POST['serie'] ?? ''),
@@ -66,6 +66,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit'
         trim($_POST['beschrijving'] ?? ''),
         isset($_POST['repareerbaar']) ? 1 : 0,
         isset($_POST['taxatie'])      ? 1 : 0,
+        trim($_POST['reparatie_titel'] ?? '') ?: null,
+        trim($_POST['reparatie_tekst'] ?? '') ?: null,
+        trim($_POST['taxatie_titel']   ?? '') ?: null,
+        trim($_POST['taxatie_tekst']   ?? '') ?: null,
         $id,
     ]);
     $msg = 'Model &ldquo;' . h($_POST['modelnummer'] ?? '') . '&rdquo; bijgewerkt.';
@@ -284,6 +288,28 @@ require_once __DIR__ . '/includes/admin-header.php';
       <div class="field">
         <label>Beschrijving</label>
         <textarea name="beschrijving" rows="3"><?= h($editModel['beschrijving']) ?></textarea>
+      </div>
+      <p class="form-section-title">Reparatie tekst (optioneel &mdash; toon alleen als Repareerbaar aangevinkt)</p>
+      <div class="form-row-2">
+        <div class="field">
+          <label>Reparatie titel</label>
+          <input type="text" name="reparatie_titel" value="<?= h($editModel['reparatie_titel'] ?? '') ?>" placeholder="Bijv. Reparatie aan huis&hellip;">
+        </div>
+        <div class="field">
+          <label>Reparatie tekst</label>
+          <textarea name="reparatie_tekst" rows="2"><?= h($editModel['reparatie_tekst'] ?? '') ?></textarea>
+        </div>
+      </div>
+      <p class="form-section-title">Taxatie tekst (optioneel &mdash; toon alleen als Taxatie aangevinkt)</p>
+      <div class="form-row-2">
+        <div class="field">
+          <label>Taxatie titel</label>
+          <input type="text" name="taxatie_titel" value="<?= h($editModel['taxatie_titel'] ?? '') ?>" placeholder="Bijv. Taxatie voor verzekeraar&hellip;">
+        </div>
+        <div class="field">
+          <label>Taxatie tekst</label>
+          <textarea name="taxatie_tekst" rows="2"><?= h($editModel['taxatie_tekst'] ?? '') ?></textarea>
+        </div>
       </div>
       <p class="form-section-title">Advies-vlaggen (afwijking van merk-standaard = uitzondering)</p>
       <div class="cb-row">
