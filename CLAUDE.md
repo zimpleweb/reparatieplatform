@@ -1,9 +1,9 @@
-## Extra regels voor TV-pagina formulier
+## Extra regels voor TV-pagina's & stappenplan
 
-* Op TV-pagina's (bijv. /tv/... of /nieuw/tv/...) toon onderaan bij "Wat zijn de mogelijkheden voor jouw..." hetzelfde stappenplan formulier als op advies.php / index.php.
-* Gebruik bij voorkeur het bestaande component (stap-wizard of vergelijkbaar) voor hergebruik.
-* Bij stap 2 (TV gegevens): vul automatisch Merk en Modelnummer in op basis van de huidige pagina URL/slug (bijv. hisense-43a6g → Merk: Hisense, Model: 43a6g).
-* Doe dit dynamisch voor alle TV-pagina's (geen aparte bestanden per model).
+* Op tv/index.php én op individuele TV-pagina's (bijv. /nieuw/tv/hisense-43a6g) moet onderaan het volledige stappenplan formulier komen te staan (hetzelfde als op advies.php en index.php).
+* Gebruik bij voorkeur een herbruikbaar component om duplicatie te voorkomen.
+* In stap 2 (TV gegevens) op een individuele TV-pagina: vul automatisch Merk en Modelnummer in op basis van de URL/slug (bijv. hisense-43a6g → Merk: Hisense, Model: 43a6g).
+* Werk volledig dynamisch — geen aparte scripts per TV-model.
 * Als SQL-wijziging nodig is: geef SQL-code apart voor phpMyAdmin.
 * Alle wijzigingen in **één enkele commit**.
 
