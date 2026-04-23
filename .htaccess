@@ -7,7 +7,7 @@ RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # /nieuw/tv/samsung-ue55cu8000 → tv.php?slug=samsung-ue55cu8000
-RewriteRule ^tv/([a-z0-9-]+)/?$ tv.php?slug=$1 [L,QSA]
+RewriteRule ^tv/([a-z0-9-]+)/?$ tv/index.php?slug=$1 [L,QSA]
 
 # Blokkeer directe toegang tot includes/
 RewriteRule ^includes/ - [F,L]
