@@ -163,15 +163,14 @@ include __DIR__ . '/../includes/header.php';
     <div class="card">
       <h2>Reparatie van de <?= h($tv['merk'].' '.$tv['modelnummer']) ?></h2>
       <p>
-        De <?= h($tv['merk'].' '.$tv['modelnummer']) ?> is een televisie van <?= h($tv['merk']) ?>.
-        Wij zijn gespecialiseerd in het repareren van <?= h($tv['merk']) ?>-televisies aan huis.
-        LED strips, T-CON boards en backlight-problemen zijn onze specialiteit.
+        <?php if ($blokTekst): ?>
+          <?= h($blokTekst) ?>
+        <?php else: ?>
+          De <?= h($tv['merk'].' '.$tv['modelnummer']) ?> is een televisie van <?= h($tv['merk']) ?>.
+          Wij zijn gespecialiseerd in het repareren van <?= h($tv['merk']) ?>-televisies aan huis.
+        <?php endif; ?>
       </p>
-      <p>
-        Heb je een beschadigde <?= h($tv['modelnummer']) ?> en wil je weten of reparatie loont?
-        Of heb je een taxatierapport nodig voor je verzekeraar?
-        Vraag gratis en vrijblijvend advies aan via het <a href="#advies">stappenplan hieronder</a>.
-      </p>
+      <p><a href="#advies">Beschrijf jouw probleem</a> en ontvang binnen één werkdag persoonlijk advies over de mogelijkheden voor jouw <?= h($tv['modelnummer']) ?>.</p>
     </div>
 
     <?php if (!empty($tv['klachten'])): ?>
