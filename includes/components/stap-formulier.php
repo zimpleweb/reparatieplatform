@@ -96,7 +96,7 @@
         <p class="field-hint">Staat achter op de tv of via Instellingen &rarr; Ondersteuning</p>
       </div>
     </div>
-    <div id="repareerbaar-feedback" style="display:none;"></div>
+    <div id="repareerbaar-feedback" style="display:none;"<?= !empty($suppressRepFeedback) ? ' data-suppress="1"' : '' ?>></div>
     <div class="field-row">
       <div class="field">
         <label>Aanschafjaar *</label>
@@ -266,7 +266,7 @@ function checkRepareerbaar() {
 }
 function toonRepFeedback() {
   const fb = document.getElementById('repareerbaar-feedback');
-  if (!fb || !_rep.geladen) return;
+  if (!fb || !_rep.geladen || fb.dataset.suppress === '1') return;
   if (!_rep.gevonden) { fb.style.display = 'none'; return; }
   if (_rep.repareerbaar) {
     fb.className = 'rep-feedback rep-ok';

@@ -102,8 +102,29 @@ $klachtRoutingJs = json_encode([
 ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
 
 // Pre-fill stap 2 vanuit TV-model (afgeleid van URL/slug)
-$prefillMerk        = $tv['merk'];
-$prefillModelnummer = $tv['modelnummer'];
+$prefillMerk         = $tv['merk'];
+$prefillModelnummer  = $tv['modelnummer'];
+$suppressRepFeedback = true; // Model is bekend; repareerbaar-feedback niet tonen
+
+// ── Rep/Tax blok: één gecombineerde tekst ─────────────────────────────────
+$heeftRep     = !empty($tv['repareerbaar']);
+$heeftTaxatie = !empty($tv['taxatie']);
+$blokTitel    = '';
+$blokTekst    = '';
+if ($heeftRep && $heeftTaxatie) {
+    $blokTitel = !empty($tv['reparatie_titel']) ? $tv['reparatie_titel'] : 'Reparatie & taxatie mogelijk';
+    $blokTekst = trim(
+        (!empty($tv['reparatie_tekst']) ? $tv['reparatie_tekst'].' ' : '').
+        (!empty($tv['taxatie_tekst'])   ? $tv['taxatie_tekst']        : '')
+    );
+    if (!$blokTekst) $blokTekst = 'Dit model kan worden gerepareerd aan huis. Ook is een officieel taxatierapport voor uw verzekeraar mogelijk.';
+} elseif ($heeftTaxatie) {
+    $blokTitel = !empty($tv['taxatie_titel']) ? $tv['taxatie_titel'] : 'Taxatie mogelijk';
+    $blokTekst = !empty($tv['taxatie_tekst']) ? $tv['taxatie_tekst'] : 'Voor dit model kan een officieel taxatierapport voor uw verzekeraar worden opgesteld.';
+} elseif ($heeftRep) {
+    $blokTitel = !empty($tv['reparatie_titel']) ? $tv['reparatie_titel'] : 'Reparatie mogelijk';
+    $blokTekst = !empty($tv['reparatie_tekst']) ? $tv['reparatie_tekst'] : 'Dit model kan worden gerepareerd aan huis door een gespecialiseerde monteur.';
+}
 
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -137,7 +158,31 @@ include __DIR__ . '/../includes/header.php';
       </div>
     </div>
 
-    <?php $klachten = $tv['klachten']; include __DIR__ . '/partials/defecten.php'; ?>
+    <!-- Bekende defecten & Reparatie/Taxatie: 2 kolommen, gelijke hoogte -->
+    <div class="defecten-reptax-row">
+      <div class="defecten-reptax-col">
+        <?php $klachten = $tv['klachten']; include __DIR__ . '/partials/defecten.php'; ?>
+      </div>
+      <div class="defecten-reptax-col">
+        <div class="info-card">
+          <h4>Reparatie &amp; Taxatie</h4>
+          <div class="info-row">
+            <span class="info-icon"><?= $heeftRep ? '&#10003;' : '&#10007;' ?></span>
+            <p><strong>Reparatie</strong></p>
+          </div>
+          <div class="info-row">
+            <span class="info-icon"><?= $heeftTaxatie ? '&#10003;' : '&#10007;' ?></span>
+            <p><strong>Taxatie</strong></p>
+          </div>
+          <?php if ($heeftRep || $heeftTaxatie): ?>
+          <div class="rep-tax-blok">
+            <h5><?= h($blokTitel) ?></h5>
+            <p><?= h($blokTekst) ?></p>
+          </div>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
 
     <div class="card">
       <h2>Reparatie van de <?= h($tv['merk'].' '.$tv['modelnummer']) ?></h2>
@@ -185,37 +230,13 @@ include __DIR__ . '/../includes/header.php';
 
     <?php include __DIR__ . '/partials/sidebar-specs.php'; ?>
 
-    <div class="info-card">
-      <h4>Reparatie &amp; Taxatie</h4>
-      <div class="info-row">
-        <span class="info-icon"><?= $tv['repareerbaar'] ? '&#10003;' : '&#10007;' ?></span>
-        <p><strong>Reparatie</strong></p>
-      </div>
-      <div class="info-row">
-        <span class="info-icon"><?= $tv['taxatie'] ? '&#10003;' : '&#10007;' ?></span>
-        <p><strong>Taxatie</strong></p>
-      </div>
-      <?php if ($tv['repareerbaar'] && !empty($tv['reparatie_titel'])): ?>
-      <div class="rep-tax-blok">
-        <h5><?= h($tv['reparatie_titel']) ?></h5>
-        <?php if (!empty($tv['reparatie_tekst'])): ?><p><?= h($tv['reparatie_tekst']) ?></p><?php endif; ?>
-      </div>
-      <?php endif; ?>
-      <?php if ($tv['taxatie'] && !empty($tv['taxatie_titel'])): ?>
-      <div class="rep-tax-blok">
-        <h5><?= h($tv['taxatie_titel']) ?></h5>
-        <?php if (!empty($tv['taxatie_tekst'])): ?><p><?= h($tv['taxatie_tekst']) ?></p><?php endif; ?>
-      </div>
-      <?php endif; ?>
-    </div>
-
     <?php if (!empty($related)): ?>
     <div class="related-card">
       <h4>Vergelijkbare modellen</h4>
       <div class="related-list">
-        <?php foreach ($related as $r): ?>
-        <a href="/nieuw/<?= h($r['slug']) ?>" class="related-link">
-          <?= h($r['merk'].' '.$r['modelnummer']) ?>
+        <?php foreach ($related as $relTv): ?>
+        <a href="/tv/<?= h($relTv['slug']) ?>" class="related-link">
+          <?= h($relTv['merk'].' '.$relTv['modelnummer']) ?>
         </a>
         <?php endforeach; ?>
       </div>
@@ -258,6 +279,131 @@ include __DIR__ . '/../includes/header.php';
   letter-spacing: .04em;
   margin-bottom: 1rem;
 }
+
+/* ── Defecten + Reparatie/Taxatie: 2 kolommen, gelijke hoogte ── */
+.defecten-reptax-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+  margin-bottom: 1.5rem;
+}
+.defecten-reptax-col {
+  display: flex;
+  flex-direction: column;
+}
+.defecten-reptax-col .model-card,
+.defecten-reptax-col .info-card {
+  flex: 1;
+  margin-bottom: 0;
+}
+.rep-tax-blok {
+  margin-top: 1rem;
+  padding-top: .85rem;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+.rep-tax-blok h5 {
+  font-size: .875rem;
+  font-weight: 700;
+  color: var(--ink, #1a2332);
+  margin: 0 0 .4rem;
+}
+.rep-tax-blok p {
+  font-size: .82rem;
+  color: var(--muted, #6b7280);
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* ── Zo werkt het (lichte variant, identiek aan advies.php) ── */
+.stappen-sectie-licht {
+  background: #f8fafc;
+  padding: 4rem 2.5rem;
+}
+.stappen-sectie-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.stappen-titel-licht {
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  font-weight: 800;
+  color: #1a2332;
+  letter-spacing: -.025em;
+  margin-bottom: .5rem;
+  text-align: center;
+}
+.stappen-lead-licht {
+  font-size: 1rem;
+  color: #64748b;
+  max-width: 48ch;
+  margin: 0 auto 2.5rem;
+  text-align: center;
+  line-height: 1.75;
+}
+.zowerkhet-steps-licht {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+.zowerkhet-step-licht {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.zowerkhet-step-licht:hover {
+  border-color: #287864;
+  box-shadow: 0 4px 16px rgba(40,120,100,.1);
+}
+.zowerkhet-step-num-licht {
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  color: #287864;
+  text-transform: uppercase;
+}
+.zowerkhet-step-icon-licht { font-size: 1.75rem; line-height: 1; }
+.zowerkhet-step-licht h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #1a2332;
+  letter-spacing: -.02em;
+  margin: 0;
+}
+.zowerkhet-step-licht p {
+  font-size: .875rem;
+  color: #475569;
+  line-height: 1.7;
+  margin: 0;
+  max-width: 36ch;
+}
+.zowerkhet-step-badge-licht {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  background: rgba(40,120,100,.08);
+  border: 1px solid rgba(40,120,100,.25);
+  border-radius: 999px;
+  padding: .25rem .75rem;
+  font-size: .72rem;
+  font-weight: 700;
+  color: #287864;
+  margin-top: auto;
+  width: fit-content;
+}
+
+@media (max-width: 768px) {
+  .stappen-sectie-licht { padding: 3rem 1.25rem; }
+  .zowerkhet-steps-licht { grid-template-columns: 1fr; }
+  .zowerkhet-step-licht { padding: 1.5rem 1.25rem; }
+}
+@media (max-width: 640px) {
+  .defecten-reptax-row { grid-template-columns: 1fr; }
+}
 </style>
 
 <div class="form-wrap form-wrap--featured" id="advies">
@@ -299,5 +445,39 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 </script>
+
+<!-- Zo werkt het: identiek aan advies.php (stap 02 zonder repareerbaar-advies) -->
+<div class="stappen-sectie-licht">
+  <div class="stappen-sectie-inner">
+
+    <h2 class="stappen-titel-licht">Zo werkt het</h2>
+    <p class="stappen-lead-licht">Geen technische kennis nodig. Beschrijf het probleem en wij denken met je mee.</p>
+
+    <div class="zowerkhet-steps-licht">
+      <div class="zowerkhet-step-licht">
+        <span class="zowerkhet-step-num-licht">Stap 01</span>
+        <div class="zowerkhet-step-icon-licht">&#128221;</div>
+        <h3>Formulier invullen</h3>
+        <p>Vul het aankoopjaar en een korte omschrijving in. Duurt minder dan twee minuten en je hebt er geen technische kennis voor nodig.</p>
+        <span class="zowerkhet-step-badge-licht">&#10003; Gratis</span>
+      </div>
+      <div class="zowerkhet-step-licht">
+        <span class="zowerkhet-step-num-licht">Stap 02</span>
+        <div class="zowerkhet-step-icon-licht">&#128269;</div>
+        <h3>Wij bekijken jouw situatie</h3>
+        <p>Een specialist beoordeelt je aanvraag op garantie, coulance, reparatiemogelijkheden en de waarde van je televisie.</p>
+        <span class="zowerkhet-step-badge-licht">&#10003; Persoonlijk advies</span>
+      </div>
+      <div class="zowerkhet-step-licht">
+        <span class="zowerkhet-step-num-licht">Stap 03</span>
+        <div class="zowerkhet-step-icon-licht">&#128233;</div>
+        <h3>Advies binnen 24 uur</h3>
+        <p>Je ontvangt een helder advies per e-mail met concrete vervolgstappen &mdash; of het nu garantie, coulance, reparatie of taxatie is.</p>
+        <span class="zowerkhet-step-badge-licht">&#10003; Binnen 1 werkdag</span>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>
