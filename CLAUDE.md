@@ -1,14 +1,9 @@
-## Extra regels voor TV-pagina's (tv/index.php) - Info tekst & links
+## Extra regels voor Taxatie formulier & mijn-aanvraag.php
 
-* Op individuele TV-pagina's (bijv. /tv/lg-43nano756qa):
-  - Het info-blok (ID card) met tekst "Reparatie van de [Merk Model]" moet dynamisch één van de drie teksten tonen op basis van database:
-    1. Beide (reparatie + taxatie mogelijk) → gecombineerde tekst over reparatie én taxatie
-    2. Alleen taxatie → tekst over alleen taxatie
-    3. Alleen reparatie → tekst over alleen reparatie
-  - "Beschrijf jouw probleem" moet een anchor link worden naar het stappenplan formulier onderaan dezelfde pagina.
-* Houd alle voorgaande TV-pagina regels van kracht (breadcrumbs, links /nieuw/, Reparatie & Taxatie sectie, etc.).
-* Gebruik bestaande componenten en database-velden waar mogelijk.
-* Als SQL-wijziging nodig is: geef SQL-code apart voor phpMyAdmin.
+* Los de PHP Fatal error op in api/aanvulling.php: Unknown column 'postcode' (SQLSTATE[42S22]).
+* Zorg dat het taxatie formulier op mijn-aanvraag.php dezelfde functionaliteit krijgt als het reparatieformulier:
+  - Preview van geüploade foto's tonen na upload.
+* Geef eventuele SQL-wijzigingen apart in SQL-code voor phpMyAdmin.
 * Alle wijzigingen in **één enkele commit**.
 
 Maak dit als één atomic commit met unified diff voor CLAUDE.md.
