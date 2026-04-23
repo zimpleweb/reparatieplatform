@@ -1,13 +1,17 @@
-## Extra regels voor Reparatie & Taxatie + links op TV-pagina's
+## Extra regels voor individuele TV-pagina's (tv/index.php)
 
-* Op individuele TV-pagina's (tv/index.php, bijv. /tv/lg-43nano756qa):
-  - Corrigeer breadcrumbs en links naar "vergelijkbare modellen" naar /nieuw/... in plaats van root (/).
-  - In de "Reparatie & Taxatie" sectie:
-    - Altijd beide opties tonen: "Reparatie" en "Taxatie" met ✓ of ✕ op basis van database.
-    - Toon daarnaast maximaal 2 tekstblokken (alleen als ingeschakeld in DB):
-      - "Reparatie" met eigen titel + beschrijvende tekst
-      - "Taxatie" met eigen titel + beschrijvende tekst
-* Gebruik bestaande componenten en database-velden waar mogelijk.
+* Op individuele TV-pagina's (bijv. /tv/lg-43nano756qa):
+  - Corrigeer breadcrumbs en links naar vergelijkbare modellen zodat ze exact dezelfde structuur volgen als in database.php (naar /nieuw/... in plaats van root).
+  - Reparatie & Taxatie sectie:
+    - Toon één gecombineerde tekstkop afhankelijk van database:
+      1. Beide (reparatie + taxatie mogelijk) → tekst over reparatie én taxatie
+      2. Alleen taxatie → tekst over taxatie
+      3. Alleen reparatie → tekst over reparatie
+  - Zorg dat de kolommen aan de linkerkant (Bekende defecten & Reparatie/Taxatie) exact dezelfde hoogte hebben (verwijder extra ruimte).
+  - Stappenplan onderaan: maak dit identiek aan het stappenplan op index.php en advies.php.
+    - Verwijder in stap 2 elk advies over "wel/niet repareerbaar".
+    - Enige verschil: vul Merk en Modelnummer automatisch in vanuit de URL (bijv. lg-43nano756qa → Merk: LG, Model: 43NANO756QA).
+* Gebruik bestaande componenten waar mogelijk.
 * Als SQL-wijziging nodig is: geef SQL-code apart voor phpMyAdmin.
 * Alle wijzigingen in **één enkele commit**.
 
