@@ -8,6 +8,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCsrf($_POST['csrf_token'] ??
     redirect(BASE_URL . '/?error=csrf');
 }
 
+// ── Rate limiting: max 10 inzendingen per IP per 10 minuten ────
+$rlKey = 'advies_' . (filter_var($_SERVER['REMOTE_ADDR'] ?? '', FILTER_VALIDATE_IP) !== false
+    ? $_SERVER['REMOTE_ADDR'] : 'unknown');
+$rl = rateLimitBekijk($rlKey);
+if ($rl['geblokkeerd']) {
+    redirect(BASE_URL . '/advies.php?error=ratelimit');
+}
+rateLimitMislukt($rlKey, 10, 600);
+
+// ── reCAPTCHA v3 ────────────────────────────────────────────────
+if (!verifyRecaptcha($_POST['recaptcha_token'] ?? '', 'advies')) {
+    redirect(BASE_URL . '/advies.php?error=captcha');
+}
+
 $merk              = trim($_POST['merk']              ?? '');
 $modelnummer       = trim($_POST['modelnummer']       ?? '');
 $aanschafjaar      = trim($_POST['aanschafjaar']      ?? '');

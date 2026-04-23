@@ -12,6 +12,24 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCsrf($_POST['csrf_token'] ??
     exit;
 }
 
+// ── Rate limiting: max 10 berichten per IP per 10 minuten ──────
+$rlKey = 'contactalg_' . (filter_var($_SERVER['REMOTE_ADDR'] ?? '', FILTER_VALIDATE_IP) !== false
+    ? $_SERVER['REMOTE_ADDR'] : 'unknown');
+$rl = rateLimitBekijk($rlKey);
+if ($rl['geblokkeerd']) {
+    http_response_code(429);
+    echo json_encode(['ok' => false, 'error' => 'ratelimit']);
+    exit;
+}
+rateLimitMislukt($rlKey, 10, 600);
+
+// ── reCAPTCHA v3 ────────────────────────────────────────────────
+if (!verifyRecaptcha($_POST['recaptcha_token'] ?? '', 'contact')) {
+    http_response_code(429);
+    echo json_encode(['ok' => false, 'error' => 'captcha']);
+    exit;
+}
+
 $naam       = strip_tags(trim($_POST['naam']       ?? ''));
 $email      = filter_var(trim($_POST['email']      ?? ''), FILTER_VALIDATE_EMAIL);
 $onderwerp  = strip_tags(trim($_POST['onderwerp']  ?? ''));

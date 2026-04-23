@@ -35,6 +35,9 @@ function isUitzondering(array $merkLijst, string $merk, int $modelWaarde): ?stri
 
 // ── Toevoegen ─────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        http_response_code(403); exit('Ongeldig beveiligingstoken.');
+    }
     $merk    = trim($_POST['merk'] ?? '');
     $modelNr = trim($_POST['modelnummer'] ?? '');
     $slug    = slugify($merk . ' ' . $modelNr);
@@ -56,6 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
 
 // ── Bewerken ──────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit') {
+    if (!verifyCsrf($_POST['csrf'] ?? '')) {
+        http_response_code(403); exit('Ongeldig beveiligingstoken.');
+    }
     $id = (int)$_POST['id'];
     db()->prepare(
         'UPDATE tv_modellen SET merk=?,serie=?,modelnummer=?,beschrijving=?,repareerbaar=?,taxatie=?,reparatie_titel=?,reparatie_tekst=?,taxatie_titel=?,taxatie_tekst=? WHERE id=?'
@@ -266,6 +272,7 @@ require_once __DIR__ . '/includes/admin-header.php';
       <?php endif; ?>
     </h2>
     <form method="POST" class="form-admin">
+      <input type="hidden" name="csrf"   value="<?= csrf() ?>">
       <input type="hidden" name="action" value="edit">
       <input type="hidden" name="id"     value="<?= $editModel['id'] ?>">
       <div class="form-row-3">
@@ -350,6 +357,7 @@ require_once __DIR__ . '/includes/admin-header.php';
   <div class="admin-card">
     <h2>&#43; Nieuw model toevoegen</h2>
     <form method="POST" class="form-admin" id="add_form">
+      <input type="hidden" name="csrf"   value="<?= csrf() ?>">
       <input type="hidden" name="action" value="add">
       <datalist id="merken-list">
         <?php foreach ($alleMerken ?: ['Samsung','Philips','Sony','LG','Panasonic','Hisense','TCL','Anders'] as $m): ?>
