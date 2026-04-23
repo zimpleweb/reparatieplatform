@@ -1,6 +1,7 @@
 <?php
 ob_start();
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 error_reporting(0);
 ini_set('display_errors', 0);
@@ -9,6 +10,17 @@ ob_clean();
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache');
+
+// ── Rate limiting: max 120 zoekopdrachten per IP per minuut ──
+$rlKey = 'ac_' . (filter_var($_SERVER['REMOTE_ADDR'] ?? '', FILTER_VALIDATE_IP) !== false
+    ? $_SERVER['REMOTE_ADDR'] : 'unknown');
+$rl = rateLimitBekijk($rlKey);
+if ($rl['geblokkeerd']) {
+    http_response_code(429);
+    echo '[]';
+    exit;
+}
+rateLimitMislukt($rlKey, 120, 60);
 
 $q = trim($_GET['q'] ?? '');
 

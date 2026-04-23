@@ -78,7 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'beric
                 $ins->execute([$aanvraagId, 'Bericht verstuurd aan klant', $berichtTxt]);
                 $msg = 'Bericht opgeslagen in de activiteitenlog.';
             } catch (\PDOException $e) {
-                $fout = 'Kon bericht niet opslaan: ' . h($e->getMessage());
+                error_log('aanvragen bericht opslaan: ' . $e->getMessage());
+                $fout = 'Kon bericht niet opslaan. Probeer het opnieuw.';
             }
             // Mail naar inzender
             try {
