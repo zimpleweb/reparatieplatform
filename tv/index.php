@@ -133,8 +133,8 @@ include __DIR__ . '/../includes/header.php';
   <div class="breadcrumb">
     <a href="/">Home</a><span class="sep">/</span>
     <a href="/nieuw/">Database</a><span class="sep">/</span>
-    <a href="/nieuw/<?= slugify($tv['merk']) ?>"><?= h($tv['merk']) ?></a><span class="sep">/</span>
-    <a href="/nieuw/<?= slugify($tv['merk']) ?>/<?= slugify($tv['serie']) ?>"><?= h($tv['serie']) ?></a><span class="sep">/</span>
+    <a href="/nieuw/database.php?merk=<?= urlencode($tv['merk']) ?>"><?= h($tv['merk']) ?></a><span class="sep">/</span>
+    <a href="/nieuw/database.php?merk=<?= urlencode($tv['merk']) ?>"><?= h($tv['serie']) ?></a><span class="sep">/</span>
     <span><?= h($tv['modelnummer']) ?></span>
   </div>
 </div>
@@ -158,31 +158,7 @@ include __DIR__ . '/../includes/header.php';
       </div>
     </div>
 
-    <!-- Bekende defecten & Reparatie/Taxatie: 2 kolommen, gelijke hoogte -->
-    <div class="defecten-reptax-row">
-      <div class="defecten-reptax-col">
-        <?php $klachten = $tv['klachten']; include __DIR__ . '/partials/defecten.php'; ?>
-      </div>
-      <div class="defecten-reptax-col">
-        <div class="info-card">
-          <h4>Reparatie &amp; Taxatie</h4>
-          <div class="info-row">
-            <span class="info-icon"><?= $heeftRep ? '&#10003;' : '&#10007;' ?></span>
-            <p><strong>Reparatie</strong></p>
-          </div>
-          <div class="info-row">
-            <span class="info-icon"><?= $heeftTaxatie ? '&#10003;' : '&#10007;' ?></span>
-            <p><strong>Taxatie</strong></p>
-          </div>
-          <?php if ($heeftRep || $heeftTaxatie): ?>
-          <div class="rep-tax-blok">
-            <h5><?= h($blokTitel) ?></h5>
-            <p><?= h($blokTekst) ?></p>
-          </div>
-          <?php endif; ?>
-        </div>
-      </div>
-    </div>
+    <?php $klachten = $tv['klachten']; include __DIR__ . '/partials/defecten.php'; ?>
 
     <div class="card">
       <h2>Reparatie van de <?= h($tv['merk'].' '.$tv['modelnummer']) ?></h2>
@@ -230,12 +206,30 @@ include __DIR__ . '/../includes/header.php';
 
     <?php include __DIR__ . '/partials/sidebar-specs.php'; ?>
 
+    <div class="info-card">
+      <h4>Reparatie &amp; Taxatie</h4>
+      <div class="info-row">
+        <span class="info-icon"><?= $heeftRep ? '&#10003;' : '&#10007;' ?></span>
+        <p><strong>Reparatie</strong></p>
+      </div>
+      <div class="info-row">
+        <span class="info-icon"><?= $heeftTaxatie ? '&#10003;' : '&#10007;' ?></span>
+        <p><strong>Taxatie</strong></p>
+      </div>
+      <?php if ($heeftRep || $heeftTaxatie): ?>
+      <div class="rep-tax-blok">
+        <h5><?= h($blokTitel) ?></h5>
+        <p><?= h($blokTekst) ?></p>
+      </div>
+      <?php endif; ?>
+    </div>
+
     <?php if (!empty($related)): ?>
     <div class="related-card">
       <h4>Vergelijkbare modellen</h4>
       <div class="related-list">
         <?php foreach ($related as $relTv): ?>
-        <a href="/tv/<?= h($relTv['slug']) ?>" class="related-link">
+        <a href="/nieuw/tv/<?= h($relTv['slug']) ?>" class="related-link">
           <?= h($relTv['merk'].' '.$relTv['modelnummer']) ?>
         </a>
         <?php endforeach; ?>
