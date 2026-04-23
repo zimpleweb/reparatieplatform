@@ -1,9 +1,11 @@
-## Extra regels voor TV-pagina's & stappenplan
+## Extra regels voor individuele TV-pagina's (tv/index.php)
 
-* Op tv/index.php én op individuele TV-pagina's (bijv. /nieuw/tv/hisense-43a6g) moet onderaan het volledige stappenplan formulier komen te staan (hetzelfde als op advies.php en index.php).
-* Gebruik bij voorkeur een herbruikbaar component om duplicatie te voorkomen.
-* In stap 2 (TV gegevens) op een individuele TV-pagina: vul automatisch Merk en Modelnummer in op basis van de URL/slug (bijv. hisense-43a6g → Merk: Hisense, Model: 43a6g).
-* Werk volledig dynamisch — geen aparte scripts per TV-model.
+* Verwijder op individuele TV-pagina's (bijv. /tv/lg-43nano756qa) het rechter gedeelte "Gratis advies aanvragen" inclusief het hele formulier.
+* Onder de Specificaties-kolom: voeg een nieuwe sectie "Reparatie & Taxatie" toe. Toon "Reparatie mogelijk" en/of "Taxatie mogelijk" alleen als dit in de database staat voor dat merk/model.
+* Verplaats de bestaande Specificaties + inhoud naar de plek waar voorheen "Reparatiemogelijkheden" stond.
+* Op de oude plek van Specificaties: toon nu "Bekende defecten" (gegevens uit de database via admin).
+* Direct onder de H1 titel (bijv. "LG 50NANO756QA") de model-sub vervangen door een duidelijke call-to-action naar het stappenplan onderaan de pagina.
+* Gebruik waar mogelijk bestaande componenten.
 * Als SQL-wijziging nodig is: geef SQL-code apart voor phpMyAdmin.
 * Alle wijzigingen in **één enkele commit**.
 
