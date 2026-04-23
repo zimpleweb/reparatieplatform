@@ -111,9 +111,9 @@ include __DIR__ . '/../includes/header.php';
 <div class="breadcrumb-bar">
   <div class="breadcrumb">
     <a href="/">Home</a><span class="sep">/</span>
-    <a href="/database.php">Database</a><span class="sep">/</span>
-    <a href="/database.php?merk=<?= urlencode($tv['merk']) ?>"><?= h($tv['merk']) ?></a><span class="sep">/</span>
-    <a href="/database.php?merk=<?= urlencode($tv['merk']) ?>&serie=<?= urlencode($tv['serie']) ?>"><?= h($tv['serie']) ?></a><span class="sep">/</span>
+    <a href="/nieuw/">Database</a><span class="sep">/</span>
+    <a href="/nieuw/<?= slugify($tv['merk']) ?>"><?= h($tv['merk']) ?></a><span class="sep">/</span>
+    <a href="/nieuw/<?= slugify($tv['merk']) ?>/<?= slugify($tv['serie']) ?>"><?= h($tv['serie']) ?></a><span class="sep">/</span>
     <span><?= h($tv['modelnummer']) ?></span>
   </div>
 </div>
@@ -185,24 +185,36 @@ include __DIR__ . '/../includes/header.php';
 
     <?php include __DIR__ . '/partials/sidebar-specs.php'; ?>
 
-    <?php if ($tv['repareerbaar'] || $tv['taxatie']): ?>
     <div class="info-card">
       <h4>Reparatie &amp; Taxatie</h4>
-      <?php if ($tv['repareerbaar']): ?>
-      <div class="info-row"><span class="info-icon">&#128295;</span><p><strong>Reparatie mogelijk</strong></p></div>
+      <div class="info-row">
+        <span class="info-icon"><?= $tv['repareerbaar'] ? '&#10003;' : '&#10007;' ?></span>
+        <p><strong>Reparatie</strong></p>
+      </div>
+      <div class="info-row">
+        <span class="info-icon"><?= $tv['taxatie'] ? '&#10003;' : '&#10007;' ?></span>
+        <p><strong>Taxatie</strong></p>
+      </div>
+      <?php if ($tv['repareerbaar'] && !empty($tv['reparatie_titel'])): ?>
+      <div class="rep-tax-blok">
+        <h5><?= h($tv['reparatie_titel']) ?></h5>
+        <?php if (!empty($tv['reparatie_tekst'])): ?><p><?= h($tv['reparatie_tekst']) ?></p><?php endif; ?>
+      </div>
       <?php endif; ?>
-      <?php if ($tv['taxatie']): ?>
-      <div class="info-row"><span class="info-icon">&#128203;</span><p><strong>Taxatie mogelijk</strong></p></div>
+      <?php if ($tv['taxatie'] && !empty($tv['taxatie_titel'])): ?>
+      <div class="rep-tax-blok">
+        <h5><?= h($tv['taxatie_titel']) ?></h5>
+        <?php if (!empty($tv['taxatie_tekst'])): ?><p><?= h($tv['taxatie_tekst']) ?></p><?php endif; ?>
+      </div>
       <?php endif; ?>
     </div>
-    <?php endif; ?>
 
     <?php if (!empty($related)): ?>
     <div class="related-card">
       <h4>Vergelijkbare modellen</h4>
       <div class="related-list">
         <?php foreach ($related as $r): ?>
-        <a href="/tv/<?= h($r['slug']) ?>" class="related-link">
+        <a href="/nieuw/<?= h($r['slug']) ?>" class="related-link">
           <?= h($r['merk'].' '.$r['modelnummer']) ?>
         </a>
         <?php endforeach; ?>
