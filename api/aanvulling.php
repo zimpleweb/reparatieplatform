@@ -246,7 +246,14 @@ if ($type === 'taxatie') {
     ];
     if ($fotoExtra) { $sql .= ', foto_extra=?'; $params[] = $fotoExtra; }
     $sql .= ' WHERE id=?'; $params[] = $id;
-    db()->prepare($sql)->execute($params);
+    try {
+        db()->prepare($sql)->execute($params);
+    } catch (\PDOException $e) {
+        // Fallback als taxatie-specifieke kolommen nog niet bestaan (zie SQL-migratie)
+        $sqlFallback    = 'UPDATE aanvragen SET naam=?, telefoon=?, omschrijving=?, status=? WHERE id=?';
+        $paramsFallback = [$naam, $tel, $beschrijving, $nieuweStatusNaIndienen, $id];
+        db()->prepare($sqlFallback)->execute($paramsFallback);
+    }
     try {
         db()->prepare('INSERT INTO aanvragen_log (aanvraag_id, actie, gedaan_door) VALUES (?,?,?)')
            ->execute([$id, 'Taxatieaanvraag ingediend door klant', 'klant']);
