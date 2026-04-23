@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/advies_regels.php';
 
 $slug = preg_replace('/[^a-z0-9\-]/', '', strtolower($_GET['slug'] ?? ''));
 $tv   = getTv($slug);
@@ -45,6 +46,64 @@ if (!empty($tv['klachten'])) {
 } else {
     $schemaJson = json_encode($schema);
 }
+
+// ── Stappenplan configuratie voor formulier ────────────────────────────────
+$r   = getAdviesRegels();
+$rJs = json_encode($r, JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
+
+$garantieShops = [];
+try {
+    $garantieShops = db()->query("SELECT naam, support_url FROM coulance_shops WHERE actief=1 ORDER BY volgorde, naam LIMIT 30")->fetchAll(PDO::FETCH_ASSOC);
+} catch (\Exception $e) {}
+
+$garantieMerkUrls = [];
+try {
+    $colCheck = db()->query("SHOW COLUMNS FROM tv_modellen LIKE 'support_url'")->fetchAll();
+    if (!empty($colCheck)) {
+        $mrows = db()->query("SELECT DISTINCT merk, MAX(support_url) AS support_url FROM tv_modellen WHERE support_url != '' AND actief=1 GROUP BY merk ORDER BY merk")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($mrows as $mr) { $garantieMerkUrls[$mr['merk']] = $mr['support_url']; }
+    }
+} catch (\Exception $e) {}
+
+$garantieShopsJs    = json_encode(array_values($garantieShops), JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
+$garantieMerkUrlsJs = json_encode($garantieMerkUrls,            JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
+
+$stappenConfig = [];
+if (!empty($r['stappen_config']) && is_array($r['stappen_config'])) {
+    $stappenConfig = $r['stappen_config'];
+}
+if (empty($stappenConfig)) {
+    $stappenConfig = [
+        ['nummer'=>1,'label'=>'Situatie',    'titel'=>'Wat is er aan de hand?',   'lead'=>'Dit bepaalt direct welke route het meest geschikt is.'],
+        ['nummer'=>2,'label'=>'TV gegevens', 'titel'=>'Over je televisie',         'lead'=>'Merk, model en aankoopinformatie bepalen de route.'],
+        ['nummer'=>3,'label'=>'Defect',      'titel'=>'Beschrijf het defect',      'lead'=>'Hoe specifieker, hoe beter het advies.'],
+        ['nummer'=>4,'label'=>'Contact',     'titel'=>'Je contactgegevens',        'lead'=>'Hier sturen wij je persoonlijk advies naartoe.'],
+    ];
+}
+$aantalStappen = count($stappenConfig);
+
+$reparatieUitsluitKlachten = (!empty($r['reparatie_uitsluiten_klachten']) && is_array($r['reparatie_uitsluiten_klachten']))
+    ? $r['reparatie_uitsluiten_klachten'] : ['gebarsten_scherm'];
+$taxatieIncludeKlachten = (!empty($r['taxatie_include_klachten']) && is_array($r['taxatie_include_klachten']))
+    ? $r['taxatie_include_klachten'] : ['gebarsten_scherm', 'stroomstoot'];
+$garantieUitsluitKlachten = (!empty($r['garantie_uitsluiten_klachten']) && is_array($r['garantie_uitsluiten_klachten']))
+    ? $r['garantie_uitsluiten_klachten'] : ['gebarsten_scherm'];
+$coulanceUitsluitKlachten = (!empty($r['coulance_uitsluiten_klachten']) && is_array($r['coulance_uitsluiten_klachten']))
+    ? $r['coulance_uitsluiten_klachten'] : ['gebarsten_scherm'];
+$taxatieUitsluitKlachten = (!empty($r['taxatie_uitsluiten_klachten']) && is_array($r['taxatie_uitsluiten_klachten']))
+    ? $r['taxatie_uitsluiten_klachten'] : [];
+
+$klachtRoutingJs = json_encode([
+    'reparatie_uitsluiten' => $reparatieUitsluitKlachten,
+    'taxatie_include'      => $taxatieIncludeKlachten,
+    'garantie_uitsluiten'  => $garantieUitsluitKlachten,
+    'coulance_uitsluiten'  => $coulanceUitsluitKlachten,
+    'taxatie_uitsluiten'   => $taxatieUitsluitKlachten,
+], JSON_HEX_TAG | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE);
+
+// Pre-fill stap 2 vanuit TV-model (afgeleid van URL/slug)
+$prefillMerk        = $tv['merk'];
+$prefillModelnummer = $tv['modelnummer'];
 
 include __DIR__ . '/../includes/header.php';
 ?>
@@ -212,5 +271,66 @@ include __DIR__ . '/../includes/header.php';
   </aside>
 
 </div>
+
+<style>
+.form-wrap--featured {
+  border-top: 4px solid #287864;
+  background: linear-gradient(180deg, #f0f9f5 0%, #ffffff 80%);
+}
+.form-cta-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  background: rgba(40,120,100,.1);
+  border: 1px solid rgba(40,120,100,.3);
+  border-radius: 999px;
+  padding: .3rem 1rem;
+  font-size: .8rem;
+  font-weight: 700;
+  color: #287864;
+  letter-spacing: .04em;
+  margin-bottom: 1rem;
+}
+</style>
+
+<div class="form-wrap form-wrap--featured" id="advies">
+  <div class="form-inner">
+
+    <div class="form-left">
+      <span class="form-cta-eyebrow">&#128221; Gratis advies &mdash; binnen 24 uur</span>
+      <h2 class="section-title">Wat zijn de mogelijkheden<br>voor jouw <?= h($tv['merk'].' '.$tv['modelnummer']) ?>?</h2>
+      <p class="section-lead">Op basis van jouw antwoorden kijken wij automatisch welke route het beste bij je past: garantie, coulance, reparatie of taxatie.</p>
+      <div class="outcome-list">
+        <div class="outcome-item"><div class="oi-icon oi-blue">&#128737;</div> Garantie aanspreken bij de winkel of fabrikant</div>
+        <div class="outcome-item"><div class="oi-icon oi-yellow">&#129309;</div> Coulanceregeling bespreken met de verkoper</div>
+        <div class="outcome-item"><div class="oi-icon oi-orange">&#128295;</div> Reparatie aan huis door gespecialiseerde monteur</div>
+        <div class="outcome-item"><div class="oi-icon oi-purple">&#128203;</div> Taxatierapport opstellen voor uw verzekeraar</div>
+        <div class="outcome-item"><div class="oi-icon" style="background:#d1fae5;color:#065f46">&#9851;</div> Recycling: verantwoorde verwerking van je televisie</div>
+      </div>
+      <div id="routing-indicator" style="display:none;" class="routing-indicator">
+        <div class="routing-label">Mogelijke route op basis van je antwoorden:</div>
+        <div id="routing-badge" class="routing-badge"></div>
+        <div id="routing-toelichting" class="routing-toelichting"></div>
+      </div>
+    </div>
+
+    <div class="form-right">
+      <div class="form-card">
+        <h3>Beschrijf het probleem</h3>
+        <p>Doorloop de stappen en ontvang binnen &eacute;&eacute;n werkdag een reactie.</p>
+        <?php include __DIR__ . '/../includes/components/stap-formulier.php'; ?>
+      </div>
+    </div>
+
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (document.getElementById('merk')?.value) {
+    resetRepareerbaar();
+    berekenRoute();
+  }
+});
+</script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

@@ -83,7 +83,7 @@
         <select name="merk" id="merk" required onchange="resetRepareerbaar()">
           <option value="">Selecteer merk</option>
           <?php foreach (getMerken() as $m): ?>
-          <option value="<?= h($m) ?>"><?= h($m) ?></option>
+          <option value="<?= h($m) ?>"<?= (isset($prefillMerk) && $m === $prefillMerk) ? ' selected' : '' ?>><?= h($m) ?></option>
           <?php endforeach; ?>
         </select>
       </div>
@@ -91,6 +91,7 @@
         <label>Modelnummer *</label>
         <input type="text" name="modelnummer" id="modelnummer"
                placeholder="Bijv. UE55CU8000" required
+               value="<?= h($prefillModelnummer ?? '') ?>"
                oninput="resetRepareerbaar()" />
         <p class="field-hint">Staat achter op de tv of via Instellingen &rarr; Ondersteuning</p>
       </div>
