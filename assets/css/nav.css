@@ -34,11 +34,11 @@ nav {
   font-size: 1.4rem; cursor: pointer; padding: .25rem;
 }
 .nav-logo img {
-  height: 34px;
+  height: 43px;
   width: auto;
   display: block;
 }
 
 @media (max-width: 640px) {
-  .nav-logo img { height: 28px; }
+  .nav-logo img { height: 35px; }
 }

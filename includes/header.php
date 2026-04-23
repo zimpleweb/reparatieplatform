@@ -38,7 +38,7 @@ try {
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/responsive.css" />
   <style>
     @media (max-width: 768px) {
-      .nav-logo img { height: 44px; }
+      .nav-logo img { height: 55px; }
     }
   </style>
   <?php if ($recaptcha_enabled && $recaptcha_site_key): ?>
@@ -77,7 +77,7 @@ try {
     <img
       src="https://reparatieplatform.nl/wp-content/uploads/2025/06/REPARATIEPLATFORM-LOGO-WEBSITE-1200x336.png"
       alt="ReparatiePlatform"
-      height="34"
+      height="43"
     />
   </a>
   <button class="nav-toggle" id="navToggle" aria-label="Menu openen">&#9776;</button>
