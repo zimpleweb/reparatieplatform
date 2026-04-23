@@ -133,43 +133,11 @@ include __DIR__ . '/../includes/header.php';
           <?php endif; ?>
         </div>
         <h1><?= h($tv['merk'].' '.$tv['modelnummer']) ?></h1>
-        <p class="model-sub"><?= h($tv['beschrijving']) ?></p>
+        <a href="#advies" class="model-cta-pill">Bekijk de mogelijkheden voor jouw <?= h($tv['modelnummer']) ?> &darr;</a>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Specificaties</h2>
-      <table class="specs-table">
-        <tr><td>Merk</td><td><?= h($tv['merk']) ?></td></tr>
-        <tr><td>Serie</td><td><?= h($tv['serie']) ?></td></tr>
-        <tr><td>Modelnummer</td><td><?= h($tv['modelnummer']) ?></td></tr>
-        <tr><td>Repareerbaar</td><td><?= $tv['repareerbaar'] ? 'Ja' : 'Nader te bepalen' ?></td></tr>
-      </table>
-    </div>
-
-    <?php if (!empty($tv['klachten'])): ?>
-    <div class="card">
-      <h2>Veelvoorkomende klachten</h2>
-      <div class="klacht-list">
-        <?php
-        $iconColors = ['hoog'=>'ki-red','middel'=>'ki-yellow','laag'=>'ki-blue'];
-        foreach ($tv['klachten'] as $k):
-          $ic = $iconColors[$k['frequentie']] ?? 'ki-blue';
-        ?>
-        <div class="klacht-item">
-          <div class="klacht-icon <?= $ic ?>"><?= h($k['type_icon']) ?></div>
-          <div>
-            <div class="klacht-title"><?= h($k['titel']) ?></div>
-            <div class="klacht-desc"><?= h($k['omschrijving']) ?></div>
-          </div>
-          <span class="freq-badge freq-<?= h($k['frequentie']) ?>">
-            <?= match($k['frequentie']) { 'hoog'=>'Veel gemeld','middel'=>'Regelmatig',default=>'Minder vaak' } ?>
-          </span>
-        </div>
-        <?php endforeach; ?>
-      </div>
-    </div>
-    <?php endif; ?>
+    <?php $klachten = $tv['klachten']; include __DIR__ . '/partials/defecten.php'; ?>
 
     <div class="card">
       <h2>Reparatie van de <?= h($tv['merk'].' '.$tv['modelnummer']) ?></h2>
@@ -181,7 +149,7 @@ include __DIR__ . '/../includes/header.php';
       <p>
         Heb je een beschadigde <?= h($tv['modelnummer']) ?> en wil je weten of reparatie loont?
         Of heb je een taxatierapport nodig voor je verzekeraar?
-        Vraag gratis en vrijblijvend advies aan via het formulier hiernaast.
+        Vraag gratis en vrijblijvend advies aan via het <a href="#advies">stappenplan hieronder</a>.
       </p>
     </div>
 
@@ -215,45 +183,19 @@ include __DIR__ . '/../includes/header.php';
 
   <aside class="sidebar">
 
-    <div class="cta-card">
-      <h3>Gratis advies aanvragen</h3>
-      <p>Vul je klacht in en ontvang persoonlijk advies over jouw <?= h($tv['modelnummer']) ?>.</p>
-      <form action="/api/send-advies.php" method="POST">
-        <input type="hidden" name="csrf_token"  value="<?= csrf() ?>" />
-        <input type="hidden" name="merk"        value="<?= h($tv['merk']) ?>" />
-        <input type="hidden" name="modelnummer" value="<?= h($tv['modelnummer']) ?>" />
-        <div class="cta-field">
-          <label>Type klacht</label>
-          <select name="klacht_type">
-            <option>Donkere vlekken / backlight-uitval</option>
-            <option>Strepen of lijnen in beeld</option>
-            <option>Geen beeld, wel geluid</option>
-            <option>LED strip kapot</option>
-            <option>TV gaat niet aan</option>
-            <option>Kapot / gebarsten scherm</option>
-            <option>Anders</option>
-          </select>
-        </div>
-        <div class="cta-field">
-          <label>Omschrijving</label>
-          <textarea name="omschrijving" placeholder="Beschrijf het probleem kort..."></textarea>
-        </div>
-        <div class="cta-field">
-          <label>E-mailadres *</label>
-          <input type="email" name="email" placeholder="naam@email.nl" required />
-        </div>
-        <p class="cta-disclaimer">Advies is indicatief en vrijblijvend. Aan dit advies kunnen geen rechten worden ontleend.</p>
-        <button type="submit" class="cta-submit">Verstuur en ontvang advies &rarr;</button>
-      </form>
-    </div>
+    <?php include __DIR__ . '/partials/sidebar-specs.php'; ?>
 
+    <?php if ($tv['repareerbaar'] || $tv['taxatie']): ?>
     <div class="info-card">
-      <h4>Reparatiemogelijkheden</h4>
-      <div class="info-row"><span class="info-icon">&#10003;</span><p><strong>LED strip vervanging</strong><br>Meest voorkomende reparatie. Aan huis mogelijk.</p></div>
-      <div class="info-row"><span class="info-icon">&#10003;</span><p><strong>T-CON board</strong><br>Oplossing voor strepen en beeldfouten.</p></div>
-      <div class="info-row"><span class="info-icon">&#10003;</span><p><strong>Power supply</strong><br>Als de tv niet meer opstart.</p></div>
-      <div class="info-row"><span class="info-icon">&#128203;</span><p><strong>Taxatierapport</strong><br>Voor verzekeraars, ook bij buitenschuld schade.</p></div>
+      <h4>Reparatie &amp; Taxatie</h4>
+      <?php if ($tv['repareerbaar']): ?>
+      <div class="info-row"><span class="info-icon">&#128295;</span><p><strong>Reparatie mogelijk</strong></p></div>
+      <?php endif; ?>
+      <?php if ($tv['taxatie']): ?>
+      <div class="info-row"><span class="info-icon">&#128203;</span><p><strong>Taxatie mogelijk</strong></p></div>
+      <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <?php if (!empty($related)): ?>
     <div class="related-card">
@@ -273,6 +215,19 @@ include __DIR__ . '/../includes/header.php';
 </div>
 
 <style>
+.model-cta-pill {
+  display: inline-block;
+  margin-top: .5rem;
+  padding: .55rem 1.25rem;
+  background: #287864;
+  color: #fff;
+  border-radius: 999px;
+  font-size: .9rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background .15s;
+}
+.model-cta-pill:hover { background: #1d5f4f; }
 .form-wrap--featured {
   border-top: 4px solid #287864;
   background: linear-gradient(180deg, #f0f9f5 0%, #ffffff 80%);
