@@ -15,6 +15,7 @@ $fout = '';
 $filterStatus = trim($_GET['status'] ?? '');
 $filterRoute  = trim($_GET['route']  ?? '');
 $filterZoek   = trim($_GET['zoek']   ?? '');
+$page         = max(1, (int)($_GET['page'] ?? 1));
 
 $statusLabels = [
     // ── Initieel ──────────────────────────────────────────────────────────
@@ -404,6 +405,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_t
                 'status' => $filterStatus,
                 'route'  => $filterRoute,
                 'zoek'   => $filterZoek,
+                'page'   => $page > 1 ? $page : '',
                 'saved'  => '1',
             ]));
             header('Location: ?' . $qs);
@@ -453,7 +455,16 @@ if ($filterZoek) {
     $like = '%' . $filterZoek . '%';
     $params = array_merge($params, [$like, $like, $like, $like]);
 }
-$sql  = 'SELECT * FROM aanvragen WHERE ' . implode(' AND ', $where) . ' ORDER BY id DESC';
+$countSql  = 'SELECT COUNT(*) FROM aanvragen WHERE ' . implode(' AND ', $where);
+$countStmt = db()->prepare($countSql);
+$countStmt->execute($params);
+$totaal        = (int)$countStmt->fetchColumn();
+$perPage       = 50;
+$totaalPaginas = max(1, (int)ceil($totaal / $perPage));
+$page          = min($page, $totaalPaginas);
+$offset        = max(0, ($page - 1) * $perPage);
+
+$sql  = 'SELECT * FROM aanvragen WHERE ' . implode(' AND ', $where) . ' ORDER BY id DESC LIMIT ' . $perPage . ' OFFSET ' . $offset;
 $stmt = db()->prepare($sql);
 $stmt->execute($params);
 $aanvragen = $stmt->fetchAll();
@@ -601,6 +612,14 @@ $adminActivePage = 'aanvragen';
     .optiemenu-divider    { border:none;border-top:1px solid var(--adm-border);margin:.25rem 0; }
     .optiemenu-type-dot   { display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:.5rem;vertical-align:middle; }
 
+    /* Paginatie */
+    .paginatie { display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;padding:1rem 0 .5rem;border-top:1px solid var(--adm-border); }
+    .pag-btn   { display:inline-flex;align-items:center;padding:.35rem .75rem;border:1.5px solid var(--adm-border);border-radius:7px;font-size:.82rem;font-weight:600;color:var(--adm-text);text-decoration:none;background:var(--adm-surface);transition:border-color .15s,background .15s; }
+    .pag-btn:hover   { border-color:var(--adm-accent);background:var(--adm-bg); }
+    .pag-btn.pag-actief { background:var(--adm-ink);color:#fff;border-color:var(--adm-ink); }
+    .pag-gap   { font-size:.82rem;color:var(--adm-faint);padding:0 .25rem; }
+    .pag-info  { font-size:.78rem;color:var(--adm-muted);margin-left:auto; }
+
     /* Lightbox */
     .lightbox-overlay { display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);align-items:center;justify-content:center;cursor:zoom-out; }
     .lightbox-overlay.active { display:flex; }
@@ -635,7 +654,7 @@ $adminActivePage = 'aanvragen';
     $huidigType   = $detail['gekozen_advies'] ?? $detail['aanvraag_type'] ?? $detail['advies_type'] ?? '';
     $routeAdvies  = $detail['geadviseerde_route'] ?? '';
     $isInzending  = ($detail['status'] === 'inzending');
-    $backQs       = http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek]));
+    $backQs       = http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek,'page'=>$page > 1 ? $page : '']));
     $routeLabels  = [
       'reparatie' => 'Op basis van merk, model en klacht is reparatie aan huis de meest geschikte route.',
       'taxatie'   => 'Er is sprake van externe schade; een taxatierapport is de aangewezen route voor de verzekeraar (€49).',
@@ -1153,7 +1172,7 @@ $adminActivePage = 'aanvragen';
   </div>
 
   <div class="admin-card">
-    <h2><?= count($aanvragen) ?> aanvragen</h2>
+    <h2><?= number_format($totaal, 0, ',', '.') ?> aanvragen<?= $totaalPaginas > 1 ? ' &mdash; pagina ' . $page . ' van ' . $totaalPaginas : '' ?></h2>
     <?php if (empty($aanvragen)): ?>
       <p style="color:var(--adm-faint);padding:1rem 0;">Geen aanvragen gevonden.</p>
     <?php else: ?>
@@ -1179,7 +1198,7 @@ $adminActivePage = 'aanvragen';
         $sl          = $statusLabels[$r['status']] ?? ['tekst' => $r['status'], 'badge' => 'badge-gray'];
         $rType       = $r['gekozen_advies'] ?? $r['aanvraag_type'] ?? $r['advies_type'] ?? '';
         $rTypeInfo   = $aanvraagTypes[$rType] ?? null;
-        $qs          = http_build_query(array_filter(['status' => $filterStatus, 'route' => $filterRoute, 'zoek' => $filterZoek]));
+        $qs          = http_build_query(array_filter(['status' => $filterStatus, 'route' => $filterRoute, 'zoek' => $filterZoek, 'page' => $page > 1 ? $page : '']));
         $heeftNieuws = in_array($r['status'], $ingevuldStatussen_lijst, true);
       ?>
       <tr>
@@ -1266,6 +1285,29 @@ $adminActivePage = 'aanvragen';
       </tbody>
     </table>
     <?php endif; ?>
+
+    <?php if ($totaalPaginas > 1): ?>
+    <div class="paginatie">
+      <?php if ($page > 1): ?>
+        <a href="?<?= h(http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek,'page'=>$page-1]))) ?>" class="pag-btn">&larr; Vorige</a>
+      <?php endif; ?>
+      <?php
+        $pStart = max(1, $page - 2);
+        $pEind  = min($totaalPaginas, $page + 2);
+        if ($pStart > 1) echo '<span class="pag-gap">1 &hellip;</span>';
+        for ($p = $pStart; $p <= $pEind; $p++):
+      ?>
+        <a href="?<?= h(http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek,'page'=>$p]))) ?>"
+           class="pag-btn<?= $p === $page ? ' pag-actief' : '' ?>"><?= $p ?></a>
+      <?php endfor; ?>
+      <?php if ($pEind < $totaalPaginas) echo '<span class="pag-gap">&hellip; ' . $totaalPaginas . '</span>'; ?>
+      <?php if ($page < $totaalPaginas): ?>
+        <a href="?<?= h(http_build_query(array_filter(['status'=>$filterStatus,'route'=>$filterRoute,'zoek'=>$filterZoek,'page'=>$page+1]))) ?>" class="pag-btn">Volgende &rarr;</a>
+      <?php endif; ?>
+      <span class="pag-info"><?= number_format($totaal,0,',','.') ?> aanvragen &mdash; <?= $perPage ?> per pagina</span>
+    </div>
+    <?php endif; ?>
+
   </div>
 
   <?php endif; ?>

@@ -219,15 +219,15 @@ include __DIR__ . '/includes/header.php';
       <div class="zowerkhet-step">
         <span class="zowerkhet-step-num">Stap 02</span>
         <div class="zowerkhet-step-icon">&#128269;</div>
-        <h3>Wij analyseren uw situatie</h3>
-        <p>Een specialist beoordeelt uw aanvraag op garantie, coulance, reparatiemogelijkheden en waarde van het toestel.</p>
+        <h3>We kijken jouw situatie na</h3>
+        <p>Een specialist bekijkt jouw aanvraag en toetst alle opties: garantie, coulance, reparatiemogelijkheden en de waarde van je tv.</p>
         <span class="zowerkhet-step-badge">&#10003; Persoonlijk advies</span>
       </div>
       <div class="zowerkhet-step">
         <span class="zowerkhet-step-num">Stap 03</span>
         <div class="zowerkhet-step-icon">&#128233;</div>
         <h3>Advies binnen 24 uur</h3>
-        <p>U ontvangt een helder advies per e-mail met concrete vervolgstappen &mdash; garantie, coulance, reparatie of taxatie.</p>
+        <p>Je ontvangt een helder advies per e-mail met concrete vervolgstappen &mdash; of het nu garantie, coulance, reparatie of taxatie is.</p>
         <span class="zowerkhet-step-badge">&#10003; Binnen 1 werkdag</span>
       </div>
     </div>

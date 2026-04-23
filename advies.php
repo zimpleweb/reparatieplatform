@@ -530,9 +530,9 @@ include __DIR__ . '/includes/header.php';
         <div id="garantie-advies-panel" style="display:none;" class="garantie-panel">
           <div class="garantie-panel-header">
             <div class="garantie-panel-badge">&#9989; Wettelijke garantie</div>
-            <h3>Uw televisie valt (mogelijk) onder garantie</h3>
-            <p>Op basis van het aanschafjaar valt uw televisie waarschijnlijk nog binnen de wettelijke garantietermijn.
-               U heeft het recht om contact op te nemen met de winkel of het merk.</p>
+            <h3>Je televisie valt waarschijnlijk nog onder garantie</h3>
+            <p>Op basis van het aanschafjaar valt je televisie nog binnen de wettelijke garantietermijn.
+               Je kunt contact opnemen met de winkel of rechtstreeks bij het merk.</p>
           </div>
           <div class="garantie-keuze-wrap">
             <h4>&#128722; Neem contact op via:</h4>
@@ -543,9 +543,9 @@ include __DIR__ . '/includes/header.php';
             </div>
           </div>
           <div class="garantie-info-box">
-            <strong>Uw rechten:</strong> Bij een defect binnen de garantietermijn heeft u recht op gratis reparatie,
-            vervanging of terugbetaling. De verkoper (winkel) is primair verantwoordelijk.<br>
-            Werkt de verkoper niet mee? Dan kunt u alsnog een aanvraag indienen en helpen wij u verder.
+            <strong>Jouw rechten:</strong> Bij een defect binnen de garantietermijn heb je recht op gratis reparatie,
+            vervanging of terugbetaling. De verkoper (winkel) is hiervoor primair verantwoordelijk.<br>
+            Werkt de winkel niet mee? Dien dan gewoon een aanvraag in &mdash; wij helpen je verder.
           </div>
           <button type="button" class="garantie-terug-btn" onclick="garantieTerug()">
             &#8592; Terug naar het formulier
@@ -737,7 +737,7 @@ function _vulGarantiePanel() {
           : `<span class="garantie-shop-btn garantie-shop-btn-no-url">${s.naam}</span>`
       ).join('');
     } else {
-      shopsList.innerHTML = '<p style="font-size:.82rem;color:#64748b;">Neem contact op met de winkel waar u de televisie heeft gekocht.</p>';
+      shopsList.innerHTML = '<p style="font-size:.82rem;color:#64748b;">Neem contact op met de winkel waar je de televisie hebt gekocht.</p>';
     }
   }
   const merkWrap = document.getElementById('garantie-merk-wrap');
